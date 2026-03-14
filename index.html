@@ -110,10 +110,10 @@ const address =
 `${f.Address || ""}<br>
 ${f.City || ""}, ${f.State || ""} ${f["Zip Code"] || ""}`
 
-const birthday = f.Birthday || ""
-const anniversary = f.Anniversary || ""
+const birthday = formatMonthDay(f.Birthday)
+const anniversary = formatMonthDay(f.Anniversary)
 const household = f.Household || ""
-const updated = f["Last Updated"] || ""
+const updated = formatDate(f["Last Updated"])
 
 const card = document.createElement("div")
 card.className="card"
@@ -153,7 +153,7 @@ ${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
 
 ${household ? `<p><strong>Household:</strong> <span style="color:blue;cursor:pointer">${household}</span></p>` : ""}
 
-${updated ? `<p style="font-size:12px;color:#666">Last updated: ${updated}</p>` : ""}
+${updated ? `<p style="font-size:12px;color:#666">Updated ${updated}</p>` : ""}
 
 <div class="close" onclick="closeProfile()">Close</div>
 
@@ -191,7 +191,20 @@ day:"numeric"
 })
 
 }
-  
+
+function formatMonthDay(dateString){
+
+if(!dateString) return ""
+
+const d = new Date(dateString)
+
+return d.toLocaleDateString("en-US",{
+month:"long",
+day:"numeric"
+})
+
+}
+
 loadMembers()
 
 </script>
