@@ -1,9 +1,166 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Church Directory</title>
+<meta charset="UTF-8">
+<title>Church Directory</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f4f4f4;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+}
+
+.directory{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+gap:20px;
+max-width:1000px;
+margin:auto;
+}
+
+.card{
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,.1);
+text-align:center;
+cursor:pointer;
+}
+
+.card img{
+width:100px;
+height:100px;
+height:100px;
+border-radius:50%;
+object-fit:cover;
+margin-bottom:10px;
+}
+
+.profile{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,.7);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.profile-box{
+background:white;
+padding:30px;
+border-radius:10px;
+width:320px;
+text-align:center;
+}
+
+.profile-box img{
+width:120px;
+height:120px;
+border-radius:50%;
+object-fit:cover;
+}
+
+.close{
+margin-top:15px;
+cursor:pointer;
+color:blue;
+}
+</style>
 </head>
+
 <body>
-  <h1>Church Directory Coming Soon</h1>
+
+<h1>Church Directory</h1>
+
+<div class="directory" id="directory"></div>
+
+<div class="profile" id="profile">
+<div class="profile-box" id="profileContent"></div>
+</div>
+
+<script>
+
+const AIRTABLE_TOKEN = "PASTE_NEW_TOKEN_HERE"
+const BASE_ID = "appk4Yy6SfLsTzxiU"
+const TABLE = "Members"
+
+const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE}`
+
+async function loadMembers(){
+
+const response = await fetch(url,{
+headers:{
+Authorization:`Bearer ${AIRTABLE_TOKEN}`
+}
+})
+
+const data = await response.json()
+
+const directory = document.getElementById("directory")
+
+data.records.forEach(record=>{
+
+const f = record.fields
+
+const photo = f.Photo?.[0]?.url || ""
+const name = f["Full Name"] || ""
+const phone = f.Phone || ""
+const email = f.Email || ""
+const address = f.Address || ""
+
+const card = document.createElement("div")
+card.className="card"
+
+card.innerHTML=`
+<img src="${photo}">
+<h3>${name}</h3>
+<p>${phone}</p>
+`
+
+card.onclick=()=>showProfile(name,photo,phone,email,address)
+
+directory.appendChild(card)
+
+})
+
+}
+
+function showProfile(name,photo,phone,email,address){
+
+const box = document.getElementById("profileContent")
+
+box.innerHTML=`
+
+<img src="${photo}">
+<h2>${name}</h2>
+<p>${phone}</p>
+<p>${email}</p>
+<p>${address}</p>
+
+<div class="close" onclick="closeProfile()">Close</div>
+
+`
+
+document.getElementById("profile").style.display="flex"
+
+}
+
+function closeProfile(){
+document.getElementById("profile").style.display="none"
+}
+
+loadMembers()
+
+</script>
+
 </body>
 </html>
