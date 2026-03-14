@@ -177,6 +177,20 @@ if(digits.length !== 10) return phone
 
 return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
 }
+
+function formatDate(dateString){
+
+if(!dateString) return ""
+
+const d = new Date(dateString)
+
+return d.toLocaleDateString("en-US",{
+year:"numeric",
+month:"long",
+day:"numeric"
+})
+
+}
   
 loadMembers()
 
