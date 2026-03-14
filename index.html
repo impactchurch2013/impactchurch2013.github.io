@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html>
+
+<!-- ================================= -->
+<!-- HEAD                              -->
+<!-- ================================= -->
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Church Directory</title>
 
 <style>
+
+/* ================================= */
+/* GLOBAL STYLES                     */
+/* ================================= */
 
 body{
 font-family:Arial, sans-serif;
@@ -23,6 +33,10 @@ letter-spacing:.5px;
 color:#333;
 }
 
+/* ================================= */
+/* DIRECTORY GRID (DESKTOP)          */
+/* ================================= */
+
 .directory{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
@@ -30,6 +44,10 @@ gap:24px;
 max-width:1200px;
 margin:auto;
 }
+
+/* ================================= */
+/* MEMBER CARD                       */
+/* ================================= */
 
 .card{
 position:relative;
@@ -51,6 +69,10 @@ height:260px;
 object-fit:cover;
 display:block;
 }
+
+/* ================================= */
+/* CARD TEXT OVERLAY                 */
+/* ================================= */
 
 .card-info{
 position:absolute;
@@ -76,6 +98,10 @@ margin:0;
 font-size:13px;
 opacity:.9;
 }
+
+/* ================================= */
+/* PROFILE POPUP (DESKTOP)           */
+/* ================================= */
 
 .profile{
 position:fixed;
@@ -111,6 +137,10 @@ cursor:pointer;
 color:blue;
 }
 
+/* ================================= */
+/* PHOTO VIEWER (FULLSCREEN IMAGE)   */
+/* ================================= */
+
 .photo-viewer{
 position:fixed;
 top:0;
@@ -130,7 +160,9 @@ max-height:90%;
 border-radius:10px;
 }
 
-@media (max-width: 600px){
+/* ================================= */
+/* MOBILE STYLES                     */
+/* ================================= */
 
 @media (max-width:600px){
 
@@ -139,7 +171,7 @@ padding:0;
 }
 
 h1{
-margin:20px 0 20px 0;
+margin:20px 0;
 }
 
 .directory{
@@ -172,12 +204,6 @@ font-size:18px;
 font-size:14px;
 }
 
-}
-
-}
-
-@media (max-width:600px){
-
 .profile{
 position:fixed;
 top:0;
@@ -203,8 +229,6 @@ box-shadow:none;
 .profile-box img{
 width:160px;
 height:160px;
-border-radius:50%;
-object-fit:cover;
 margin-bottom:15px;
 }
 
@@ -214,32 +238,56 @@ margin-top:25px;
 }
 
 }
-  
+
 </style>
+
 </head>
+
+<!-- ================================= -->
+<!-- BODY                              -->
+<!-- ================================= -->
 
 <body>
 
 <h1>Church Directory</h1>
 
+<!-- DIRECTORY GRID -->
+
 <div class="directory" id="directory"></div>
+
+<!-- PROFILE POPUP -->
 
 <div class="profile" id="profile">
 <div class="profile-box" id="profileContent"></div>
 </div>
 
+<!-- FULL PHOTO VIEWER -->
+
 <div id="photoViewer" class="photo-viewer" onclick="closePhoto()">
 <img id="photoViewerImg">
 </div>
 
+<!-- ================================= -->
+<!-- SCRIPT                            -->
+<!-- ================================= -->
+
 <script>
+
+/* ================================= */
+/* LOAD MEMBERS DATA                  */
+/* ================================= */
 
 async function loadMembers(){
 
-const response = await fetch("/.netlify/functions/members")
+/* TEMPORARY: LOCAL JSON FILE
+   (Later replaced with Firebase endpoint) */
+
+const response = await fetch("members.json")
 const data = await response.json()
 
 const directory = document.getElementById("directory")
+
+/* SORT BY LAST NAME */
 
 data.records.sort((a,b)=>{
 
@@ -255,7 +303,9 @@ if(aLast > bLast) return 1
 return aFirst.localeCompare(bFirst)
 
 })
-  
+
+/* BUILD DIRECTORY CARDS */
+
 data.records.forEach(record=>{
 
 const f = record.fields
@@ -294,6 +344,10 @@ directory.appendChild(card)
 
 }
 
+/* ================================= */
+/* PROFILE DISPLAY                   */
+/* ================================= */
+
 function showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated){
 
 const box = document.getElementById("profileContent")
@@ -325,9 +379,17 @@ document.getElementById("profile").style.display="flex"
 
 }
 
+/* ================================= */
+/* PROFILE CLOSE                     */
+/* ================================= */
+
 function closeProfile(){
 document.getElementById("profile").style.display="none"
 }
+
+/* ================================= */
+/* PHOTO VIEWER                      */
+/* ================================= */
 
 function openPhoto(photo){
 const viewer = document.getElementById("photoViewer")
@@ -340,6 +402,10 @@ viewer.style.display = "flex"
 function closePhoto(){
 document.getElementById("photoViewer").style.display = "none"
 }
+
+/* ================================= */
+/* DATA FORMATTING                   */
+/* ================================= */
 
 function formatPhone(phone){
 
@@ -378,6 +444,10 @@ day:"numeric"
 })
 
 }
+
+/* ================================= */
+/* INITIALIZE DIRECTORY              */
+/* ================================= */
 
 loadMembers()
 
