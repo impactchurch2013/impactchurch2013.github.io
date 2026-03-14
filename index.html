@@ -102,7 +102,7 @@ const f = record.fields
 
 const photo = f.Photo?.[0]?.url || ""
 const name = f["Full Name"] || ""
-const phone = f["Phone Number"] || ""
+const phone = formatPhone(f["Phone Number"])
 const email = f.Email || ""
 const address =
 `${f.Address || ""}<br>
@@ -149,6 +149,17 @@ function closeProfile(){
 document.getElementById("profile").style.display="none"
 }
 
+function formatPhone(phone){
+
+if(!phone) return ""
+
+const digits = phone.replace(/\D/g,'')
+
+if(digits.length !== 10) return phone
+
+return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
+}
+  
 loadMembers()
 
 </script>
