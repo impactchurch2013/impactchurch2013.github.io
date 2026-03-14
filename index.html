@@ -82,6 +82,25 @@ cursor:pointer;
 color:blue;
 }
 
+.photo-viewer{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,.9);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:2000;
+}
+
+.photo-viewer img{
+max-width:90%;
+max-height:90%;
+border-radius:10px;
+}
+
 @media (max-width: 600px){
 
 .directory{
@@ -153,6 +172,10 @@ margin-top:25px;
 <div class="profile-box" id="profileContent"></div>
 </div>
 
+<div id="photoViewer" class="photo-viewer" onclick="closePhoto()">
+<img id="photoViewerImg">
+</div>
+
 <script>
 
 async function loadMembers(){
@@ -204,7 +227,7 @@ const box = document.getElementById("profileContent")
 
 box.innerHTML=`
 
-<img src="${photo}">
+<img src="${photo}" onclick="openPhoto('${photo}')" style="cursor:pointer">
 <h2>${name}</h2>
 
 ${ministry ? `<p><strong>${ministry}</strong></p>` : ""}
@@ -231,6 +254,18 @@ document.getElementById("profile").style.display="flex"
 
 function closeProfile(){
 document.getElementById("profile").style.display="none"
+}
+
+function openPhoto(photo){
+const viewer = document.getElementById("photoViewer")
+const img = document.getElementById("photoViewerImg")
+
+img.src = photo
+viewer.style.display = "flex"
+}
+
+function closePhoto(){
+document.getElementById("photoViewer").style.display = "none"
 }
 
 function formatPhone(phone){
