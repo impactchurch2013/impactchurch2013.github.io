@@ -102,9 +102,11 @@ const f = record.fields
 
 const photo = f.Photo?.[0]?.url || ""
 const name = f["Full Name"] || ""
-const phone = f.Phone || ""
+const phone = f["Phone Number"] || ""
 const email = f.Email || ""
-const address = f.Address || ""
+const address =
+`${f.Address || ""}<br>
+${f.City || ""}, ${f.State || ""} ${f["Zip Code"] || ""}`
 
 const card = document.createElement("div")
 card.className="card"
