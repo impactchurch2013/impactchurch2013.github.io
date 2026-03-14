@@ -274,6 +274,12 @@ margin-top:25px;
 <script>
 
 /* ================================= */
+/* GLOBAL DATA STORE                 */
+/* ================================= */
+
+let members = []
+   
+/* ================================= */
 /* LOAD MEMBERS DATA                  */
 /* ================================= */
 
@@ -285,11 +291,27 @@ async function loadMembers(){
 const response = await fetch("members.json")
 const data = await response.json()
 
+/* STORE MEMBERS GLOBALLY */
+
+members = data.records
+
+/* BUILD DIRECTORY */
+
+buildDirectory()
+
+}
+
+/* ================================= */
+/* BUILD DIRECTORY                   */
+/* ================================= */
+
+function buildDirectory(){
+
 const directory = document.getElementById("directory")
 
-/* SORT BY LAST NAME */
+directory.innerHTML = ""
 
-data.records.sort((a,b)=>{
+members.sort((a,b)=>{
 
 const aLast = a.fields["Last Name"] || ""
 const bLast = b.fields["Last Name"] || ""
@@ -304,13 +326,11 @@ return aFirst.localeCompare(bFirst)
 
 })
 
-/* BUILD DIRECTORY CARDS */
-
-data.records.forEach(record=>{
+members.forEach(record=>{
 
 const f = record.fields
 
-const photo = f.Photo?.[0]?.url || ""
+const photo = f.Photo?.[0]?.url || "images/default.jpg"
 const name = f["Full Name"] || ""
 const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
