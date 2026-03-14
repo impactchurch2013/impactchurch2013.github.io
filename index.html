@@ -89,19 +89,30 @@ color:blue;
 
 <script>
 
-const AIRTABLE_TOKEN = "PASTE_NEW_TOKEN_HERE"
-const BASE_ID = "appk4Yy6SfLsTzxiU"
-const TABLE = "Members"
-
 const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE}`
 
 async function loadMembers(){
 
-const response = await fetch(url,{
-headers:{
-Authorization:`Bearer ${AIRTABLE_TOKEN}`
-}
-})
+fetch("/.netlify/functions/members")
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById("directory");
+
+    data.records.forEach(record => {
+      const member = record.fields;
+
+      const card = document.createElement("div");
+      card.className = "member";
+
+      card.innerHTML = `
+        <h3>${member["Full Name"] || ""}</h3>
+        <p>${member.Email || ""}</p>
+        <p>${member.Phone || ""}</p>
+      `;
+
+      container.appendChild(card);
+    });
+  });
 
 const data = await response.json()
 
