@@ -111,8 +111,11 @@ right:0;
 bottom:0;
 background:rgba(0,0,0,.7);
 display:none;
-align-items:center;
+align-items:flex-start;
 justify-content:center;
+overflow-y:auto;
+padding-top:40px;
+padding-bottom:40px;
 }
 
 .profile-box{
@@ -313,6 +316,7 @@ margin-top:25px;
 
 let members = []
 let lastViewedProfile = null
+let returnToFamily = null
    
 /* ================================= */
 /* LOAD MEMBERS DATA                  */
@@ -455,7 +459,19 @@ document.getElementById("profile").style.display="flex"
 /* ================================= */
 
 function closeProfile(){
+
+if(returnToFamily){
+
+const family = returnToFamily
+returnToFamily = null
+
+showHousehold(family)
+return
+
+}
+
 document.getElementById("profile").style.display="none"
+
 }
 
 /* ================================= */
@@ -487,7 +503,7 @@ const name = f["Full Name"] || ""
 const photo = f.Photo?.[0]?.url || ""
 
 html += `
-<div class="family-member" onclick="showProfileFromMember('${name}')">
+<div class="family-member" onclick="showFamilyMemberProfile('${name}','${householdName}')">
 
 <img src="${photo}">
 
@@ -573,6 +589,18 @@ anniversary,
 household,
 updated
 )
+
+}
+
+/* ================================= */
+/* OPEN PROFILE FROM FAMILY PAGE     */
+/* ================================= */
+
+function showFamilyMemberProfile(name, householdName){
+
+returnToFamily = householdName
+
+showProfileFromMember(name)
 
 }
 
