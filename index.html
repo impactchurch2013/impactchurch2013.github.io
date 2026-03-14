@@ -102,11 +102,18 @@ const f = record.fields
 
 const photo = f.Photo?.[0]?.url || ""
 const name = f["Full Name"] || ""
+const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
 const email = f.Email || ""
+
 const address =
 `${f.Address || ""}<br>
 ${f.City || ""}, ${f.State || ""} ${f["Zip Code"] || ""}`
+
+const birthday = f.Birthday || ""
+const anniversary = f.Anniversary || ""
+const household = f.Household || ""
+const updated = f["Last Updated"] || ""
 
 const card = document.createElement("div")
 card.className="card"
@@ -117,7 +124,7 @@ card.innerHTML=`
 <p>${phone}</p>
 `
 
-card.onclick=()=>showProfile(name,photo,phone,email,address)
+card.onclick=()=>showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated)
 
 directory.appendChild(card)
 
@@ -125,7 +132,7 @@ directory.appendChild(card)
 
 }
 
-function showProfile(name,photo,phone,email,address){
+function showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated){
 
 const box = document.getElementById("profileContent")
 
@@ -133,11 +140,24 @@ box.innerHTML=`
 
 <img src="${photo}">
 <h2>${name}</h2>
-<p>${phone}</p>
+
+${ministry ? `<p><strong>${ministry}</strong></p>` : ""}
+
+<p><a href="tel:${phone}">${phone}</a></p>
 <p>${email}</p>
 <p>${address}</p>
 
+${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
+
+${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
+
+${household ? `<p><strong>Household:</strong> <span style="color:blue;cursor:pointer">${household}</span></p>` : ""}
+
+${updated ? `<p style="font-size:12px;color:#666">Last updated: ${updated}</p>` : ""}
+
 <div class="close" onclick="closeProfile()">Close</div>
+
+`
 
 `
 
