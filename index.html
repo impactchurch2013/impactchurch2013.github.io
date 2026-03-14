@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Church Directory</title>
 
 <style>
@@ -80,6 +81,42 @@ margin-top:15px;
 cursor:pointer;
 color:blue;
 }
+
+@media (max-width: 600px){
+
+.directory{
+grid-template-columns:1fr;
+gap:16px;
+padding:10px;
+}
+
+.card{
+padding:18px;
+}
+
+.card img{
+width:110px;
+height:110px;
+}
+
+}
+
+@media (max-width: 600px){
+
+.profile{
+align-items:flex-start;
+overflow:auto;
+}
+
+.profile-box{
+width:100%;
+height:100%;
+border-radius:0;
+padding:25px;
+}
+
+}
+  
 </style>
 </head>
 
