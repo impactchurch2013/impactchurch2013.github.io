@@ -542,13 +542,21 @@ const cards = document.querySelectorAll(".card")
 
 cards.forEach(card=>{
 
-const name = card
+const fullName = card
 .querySelector("h3")
 .textContent
 .toLowerCase()
 
-if(name.includes(search)){
-card.style.display=""
+const parts = fullName.split(" ")
+
+const first = parts[0] || ""
+const last = parts[1] || ""
+
+if(
+first.startsWith(search) ||
+last.startsWith(search)
+){
+card.style.display="block"
 }else{
 card.style.display="none"
 }
