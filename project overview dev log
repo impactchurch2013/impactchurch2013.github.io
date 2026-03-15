@@ -1,0 +1,443 @@
+# Church Directory Project Overview & Development Log
+
+## 1. Project Purpose
+
+The goal of this project is to create a **modern, mobile-friendly church member directory** that is easy for church members to browse and easy for church administrators to maintain.
+
+The system is designed with three main priorities:
+
+1. **Simple for members to use**
+2. **Simple for church staff to maintain**
+3. **Secure access to member information**
+
+The directory will ultimately run as a **web application hosted on GitHub Pages**, with **Firebase handling authentication and data access**, while **Airtable serves as the administrative database interface** for church staff.
+
+This architecture allows the church to manage the directory **without needing technical knowledge**.
+
+---
+
+# 2. System Architecture
+
+The project is composed of four major components.
+
+## Airtable (Administrative Database)
+
+Airtable will act as the **data management system for church administrators**.
+
+Church staff will be able to:
+
+* Add members
+* Update member contact information
+* Upload photos
+* Manage households
+* Track ministries
+* Update birthdays and anniversaries
+
+Airtable is used because it provides:
+
+* Spreadsheet-style editing
+* Simple media uploads
+* Easy filtering and searching
+* Low technical barrier for staff
+
+However, the public website will **not connect directly to Airtable** for security reasons.
+
+---
+
+## Firebase (Backend Layer)
+
+Firebase will act as the **secure backend layer** between Airtable and the directory website.
+
+Firebase responsibilities will include:
+
+* Authentication (member login)
+* Secure API endpoints
+* Data syncing from Airtable
+* Hosting optional future features
+* Preventing unauthorized access
+
+Firebase ensures:
+
+* Only approved users can access the directory
+* Member data is not exposed publicly
+* Access can be revoked if needed
+
+---
+
+## GitHub Pages (Hosting)
+
+The directory web app will be hosted using **GitHub Pages**.
+
+Advantages:
+
+* Free hosting
+* Extremely reliable
+* Version control
+* Easy updates through Git
+
+The directory itself is a **static web application** consisting of:
+
+* HTML
+* CSS
+* JavaScript
+
+Because the site is static, it loads very quickly and is easy to maintain.
+
+---
+
+## The Directory Web App
+
+The directory interface provides members with a clean, modern way to view church members.
+
+Features include:
+
+* Photo-based member cards
+* Member profile pages
+* Household grouping
+* Search functionality
+* Mobile-friendly design
+* Tap-to-call phone numbers
+* Tap-to-email addresses
+* Tap-to-open maps for addresses
+
+The directory is designed to behave more like a **mobile app experience** than a traditional website.
+
+---
+
+# 3. Development Progress
+
+## Core Directory Interface
+
+The main directory layout has been created.
+
+Implemented features include:
+
+* Member photo grid
+* Responsive layout
+* Desktop grid view
+* Single-column mobile layout
+
+Member cards display:
+
+* Photo
+* Name
+* Ministry (optional)
+
+Clicking a card opens the **member profile view**.
+
+---
+
+## Profile System
+
+Member profiles display detailed information including:
+
+* Member photo
+* Name
+* Ministry
+* Phone number
+* Email address
+* Address
+* Birthday
+* Anniversary
+* Household
+* Last updated date
+
+Profiles include interactive functionality:
+
+Phone numbers:
+
+* Tap to call on mobile devices
+
+Emails:
+
+* Tap to open email client
+
+Addresses:
+
+* Tap to open location in Google Maps
+
+Photos:
+
+* Tap to open fullscreen photo viewer
+
+---
+
+## Household / Family View
+
+A household system has been implemented.
+
+Features:
+
+* Household name appears in member profiles
+* Tapping a household shows all family members
+* Family page displays circular profile photos
+* Clicking a family member opens their profile
+
+Navigation behavior:
+
+* Opening a member from a family page
+* Closing that member returns to the **family page**, not the directory
+
+---
+
+## Search System
+
+A search bar has been implemented.
+
+Search behavior includes:
+
+* Real-time filtering while typing
+* Prefix matching instead of substring matching
+
+Example behavior:
+
+Typing:
+
+Li
+
+Results include:
+
+Lindsey Johnson
+Barry Lightfoot
+
+Results exclude:
+
+Alicia Johnson
+Ralph Blighton
+
+Search checks both:
+
+* First names
+* Last names
+
+---
+
+## Layout Improvements
+
+Several layout improvements have been implemented.
+
+### Header
+
+* Sticky header
+* Church logo displayed in header
+* Black header background
+
+### Search Bar
+
+* Positioned beneath the header
+* Sticky behavior when scrolling
+* Centered layout
+
+### Directory Background
+
+The background uses a **soft gradient based on the church brand color**.
+
+Primary color:
+
+RGB(0,186,248)
+
+The gradient was softened to prevent visual fatigue.
+
+---
+
+## Mobile Optimization
+
+The mobile experience has been heavily optimized.
+
+Improvements include:
+
+* Fixed single-column layout
+* Eliminated horizontal scrolling
+* Centered content
+* Full-screen profile view
+* Proper spacing and padding
+
+The goal was to create a **native app-like experience** on phones.
+
+---
+
+## Performance Improvements
+
+Performance improvements implemented:
+
+* Lazy loading of member photos
+* Optimized grid layout
+* Reduced layout shifting
+* Faster directory rendering
+
+---
+
+# 4. Temporary Development Data
+
+During development, member data is currently loaded from:
+
+members.json
+
+This file simulates the data structure returned by Airtable.
+
+Example structure:
+
+records
+fields
+First Name
+Last Name
+Full Name
+Photo
+Phone Number
+Email
+Address
+City
+State
+Zip Code
+Birthday
+Anniversary
+Household
+Ministry
+
+This temporary file will later be **replaced by Firebase endpoints**.
+
+---
+
+# 5. Remaining Development Tasks
+
+The following work still needs to be completed.
+
+---
+
+## Firebase Backend
+
+Tasks:
+
+* Create Firebase project
+* Configure Firestore database
+* Create secure API endpoints
+* Connect directory to Firebase
+* Replace members.json with Firebase data
+
+---
+
+## Authentication System
+
+Members should log in before accessing the directory.
+
+Tasks:
+
+* Configure Firebase Authentication
+* Allow login via email/password
+* Restrict directory access to authenticated users
+* Add login page
+* Add logout functionality
+
+Future improvements may include:
+
+* Password reset
+* Invite-based registration
+
+---
+
+## Airtable Integration
+
+Airtable will remain the **administrative editing interface**.
+
+Tasks:
+
+* Configure Airtable base
+* Create proper table structure
+* Set up automation or sync process
+* Send data updates to Firebase
+
+This allows administrators to **manage members through Airtable** without touching the website.
+
+---
+
+## Admin Documentation
+
+A written guide will be created for church administrators explaining:
+
+How to:
+
+* Add new members
+* Upload profile photos
+* Edit contact information
+* Update addresses
+* Manage households
+* Update birthdays and anniversaries
+* Correct data mistakes
+
+The goal is to make Airtable feel **simple and non-technical**.
+
+---
+
+## Security Hardening
+
+Before launch, the following security measures will be implemented:
+
+* Firebase security rules
+* Authenticated access only
+* API request validation
+* Protection against scraping
+
+---
+
+## Final UI Polishing
+
+Potential improvements:
+
+* Alphabetical jump navigation
+* Ministry filtering
+* Household badges
+* Improved photo viewer
+* Profile layout polish
+
+---
+
+# 6. Future Expansion Ideas
+
+Possible future features include:
+
+Member profile editing (admin)
+
+Event calendar
+
+Ministry directory
+
+Prayer request system
+
+Attendance tracking
+
+Volunteer scheduling
+
+These are not required for launch but could expand the usefulness of the platform.
+
+---
+
+# 7. Project Philosophy
+
+This project is intentionally designed to balance:
+
+Technical reliability
+Ease of maintenance
+Long-term sustainability
+
+Key principles:
+
+* The website remains **simple static code**
+* Sensitive logic is handled by **Firebase**
+* Church staff manage data through **Airtable**
+
+This approach prevents the church from being dependent on a developer for routine updates.
+
+---
+
+# 8. Current Project Status
+
+The **front-end directory interface is largely complete**.
+
+Major remaining work involves:
+
+* Backend infrastructure
+* Authentication
+* Airtable integration
+* Documentation for administrators
+
+Once those components are finished, the directory will be ready for deployment and use by the church community.
