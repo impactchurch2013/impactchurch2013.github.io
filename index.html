@@ -79,14 +79,9 @@ align-items:center;
 /* ================================= */
 
 .search-bar{
-position:sticky;
-top:96px;
 max-width:600px;
-margin:20px auto 30px auto;
-padding:0 12px;
-z-index:90;
-background:rgba(255,255,255,.85);
-backdrop-filter:blur(6px);
+margin:10px auto 20px auto;
+padding:0 12px 14px 12px;
 }
 
 .search-bar input{
@@ -94,10 +89,10 @@ width:100%;
 box-sizing:border-box;
 padding:14px 16px;
 font-size:16px;
-border-radius:10px;
-border:1px solid #ddd;
+border-radius:12px;
+border:none;
 outline:none;
-box-shadow:0 2px 6px rgba(0,0,0,.05);
+box-shadow:0 8px 20px rgba(0,0,0,.18);
 }
 
 .search-bar input:focus{
@@ -116,6 +111,7 @@ gap:24px;
 max-width:1200px;
 width:100%;
 margin:auto;
+scroll-margin-top:140px;
 justify-content:center;
 }
 
@@ -392,6 +388,10 @@ height:70px;
 
 <body>
 
+<!-- ================================= -->
+<!-- HEADER / MEMBER SEARCH                     -->
+<!-- ================================= -->
+   
 <header class="header">
 
 <div class="header-inner">
@@ -400,27 +400,17 @@ height:70px;
 <img src="images/impact logo.png" alt="Impact Directory">
 </div>
 
-<div class="header-controls">
-<!-- future search / toggles -->
 </div>
 
+<div class="search-bar">
+<input 
+type="text" 
+id="memberSearch"
+placeholder="Search members..."
+oninput="filterMembers()">
 </div>
 
 </header>
-
-<!-- ================================= -->
-<!-- MEMBER SEARCH                     -->
-<!-- ================================= -->
-
-<div class="search-bar">
-
-<input 
-type="text" 
-id="memberSearch" 
-placeholder="Search members..."
-oninput="filterMembers()">
-
-</div>
    
 <!-- DIRECTORY GRID -->
 
