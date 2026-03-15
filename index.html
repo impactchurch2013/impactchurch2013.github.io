@@ -207,12 +207,16 @@ transition:transform .35s ease;
 position:relative;
 }
 
+.profile-box img{
+width:140px;
+height:140px;
+border-radius:50%;
+object-fit:cover;
+margin-bottom:10px;
+}
+
 .sheet-handle{
-width:42px;
-height:5px;
-background:#ccc;
-border-radius:3px;
-margin:0 auto 16px auto;
+display:none;
 }
 
 .close-icon{
@@ -222,14 +226,6 @@ right:18px;
 font-size:22px;
 cursor:pointer;
 color:#666;
-}
-
-.profile-box img{
-width:140px;
-height:140px;
-border-radius:50%;
-object-fit:cover;
-margin-bottom:10px;
 }
 
 .close{
@@ -649,8 +645,6 @@ ${household}
 
 ${updated ? `<p style="font-size:12px;color:#666">Updated ${updated}</p>` : ""}
 
-<div class="close" onclick="closeProfile()">Close</div>
-
 `
 
 savedScrollPosition = window.scrollY
@@ -779,7 +773,6 @@ html += `
 html += `
 </div>
 
-<div class="close" onclick="closeProfile()">Close</div>
 `
 
 box.innerHTML = html
