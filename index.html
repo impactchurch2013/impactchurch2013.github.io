@@ -259,6 +259,15 @@ margin-top:8px;
 font-size:14px;
 }
 
+.profile-box a{
+color:#2b5cff;
+text-decoration:none;
+}
+
+.profile-box a:hover{
+text-decoration:underline;
+}
+
 /* ================================= */
 /* MOBILE STYLES                     */
 /* ================================= */
@@ -571,8 +580,12 @@ box.innerHTML=`
 ${ministry ? `<p><strong>${ministry}</strong></p>` : ""}
 
 <p><a href="tel:${phone}">${phone}</a></p>
-<p>${email}</p>
-<p>${address}</p>
+<p><a href="mailto:${email}">${email}</a></p>
+<p>
+<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.replace(/<br>/g,' '))}" target="_blank">
+${address}
+</a>
+</p>
 
 ${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
 
