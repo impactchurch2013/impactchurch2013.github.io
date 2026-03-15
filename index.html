@@ -181,12 +181,18 @@ right:0;
 bottom:0;
 top:0;
 background:rgba(0,0,0,.5);
-
-display:none;
+display:flex;
 justify-content:center;
 align-items:flex-end;
-
+opacity:0;
+pointer-events:none;
+transition:opacity .2s ease;
 z-index:2000;
+}
+
+.profile.show{
+opacity:1;
+pointer-events:auto;
 }
 
 .profile-box{
@@ -659,7 +665,7 @@ document.body.style.overflow = "hidden"
 const overlay = document.getElementById("profile")
 const sheet = overlay.querySelector(".profile-box")
 
-overlay.style.display = "flex"
+overlay.classList.add("show")
 
 setTimeout(()=>{
 sheet.style.transform = "translateY(0)"
@@ -689,7 +695,7 @@ const sheet = overlay.querySelector(".profile-box")
 sheet.style.transform = "translateY(100%)"
 
 setTimeout(()=>{
-overlay.style.display="none"
+overlay.classList.remove("show")
 },300)
 document.body.style.overflow = ""
 window.scrollTo(0, savedScrollPosition)
@@ -702,13 +708,17 @@ window.scrollTo(0, savedScrollPosition)
 
 let startY = 0
 let currentY = 0
+let startTime = 0
 let dragging = false
 
 const sheet = document.querySelector(".profile-box")
 
 sheet.addEventListener("touchstart",(e)=>{
+
 startY = e.touches[0].clientY
+startTime = Date.now()
 dragging = true
+
 })
 
 sheet.addEventListener("touchmove",(e)=>{
@@ -716,10 +726,16 @@ sheet.addEventListener("touchmove",(e)=>{
 if(!dragging) return
 
 currentY = e.touches[0].clientY
+
 let diff = currentY - startY
 
 if(diff > 0){
-sheet.style.transform = `translateY(${diff}px)`
+
+/* drag resistance */
+let resistance = diff * 0.7
+
+sheet.style.transform = `translateY(${resistance}px)`
+
 }
 
 })
@@ -728,7 +744,11 @@ sheet.addEventListener("touchend",()=>{
 
 dragging = false
 
-if(currentY - startY > 120){
+const distance = currentY - startY
+const time = Date.now() - startTime
+const velocity = distance / time
+
+if(distance > 120 || velocity > 0.5){
 closeProfile()
 }else{
 sheet.style.transform = "translateY(0)"
