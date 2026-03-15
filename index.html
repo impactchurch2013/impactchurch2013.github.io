@@ -19,10 +19,16 @@
 
 body{
 font-family:Arial, sans-serif;
-background:linear-gradient(180deg,#00BAF8 0%,#0099DA 50%,#0078B8 100%);
+background:linear-gradient(
+180deg,
+#0d4e6a 0%,
+#0e6a8e 50%,
+#00a3da 100%
+);
 margin:0;
 padding:0;
 min-height:100vh;
+overflow-x:hidden;
 }
 
 h1{
@@ -104,6 +110,7 @@ display:grid;
 grid-template-columns:repeat(auto-fill,260px);
 gap:24px;
 max-width:1200px;
+width:100%;
 margin:auto;
 justify-content:center;
 }
@@ -115,7 +122,8 @@ justify-content:center;
 .card{
 position:relative;
 cursor:pointer;
-border-radius:12px;
+background:white;
+border-radius:14px;
 overflow:hidden;
 box-shadow:0 10px 30px rgba(0,0,0,.25);
 transition:transform .15s ease, box-shadow .15s ease;
@@ -286,7 +294,7 @@ margin:20px 0;
 grid-template-columns:1fr;
 gap:12px;
 max-width:100%;
-padding:0 16px;
+padding:0 12px;
 box-sizing:border-box;
 }
 
