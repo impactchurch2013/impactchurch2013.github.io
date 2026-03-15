@@ -66,6 +66,31 @@ display:flex;
 gap:12px;
 align-items:center;
 }
+
+/* ================================= */
+/* SEARCH BAR                        */
+/* ================================= */
+
+.search-bar{
+max-width:600px;
+margin:20px auto 30px auto;
+padding:0 20px;
+}
+
+.search-bar input{
+width:100%;
+padding:14px 16px;
+font-size:16px;
+border-radius:10px;
+border:1px solid #ddd;
+outline:none;
+box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+
+.search-bar input:focus{
+border-color:#4a5bdc;
+box-shadow:0 4px 12px rgba(0,0,0,.1);
+}
    
 /* ================================= */
 /* DIRECTORY GRID (DESKTOP)          */
@@ -354,6 +379,18 @@ height:50px;
 
 </header>
 
+<!-- ================================= -->
+<!-- MEMBER SEARCH                     -->
+<!-- ================================= -->
+
+<div class="search-bar">
+<input 
+type="text" 
+id="memberSearch" 
+placeholder="Search members..."
+oninput="filterMembers()">
+</div>
+   
 <!-- DIRECTORY GRID -->
 
 <div class="directory" id="directory"></div>
@@ -464,6 +501,36 @@ ${ministry ? `<p>${ministry}</p>` : ""}
 card.onclick=()=>showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated)
 
 directory.appendChild(card)
+
+})
+
+}
+
+/* ================================= */
+/* MEMBER SEARCH                     */
+/* ================================= */
+
+function filterMembers(){
+
+const search = document
+.getElementById("memberSearch")
+.value
+.toLowerCase()
+
+const cards = document.querySelectorAll(".card")
+
+cards.forEach(card=>{
+
+const name = card
+.querySelector("h3")
+.textContent
+.toLowerCase()
+
+if(name.includes(search)){
+card.style.display="block"
+}else{
+card.style.display="none"
+}
 
 })
 
