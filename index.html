@@ -881,6 +881,7 @@ const familyMembers = members.filter(m =>
 
 const box = document.getElementById("profileContent")
 
+let html = `
 <h2>${householdName} Family</h2>
 
 <div class="family-grid">
@@ -890,7 +891,7 @@ familyMembers.forEach(member=>{
 
 const f = member.fields
 const name = f["Full Name"] || ""
-const photo = f.Photo?.[0]?.url || ""
+const photo = f.Photo?.[0]?.url || "images/default.jpg"
 
 html += `
 <div class="family-member" onclick="showFamilyMemberProfile('${name}','${householdName}')">
@@ -906,7 +907,6 @@ html += `
 
 html += `
 </div>
-
 `
 
 box.innerHTML = html
