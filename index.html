@@ -364,12 +364,13 @@ border-radius:10px;
 
 .family-grid{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-grid-auto-flow:column;
+grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
 gap:20px;
 margin-top:20px;
 width:100%;
 justify-items:center;
+padding:0 10px;
+box-sizing:border-box;
 }
 
 .family-member{
