@@ -31,15 +31,17 @@ min-height:100vh;
 overflow-x:hidden;
 }
 
-a{
+a,
+a:visited,
+a:active{
 color:#00BAF8;
 text-decoration:none;
 }
 
 a:hover{
-text-decoration:underline;
+color:#009bd1;
 }
-   
+
 h1{
 text-align:center;
 margin-bottom:50px;
@@ -698,9 +700,10 @@ ${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
 ${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
 
 ${household ? `<p><strong>Family:</strong> 
-<span style="cursor:pointer" onclick="showHousehold('${household}')">
+<a href="#" onclick="showHousehold('${household}');return false;">
 ${household}
-</span></p>` : ""}
+</a>
+</p>` : ""}
 
 ${updated ? `<p style="font-size:12px;color:#666">Updated ${updated}</p>` : ""}
 
