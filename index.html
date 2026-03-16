@@ -346,6 +346,40 @@ color:blue;
 }
 
 /* ================================= */
+/* FORCE PROFILE DETAILS CENTERED    */
+/* ================================= */
+
+/* The Wrapper: Shrinks to fit content and centers the whole block */
+.profile-info-group {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start; 
+    text-align: left;
+    max-width: 90%; 
+    margin: 0 auto;
+}
+
+/* The Name: Ensures it doesn't force a width larger than the text */
+.profile-info-group h2 {
+    width: auto;
+    margin: 12px 0 8px 0;
+}
+
+/* The Details: Resets your original 420px width so it shrink-wraps too */
+.profile-info-group .profile-details {
+    width: auto;
+    max-width: none;
+    margin: 0;
+}
+
+/* Specific fix to keep the Family sheet title centered */
+.family-title {
+    text-align: center !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* ================================= */
 /* PHOTO VIEWER (FULLSCREEN IMAGE)   */
 /* ================================= */
 
@@ -738,58 +772,42 @@ return months[d.getMonth()] + " " + d.getDate()
 
 function showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated){
 
-birthday = formatShortDate(birthday)
-anniversary = formatShortDate(anniversary)
+birthday = formatShortDate(birthday);
+anniversary = formatShortDate(anniversary);
    
-lastViewedProfile = {
-name,
-photo,
-ministry,
-phone,
-email,
-address,
-birthday,
-anniversary,
-household,
-updated
-}
+lastViewedProfile = { name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
    
-const box = document.getElementById("profileContent")
+const box = document.getElementById("profileContent");
 
 box.innerHTML=`
+    <img src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
+    
+    <div class="profile-info-group">
+        <h2>${name}</h2>
 
-<img src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
-<h2>${name}</h2>
+        <div class="profile-details">
+            ${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
 
-<div class="profile-details">
+            <p><a href="tel:${phone}">${phone}</a></p>
+            <p><a href="mailto:${email}">${email}</a></p>
 
-${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
+            <p>
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.replace(/<br>/g,' '))}" target="_blank">
+                    ${address}
+                </a>
+            </p>
 
-<p><a href="tel:${phone}">${phone}</a></p>
-<p><a href="mailto:${email}">${email}</a></p>
+            ${(birthday || anniversary || household) ? `<div class="profile-divider"></div>` : ""}
 
-<p>
-<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.replace(/<br>/g,' '))}" target="_blank">
-${address}
-</a>
-</p>
+            ${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
+            ${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
+            ${household ? `<p><strong>Family:</strong> 
+                <a href="#" onclick="showHousehold('${household}');return false;">${household}</a>
+            </p>` : ""}
 
-${(birthday || anniversary || household) ? `<div class="profile-divider"></div>` : ""}
-
-${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
-
-${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
-
-${household ? `<p><strong>Family:</strong> 
-<a href="#" onclick="showHousehold('${household}');return false;">
-${household}
-</a>
-</p>` : ""}
-
-${updated ? `<p style="font-size:12px;color:#777;margin-top:12px">Updated ${updated}</p>` : ""}
-
-</div>
-
+            ${updated ? `<p style="font-size:12px;color:#777;margin-top:12px">Updated ${updated}</p>` : ""}
+        </div>
+    </div>
 `
 
 savedScrollPosition = window.scrollY
@@ -904,10 +922,9 @@ const familyMembers = members.filter(m =>
 const box = document.getElementById("profileContent")
 
 let html = `
-<h2>${householdName} Family</h2>
-
-<div class="family-grid">
-`
+        <h2 class="family-title">${householdName} Family</h2>
+        <div class="family-grid">
+    `
 
 familyMembers.forEach(member=>{
 
