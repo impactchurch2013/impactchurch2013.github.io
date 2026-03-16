@@ -301,8 +301,8 @@ text-decoration:none;
 
 .profile-divider{
 height:1px;
-background:#eee;
-margin:14px 0;
+background:#e9eef2;
+margin:16px 0;
 }
 
 .sheet-handle{
@@ -743,6 +743,8 @@ box.innerHTML=`
 
 ${ministry ? `<p><strong>${ministry} Ministry</strong></p>` : ""}
 
+${ministry ? `<p><strong>${ministry}</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
+
 <p><a href="tel:${phone}">${phone}</a></p>
 <p><a href="mailto:${email}">${email}</a></p>
 
@@ -878,11 +880,6 @@ const familyMembers = members.filter(m =>
 )
 
 const box = document.getElementById("profileContent")
-
-let html = `
-<div style="margin-bottom:10px;">
-<span style="cursor:pointer;color:blue" onclick="goBackToProfile()">← Back to ${lastViewedProfile?.name || ""}</span>
-</div>
 
 <h2>${householdName} Family</h2>
 
