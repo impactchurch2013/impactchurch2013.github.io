@@ -624,11 +624,33 @@ card.style.display="none"
 }
 
 /* ================================= */
+/* FORMAT DATE                       */
+/* ================================= */
+   
+function formatShortDate(dateString){
+
+if(!dateString) return ""
+
+const d = new Date(dateString)
+
+const months = [
+"Jan","Feb","Mar","Apr","May","Jun",
+"Jul","Aug","Sep","Oct","Nov","Dec"
+]
+
+return months[d.getMonth()] + " " + d.getDate()
+
+}
+   
+/* ================================= */
 /* PROFILE DISPLAY                   */
 /* ================================= */
 
 function showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated){
 
+birthday = formatShortDate(birthday)
+anniversary = formatShortDate(anniversary)
+   
 lastViewedProfile = {
 name,
 photo,
