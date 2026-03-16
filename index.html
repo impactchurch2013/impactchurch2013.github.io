@@ -31,6 +31,15 @@ min-height:100vh;
 overflow-x:hidden;
 }
 
+a{
+color:#00BAF8;
+text-decoration:none;
+}
+
+a:hover{
+text-decoration:underline;
+}
+   
 h1{
 text-align:center;
 margin-bottom:50px;
@@ -689,7 +698,7 @@ ${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
 ${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
 
 ${household ? `<p><strong>Family:</strong> 
-<span style="color:blue;cursor:pointer" onclick="showHousehold('${household}')">
+<span style="cursor:pointer" onclick="showHousehold('${household}')">
 ${household}
 </span></p>` : ""}
 
