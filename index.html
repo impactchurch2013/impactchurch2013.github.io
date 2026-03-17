@@ -562,7 +562,7 @@ height:90px;
 <body>
 
 <!-- ================================= -->
-<!-- HEADER / MEMBER SEARCH                     -->
+<!-- HEADER / MEMBER SEARCH            -->
 <!-- ================================= -->
    
 <header class="header">
@@ -585,9 +585,9 @@ oninput="filterMembers()">
 
 </header>
 
-<!-- ================================= -->
-<!-- AUTH LOGIN BUTTON (TESTING)       -->
-<!-- ================================= -->
+/* ================================= */
+/* AUTH LOGIN BUTTON (TESTING)       */
+/* ================================= */
 
 <button id="loginBtn">Sign in with Google</button>
 <button id="logoutBtn" style="display:none;">Logout</button>
@@ -616,27 +616,26 @@ oninput="filterMembers()">
 <img id="photoViewerImg">
 </div>
 
-<!-- ================================= -->
-<!-- FIREBASE SCRIPT                   -->
-<!-- ================================= -->
+/* ================================= */
+/* FIREBASE SCRIPT                   */
+/* ================================= */
    
-<script type="module" src="firebase.js"></script>
+<script type="module" src="firebase.js">
+</script>
    
-<!-- ================================= -->
-<!-- JAVASCRIPT FUNCTIONS              -->
-<!-- ================================= -->
+/* ================================= */
+/* JAVASCRIPT FUNCTIONS              */
+/* ================================= */
 
 <script type="module">
 
 /* Import Firebase */
 
-import "./firebase.js";
-
 const { auth } = window.firebase;
    
-<!-- ================================= -->
-<!-- BUTTON LOGIN LOGIC                -->
-<!-- ================================= -->
+/* ================================= */
+/* BUTTON LOGIN LOGIC                */
+/* ================================= */
 
 import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ 
   GoogleAuthProvider, 
