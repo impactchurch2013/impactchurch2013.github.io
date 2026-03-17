@@ -562,6 +562,21 @@ height:90px;
 <body>
 
 <!-- ================================= -->
+<!-- AUTH LOGIN DISPLAY                -->
+<!-- ================================= -->
+   
+<div id="loginScreen">
+  <h2>Church Directory Login</h2>
+  <button id="loginBtn">Sign in with Google</button>
+</div>
+   
+<!-- ================================= -->
+<!-- LOCK THE APP BEHIND AUTH          -->
+<!-- ================================= -->
+   
+<div id="app" style="display:none;">
+   
+<!-- ================================= -->
 <!-- HEADER / MEMBER SEARCH            -->
 <!-- ================================= -->
    
@@ -616,6 +631,8 @@ oninput="filterMembers()">
 <img id="photoViewerImg">
 </div>
 
+</div>   
+   
 /* ================================= */
 /* FIREBASE SCRIPT                   */
 /* ================================= */
@@ -662,25 +679,33 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
   };
 
   onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("Logged in:", user.email);
+  const app = document.getElementById("app");
+  const loginScreen = document.getElementById("loginScreen");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "block";
+  if (user) {
+    console.log("Logged in:", user.email);
 
-      // we’ll use this later
-      window.currentUser = user;
+    window.currentUser = user;
 
-    } else {
-      console.log("Logged out");
+    // SHOW APP
+    app.style.display = "block";
+    loginScreen.style.display = "none";
+    logoutBtn.style.display = "block";
 
-      loginBtn.style.display = "block";
-      logoutBtn.style.display = "none";
+    // IMPORTANT: load your directory here
+    loadMembers();
 
-      window.currentUser = null;
-    }
-  });
+  } else {
+    console.log("Logged out");
 
+    window.currentUser = null;
+
+    // SHOW LOGIN
+    app.style.display = "none";
+    loginScreen.style.display = "block";
+    logoutBtn.style.display = "none";
+  }
 });
    
 /* ================================= */
