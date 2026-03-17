@@ -780,34 +780,35 @@ lastViewedProfile = { name, photo, ministry, phone, email, address, birthday, an
 const box = document.getElementById("profileContent");
 
 box.innerHTML=`
-    <img src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
+<img src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
     
-    <div class="profile-info-group">
-        <h2>${name}</h2>
+<div class="profile-info-group">
+<h2>${name}</h2>
 
-        <div class="profile-details">
-            ${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
+<div class="profile-details">
+${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
 
-            <p><a href="tel:${phone}">${phone}</a></p>
-            <p><a href="mailto:${email}">${email}</a></p>
+<p><a href="tel:${phone}">${phone}</a></p>
+<p><a href="mailto:${email}">${email}</a></p>
 
-            <p>
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.replace(/<br>/g,' '))}" target="_blank">
-                    ${address}
-                </a>
-            </p>
+<p>
+<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.replace(/<br>/g,' '))}" target="_blank">
+${address}
+</a>
+</p>
 
-            ${(birthday || anniversary || household) ? `<div class="profile-divider"></div>` : ""}
+${(birthday || anniversary || household) ? `<div class="profile-divider"></div>` : ""}
 
-            ${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
-            ${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
-            ${household ? `<p><strong>Family:</strong> 
-                <a href="#" onclick="showHousehold('${household}');return false;">${household}</a>
-            </p>` : ""}
+${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
+${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
+${household ? `<p><strong>Family:</strong> 
+<a href="#" onclick="showHousehold('${household}');return false;">${household}</a>
+</p>` : ""}
 
-            ${updated ? `<p style="font-size:12px;color:#777;margin-top:12px">Updated ${updated}</p>` : ""}
-        </div>
-    </div>
+${updated ? `<p style="font-size:12px;color:#777;margin-top:12px">Updated ${updated}</p>` : ""}
+</div>
+</div>
+
 `
 
 savedScrollPosition = window.scrollY
@@ -868,6 +869,12 @@ const sheet = document.querySelector(".profile-box")
 
 sheet.addEventListener("touchstart",(e)=>{
 
+// ONLY allow drag if scrolled to top
+if(sheet.scrollTop > 0){
+dragging = false
+return
+}
+
 startY = e.touches[0].clientY
 startTime = Date.now()
 dragging = true
@@ -882,11 +889,11 @@ currentY = e.touches[0].clientY
 
 let diff = currentY - startY
 
+/* Only drag downward */
 if(diff > 0){
 
 /* drag resistance */
 let resistance = diff * 0.7
-
 sheet.style.transform = `translateY(${resistance}px)`
 
 }
