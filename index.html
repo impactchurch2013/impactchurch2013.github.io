@@ -584,6 +584,13 @@ oninput="filterMembers()">
 </div>
 
 </header>
+
+<!-- ================================= -->
+<!-- AUTH LOGIN BUTTON (TESTING)       -->
+<!-- ================================= -->
+
+<button id="loginBtn">Sign in with Google</button>
+<button id="logoutBtn" style="display:none;">Logout</button>
    
 <!-- DIRECTORY GRID -->
 
@@ -621,6 +628,58 @@ oninput="filterMembers()">
 
 <script>
 
+<!-- ================================= -->
+<!-- BUTTON LOGIN LOGIC                -->
+<!-- ================================= -->
+   
+const { auth } = window.firebase;
+
+import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  onAuthStateChanged,
+  signOut
+}) => {
+
+  const provider = new GoogleAuthProvider();
+
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  loginBtn.onclick = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error("Login error:", err);
+    }
+  };
+
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("Logged in:", user.email);
+
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+
+      // we’ll use this later
+      window.currentUser = user;
+
+    } else {
+      console.log("Logged out");
+
+      loginBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+
+      window.currentUser = null;
+    }
+  });
+
+});
+   
 /* ================================= */
 /* GLOBAL DATA STORE                 */
 /* ================================= */
