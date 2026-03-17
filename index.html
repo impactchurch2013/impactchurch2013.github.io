@@ -626,13 +626,17 @@ oninput="filterMembers()">
 <!-- JAVASCRIPT FUNCTIONS              -->
 <!-- ================================= -->
 
-<script>
+<script type="module">
 
+/* Import Firebase */
+
+import "./firebase.js";
+
+const { auth } = window.firebase;
+   
 <!-- ================================= -->
 <!-- BUTTON LOGIN LOGIC                -->
 <!-- ================================= -->
-   
-const { auth } = window.firebase;
 
 import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ 
   GoogleAuthProvider, 
