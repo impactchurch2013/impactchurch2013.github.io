@@ -1049,6 +1049,8 @@ async function editField(fieldName){
 
 function showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated){
 
+const rawPhone = phone ? phone.replace(/\D/g, '') : "";
+   
 birthday = formatShortDate(birthday);
 anniversary = formatShortDate(anniversary);
    
