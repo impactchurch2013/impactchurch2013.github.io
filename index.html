@@ -1008,8 +1008,14 @@ async function editField(fieldName){
 
     // Map field names → Firestore keys
     const fieldMap = {
-      "Phone Number": "phone"
-    };
+  "Phone Number": "phone",
+  "Email": "email",
+  "Full Name": "fullName",
+  "First Name": "firstName",
+  "Last Name": "lastName",
+  "Ministry": "ministry",
+  "Household": "household"
+};
 
     await updateDoc(doc(db, "members", member.id), {
       [fieldMap[fieldName]]: newValue
