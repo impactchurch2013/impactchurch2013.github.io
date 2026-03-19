@@ -894,6 +894,10 @@ return months[d.getMonth()] + " " + d.getDate()
 /* ================================= */
 /* UPLOAD PHOTOS                     */
 /* ================================= */
+
+if (!confirm("Upload this photo?")) {
+  return;
+}
    
 async function uploadPhoto(){
 
@@ -943,13 +947,24 @@ async function uploadPhoto(){
     const { updateDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
     await updateDoc(docRef(db, "members", targetDoc.id), {
-      photo: downloadURL
-    });
+  photo: downloadURL
+});
 
-    alert("Photo updated!");
+console.log("Photo updated!");
 
-    // REFRESH UI
-    await loadMembers();
+// UPDATE PROFILE IMAGE INSTANTLY
+const profileImg = document.getElementById("profileImage");
+if (profileImg) {
+  profileImg.src = downloadURL;
+}
+
+// ALSO update cached profile data (important)
+if (window.lastViewedProfile) {
+  window.lastViewedProfile.photo = downloadURL;
+}
+
+// OPTIONAL: refresh directory in background
+loadMembers();
 
   } catch (error) {
     console.error("Upload failed:", error);
@@ -973,13 +988,20 @@ window.selectedMemberName = name;
 const box = document.getElementById("profileContent");
 
 box.innerHTML=`
-<img src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
+box.innerHTML=`
+<img id="profilePhoto" src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
 
-<div style="margin-bottom:15px; text-align:center;">
-  <input type="file" id="photoUpload">
-  <br><br>
-  <button onclick="uploadPhoto()">Upload Photo</button>
-</div>
+<br>
+
+<button onclick="document.getElementById('photoUpload').click()">
+  Change Photo
+</button>
+
+<input 
+  type="file" 
+  id="photoUpload" 
+  style="display:none" 
+  onchange="uploadPhoto()">
     
 <div class="profile-info-group">
 <h2>${name}</h2>
