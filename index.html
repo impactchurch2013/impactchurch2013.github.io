@@ -765,7 +765,7 @@ members.forEach(record=>{
 
 const f = record.fields
 
-const photo = f.Photo?.[0]?.url || "images/default.jpg"
+const photo = f.Photo || "images/default.jpg"
 const name = f["Full Name"] || ""
 const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
