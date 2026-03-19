@@ -413,6 +413,15 @@ border-radius:10px;
 }
 
 /* ================================= */
+/* UPDATE PHOTO EFFECT               */
+/* ================================= */
+   
+#profilePhoto:hover {
+  opacity: 0.9;
+  transition: 0.15s ease;
+}
+   
+/* ================================= */
 /* FAMILY PAGE                       */
 /* ================================= */
 
@@ -996,7 +1005,28 @@ window.selectedMemberName = name;
 const box = document.getElementById("profileContent");
 
 box.innerHTML=`
-<img id="profilePhoto" src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
+<div style="position:relative; display:inline-block;">
+  
+  <img 
+    id="profilePhoto"
+    src="${photo}" 
+    loading="lazy"
+    onclick="document.getElementById('photoUpload').click()"
+    style="cursor:pointer">
+
+  <span style="
+    position:absolute;
+    bottom:8px;
+    right:8px;
+    font-size:18px;
+    background:rgba(0,0,0,0.6);
+    color:white;
+    border-radius:50%;
+    padding:4px;
+    line-height:1;
+  ">✏️</span>
+
+</div>
 
 <br>
 
