@@ -1003,20 +1003,24 @@ box.innerHTML = `
     id="profilePhoto"
     src="${photo}" 
     loading="lazy"
-    onclick="document.getElementById('photoUpload').click()"
+    onclick="openPhoto('${photo}')"
     style="cursor:pointer">
 
-  <span style="
-    position:absolute;
-    bottom:8px;
-    right:8px;
-    font-size:18px;
-    background:rgba(0,0,0,0.6);
-    color:white;
-    border-radius:50%;
-    padding:4px;
-    line-height:1;
-  ">✏️</span>
+  <span 
+    onclick="document.getElementById('photoUpload').click()"
+    style="
+      position:absolute;
+      bottom:8px;
+      right:8px;
+      font-size:18px;
+      background:rgba(0,0,0,0.6);
+      color:white;
+      border-radius:50%;
+      padding:4px;
+      line-height:1;
+      cursor:pointer;
+    "
+  >✏️</span>
 
 </div>
 
