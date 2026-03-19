@@ -592,9 +592,6 @@ height:90px;
     <button id="logoutBtn" style="display:none;">Logout</button>
   </div>
 
-<input type="file" id="photoUpload">
-<button onclick="uploadPhoto()">Upload Photo</button>
-
 </div>
 
 <div class="search-bar">
@@ -977,6 +974,12 @@ const box = document.getElementById("profileContent");
 
 box.innerHTML=`
 <img src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
+
+<div style="margin-bottom:15px; text-align:center;">
+  <input type="file" id="photoUpload">
+  <br><br>
+  <button onclick="uploadPhoto()">Upload Photo</button>
+</div>
     
 <div class="profile-info-group">
 <h2>${name}</h2>
