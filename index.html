@@ -895,10 +895,6 @@ return months[d.getMonth()] + " " + d.getDate()
 /* UPLOAD PHOTOS                     */
 /* ================================= */
 
-if (!confirm("Upload this photo?")) {
-  return;
-}
-   
 async function uploadPhoto(){
 
   const fileInput = document.getElementById("photoUpload");
@@ -909,7 +905,12 @@ async function uploadPhoto(){
     return;
   }
 
-  if(!window.selectedMemberName){
+  // MOVE CONFIRM HERE
+  if (!confirm("Upload this photo?")) {
+    return;
+  }
+
+  if(!window.lastViewedProfile){
     alert("Open a member profile first");
     return;
   }
@@ -933,7 +934,7 @@ async function uploadPhoto(){
     let targetDoc = null;
 
     querySnapshot.forEach(doc => {
-      if(doc.data().fullName === window.selectedMemberName){
+      if(doc.data().fullName === window.lastViewedProfile.name){
         targetDoc = doc;
       }
     });
@@ -943,28 +944,25 @@ async function uploadPhoto(){
       return;
     }
 
-    // UPDATE FIRESTORE
     const { updateDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
     await updateDoc(docRef(db, "members", targetDoc.id), {
-  photo: downloadURL
-});
+      photo: downloadURL
+    });
 
-console.log("Photo updated!");
+    console.log("Photo updated!");
 
-// UPDATE PROFILE IMAGE INSTANTLY
-const profileImg = document.getElementById("profileImage");
-if (profileImg) {
-  profileImg.src = downloadURL;
-}
+    // UPDATE PROFILE IMAGE INSTANTLY
+    const profileImg = document.getElementById("profilePhoto");
+    if (profileImg) {
+      profileImg.src = downloadURL;
+    }
 
-// ALSO update cached profile data (important)
-if (window.lastViewedProfile) {
-  window.lastViewedProfile.photo = downloadURL;
-}
+    // KEEP STATE IN SYNC
+    window.lastViewedProfile.photo = downloadURL;
 
-// OPTIONAL: refresh directory in background
-loadMembers();
+    // OPTIONAL refresh
+    loadMembers();
 
   } catch (error) {
     console.error("Upload failed:", error);
