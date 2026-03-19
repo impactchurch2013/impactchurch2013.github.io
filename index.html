@@ -747,7 +747,7 @@ async function loadMembers(){
           "Email": data.email || "",
           "Phone Number": data.phone || "",
           "Ministry": data.ministry || "",
-          "Family": data.family || "",
+          "Household": data.household || "",
           "Address": data.address || "",
           "City": data.city || "",
           "State": data.state || "",
@@ -985,7 +985,6 @@ window.selectedMemberName = name;
    
 const box = document.getElementById("profileContent");
 
-box.innerHTML=`
 box.innerHTML=`
 <img id="profilePhoto" src="${photo}" loading="lazy" onclick="openPhoto('${photo}')" style="cursor:pointer">
 
