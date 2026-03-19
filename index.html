@@ -979,6 +979,62 @@ async function uploadPhoto(){
   }
 
 }
+
+/* ================================= */
+/* EDIT PROFILE DETAIL DATA          */
+/* ================================= */
+   
+async function editField(fieldName){
+
+  const newValue = prompt(`Enter new ${fieldName}:`);
+
+  if(newValue === null) return;
+
+  const member = members.find(m => 
+    m.fields["Full Name"] === window.lastViewedProfile.name
+  );
+
+  if(!member){
+    alert("Member not found");
+    return;
+  }
+
+  try {
+
+    const { updateDoc, doc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    // Map field names → Firestore keys
+    const fieldMap = {
+      "Phone Number": "phone"
+    };
+
+    await updateDoc(doc(db, "members", member.id), {
+      [fieldMap[fieldName]]: newValue
+    });
+
+    // Update UI immediately
+    window.lastViewedProfile.phone = newValue;
+
+    showProfile(
+      window.lastViewedProfile.name,
+      window.lastViewedProfile.photo,
+      window.lastViewedProfile.ministry,
+      newValue,
+      window.lastViewedProfile.email,
+      window.lastViewedProfile.address,
+      window.lastViewedProfile.birthday,
+      window.lastViewedProfile.anniversary,
+      window.lastViewedProfile.household,
+      window.lastViewedProfile.updated
+    );
+
+  } catch (err) {
+    console.error("Update failed:", err);
+  }
+
+}
    
 /* ================================= */
 /* PROFILE DISPLAY                   */
@@ -1036,7 +1092,9 @@ box.innerHTML = `
 <div class="profile-details">
 ${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
 
-<p><a href="tel:${phone}">${phone}</a></p>
+<p onclick="editField('Phone Number')" style="cursor:pointer;">
+  ${phone || "Add phone"}
+</p>
 <p><a href="mailto:${email}">${email}</a></p>
 
 <p>
