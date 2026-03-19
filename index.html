@@ -995,22 +995,40 @@ window.selectedMemberName = name;
    
 const box = document.getElementById("profileContent");
 
-box.innerHTML=`
+box.innerHTML = `
 
-<br>
+<div style="position:relative; display:inline-block;">
+  
+  <img 
+    id="profilePhoto"
+    src="${photo}" 
+    loading="lazy"
+    onclick="document.getElementById('photoUpload').click()"
+    style="cursor:pointer">
 
-<img 
-  id="profilePhoto"
-  src="${photo}" 
-  loading="lazy"
-  onclick="document.getElementById('photoUpload').click()"
-  style="cursor:pointer">
+  <span style="
+    position:absolute;
+    bottom:8px;
+    right:8px;
+    font-size:18px;
+    background:rgba(0,0,0,0.6);
+    color:white;
+    border-radius:50%;
+    padding:4px;
+    line-height:1;
+  ">✏️</span>
+
+</div>
 
 <input 
   type="file" 
   id="photoUpload" 
   style="display:none" 
   onchange="uploadPhoto()">
+
+<!-- rest of profile content continues here -->
+
+`
     
 <div class="profile-info-group">
 <h2>${name}</h2>
