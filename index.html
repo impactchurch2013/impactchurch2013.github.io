@@ -1000,9 +1000,12 @@ box.innerHTML=`
 
 <br>
 
-<button onclick="document.getElementById('photoUpload').click()">
-  Change Photo
-</button>
+<img 
+  id="profilePhoto"
+  src="${photo}" 
+  loading="lazy"
+  onclick="document.getElementById('photoUpload').click()"
+  style="cursor:pointer">
 
 <input 
   type="file" 
