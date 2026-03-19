@@ -908,23 +908,51 @@ async function uploadPhoto(){
     return;
   }
 
+  if(!window.selectedMemberName){
+    alert("Open a member profile first");
+    return;
+  }
+
   try {
 
-    // Create unique filename
     const fileName = Date.now() + "_" + file.name;
-
-    // Create storage reference
     const storageRef = ref(storage, "member-photos/" + fileName);
 
-    // Upload file
+    // Upload
     await uploadBytes(storageRef, file);
 
-    // Get public URL
+    // Get URL
     const downloadURL = await getDownloadURL(storageRef);
 
     console.log("Uploaded image URL:", downloadURL);
 
-    alert("Upload successful! Copy URL from console.");
+    // FIND MEMBER IN FIRESTORE
+    const querySnapshot = await getDocs(collection(db, "members"));
+
+    let targetDoc = null;
+
+    querySnapshot.forEach(doc => {
+      if(doc.data().fullName === window.selectedMemberName){
+        targetDoc = doc;
+      }
+    });
+
+    if(!targetDoc){
+      alert("Member not found in database");
+      return;
+    }
+
+    // UPDATE FIRESTORE
+    const { updateDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+    await updateDoc(docRef(db, "members", targetDoc.id), {
+      photo: downloadURL
+    });
+
+    alert("Photo updated!");
+
+    // REFRESH UI
+    await loadMembers();
 
   } catch (error) {
     console.error("Upload failed:", error);
@@ -942,6 +970,8 @@ birthday = formatShortDate(birthday);
 anniversary = formatShortDate(anniversary);
    
 lastViewedProfile = { name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
+
+window.selectedMemberName = name;
    
 const box = document.getElementById("profileContent");
 
