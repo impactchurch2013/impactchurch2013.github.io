@@ -750,24 +750,25 @@ async function loadMembers(){
       const data = doc.data();
 
       return {
-        fields: {
-          "Full Name": data.fullName || "",
-          "First Name": data.firstName || "",
-          "Last Name": data.lastName || "",
-          "Email": data.email || "",
-          "Phone Number": data.phone || "",
-          "Ministry": data.ministry || "",
-          "Household": data.household || "",
-          "Address": data.address || "",
-          "City": data.city || "",
-          "State": data.state || "",
-          "Zip Code": data.zipCode || "",
-          "Birthday": data.birthday || "",
-          "Anniversary": data.anniversary || "",
-          "Last Updated": data.lastUpdated || "",
-          "Photo": data.photo || ""
-        }
-      };
+  id: doc.id, // ADD THIS
+  fields: {
+    "Full Name": data.fullName || "",
+    "First Name": data.firstName || "",
+    "Last Name": data.lastName || "",
+    "Email": data.email || "",
+    "Phone Number": data.phone || "",
+    "Ministry": data.ministry || "",
+    "Household": data.household || "",
+    "Address": data.address || "",
+    "City": data.city || "",
+    "State": data.state || "",
+    "Zip Code": data.zipCode || "",
+    "Birthday": data.birthday || "",
+    "Anniversary": data.anniversary || "",
+    "Last Updated": data.lastUpdated || "",
+    "Photo": data.photo || ""
+  }
+};
 
     });
 
