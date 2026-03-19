@@ -1092,9 +1092,7 @@ box.innerHTML = `
 <div class="profile-details">
 ${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
 
-<p onclick="editField('Phone Number')" style="cursor:pointer;">
-  ${phone || "Add phone"}
-</p>
+<p><a href="tel:${rawPhone}">${phone}</a></p>
 <p><a href="mailto:${email}">${email}</a></p>
 
 <p>
