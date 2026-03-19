@@ -644,7 +644,11 @@ oninput="filterMembers()">
 
 /* Import Firebase */
 
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
 const { auth } = window.firebase;
+
+const db = getFirestore(window.firebase.app);
    
 /* ================================= */
 /* BUTTON LOGIN LOGIC                */
@@ -720,19 +724,43 @@ let savedScrollPosition = 0
 
 async function loadMembers(){
 
-/* TEMPORARY: LOCAL JSON FILE
-   (Later replaced with Firebase endpoint) */
+  try {
 
-const response = await fetch("members.json")
-const data = await response.json()
+    const querySnapshot = await getDocs(collection(db, "members"));
 
-/* STORE MEMBERS GLOBALLY */
+    members = querySnapshot.docs.map(doc => {
 
-members = data.records
+      const data = doc.data();
 
-/* BUILD DIRECTORY */
+      return {
+        fields: {
+          "Full Name": data.fullName || "",
+          "First Name": data.firstName || "",
+          "Last Name": data.lastName || "",
+          "Email": data.email || "",
+          "Phone Number": data.phone || "",
+          "Ministry": data.ministry || "",
+          "Family": data.family || "",
+          "Address": data.address || "",
+          "City": data.city || "",
+          "State": data.state || "",
+          "Zip Code": data.zipCode || "",
+          "Birthday": data.birthday || "",
+          "Anniversary": data.anniversary || "",
+          "Last Updated": data.lastUpdated || "",
+          "Photo": data.photo || ""
+        }
+      };
 
-buildDirectory()
+    });
+
+    console.log("Loaded members from Firestore:", members);
+
+    buildDirectory();
+
+  } catch (error) {
+    console.error("Error loading members:", error);
+  }
 
 }
 
@@ -1027,7 +1055,7 @@ familyMembers.forEach(member=>{
 
 const f = member.fields
 const name = f["Full Name"] || ""
-const photo = f.Photo?.[0]?.url || "images/default.jpg"
+const photo = f.Photo || "images/default.jpg"
 
 html += `
 <div class="family-member" onclick="showFamilyMemberProfile('${name}','${householdName}')">
@@ -1088,7 +1116,7 @@ if(!member) return
 
 const f = member.fields
 
-const photo = f.Photo?.[0]?.url || ""
+const photo = f.Photo || ""
 const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
 const email = f.Email || ""
