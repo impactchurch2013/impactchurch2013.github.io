@@ -746,9 +746,11 @@ oninput="filterMembers()">
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const { auth, db } = window.firebase;
+const { auth } = window.firebase;
 
 console.log("AUTH OBJECT:", auth);
+
+const db = getFirestore(window.firebase.app);
 
 /* Import Firebase storage */
 
@@ -918,46 +920,73 @@ getRedirectResult(auth)
   };
 
   onAuthStateChanged(auth, async (user) => {
+  console.log("AUTH STATE CHANGED:", user);
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
-    console.log("User logged in:", user.email);
-    const email = user.email.toLowerCase().trim();
-    console.log("Checking allowedUsers doc for:", email);
-    const allowed = await isUserAllowed(email);
-    console.log("Allowed check result:", allowed);
 
-    if (!allowed) {
-      alert("You are not authorized to access this directory.");
-      await signOut(auth);
-      return; 
-    }
+  const email = user.email.toLowerCase().trim();
+  console.log("Checking allowedUsers doc for:", email);
+  const allowed = await isUserAllowed(email);
 
-    window.currentUser = user;
-    const profile = await getMemberProfileByEmail(email);
+  console.log("Allowed check result:", allowed);
 
-    // Setup Roles
-    window.isSuperAdmin = SUPER_ADMINS.includes(email);
-    window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
+  if(!allowed){
+  alert("You are not authorized to access this directory.");
+  await signOut(auth);
+  return;
+}
+  
+  
+  
 
-    const editorToggleBtn = document.getElementById("editorToggleBtn");
-    editorToggleBtn.style.display = window.isChurchAdmin ? "block" : "none";
+  window.currentUser = user;
 
-    // Show App
+  const profile = await getMemberProfileByEmail(email);
+
+// SHOW APP FIRST
+app.style.display = "block";
+loginScreen.style.display = "none";
+logoutBtn.style.display = "block";
+
+// THEN check onboarding
+if(!profile){
+  openOnboarding();
+}
+
+// role detection
+window.isSuperAdmin = SUPER_ADMINS.includes(email);
+window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
+
+console.log("Roles:", {
+  superAdmin: window.isSuperAdmin,
+  churchAdmin: window.isChurchAdmin
+});
+
+const editorToggleBtn = document.getElementById("editorToggleBtn");
+
+if (window.isChurchAdmin) {
+  editorToggleBtn.style.display = "block";
+} else {
+  editorToggleBtn.style.display = "none";
+}
+     
+    // SHOW APP
     app.style.display = "block";
     loginScreen.style.display = "none";
     logoutBtn.style.display = "block";
 
-    if (!profile) {
-      openOnboarding();
-    }
+    // IMPORTANT: load your directory here
+    loadMembers();
 
-    loadMembers(); // Ensure this function is defined!
   } else {
-    console.log("User logged in:");
+    ("Logged out");
+
     window.currentUser = null;
+
+    // SHOW LOGIN
     app.style.display = "none";
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
