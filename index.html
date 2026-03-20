@@ -877,12 +877,13 @@ hideEditorUI();
 /* BUTTON LOGIN LOGIC                */
 /* ================================= */
 
-import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ 
+import { 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged,
   signOut
-}) => {
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const provider = new GoogleAuthProvider();
 
@@ -890,12 +891,14 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
   const logoutBtn = document.getElementById("logoutBtn");
 
   loginBtn.onclick = async () => {
-    try {
-      import { signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  try {
+    await signInWithRedirect(auth, provider);
+  } catch (err) {
+    console.error("Login error:", err);
+  }
+};
 
-await signInWithRedirect(auth, provider);
-
-       getRedirectResult(auth)
+getRedirectResult(auth)
   .then((result) => {
     if (result?.user) {
       console.log("Redirect login success:", result.user.email);
@@ -904,12 +907,7 @@ await signInWithRedirect(auth, provider);
   .catch((error) => {
     console.error("Redirect login error:", error);
   });
-       
-    } catch (err) {
-      console.error("Login error:", err);
-    }
-  };
-
+   
   logoutBtn.onclick = async () => {
     await signOut(auth);
   };
