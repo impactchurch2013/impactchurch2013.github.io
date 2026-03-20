@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCSzJmoocSe-48-OBmy-OrBMm1v5SqyCCs",
   authDomain: "church-directory-86ccb.firebaseapp.com",
@@ -11,12 +12,23 @@ const firebaseConfig = {
   appId: "1:836390060293:web:b9d1b4dd057748cfe0376c"
 };
 
-
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Get Auth and Firestore
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Enable persistence to keep user logged in across page reloads
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("Firebase Auth persistence set to Local.");
+  })
+  .catch((error) => {
+    console.error("Error setting Firebase Auth persistence:", error);
+  });
+
+// Expose Firebase to the window for access in other scripts
 window.firebase = { auth, db };
 
 console.log("Firebase initialized:", window.firebase);
