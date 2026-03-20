@@ -648,7 +648,7 @@ oninput="filterMembers()">
 </div>
 
 <!-- ================================= -->
-<!-- DISPLAY MEMBER DIRECTORY          -->
+<!-- MEMBER DIRECTORY          -->
 <!-- ================================= -->
    
 <!-- DIRECTORY GRID -->
@@ -656,7 +656,7 @@ oninput="filterMembers()">
 <div class="directory" id="directory"></div>
 
 <!-- ================================= -->
-<!-- DISPLAY MEMBER PROFILE SHEET      -->
+<!-- MEMBER PROFILE SHEET      -->
 <!-- ================================= -->
    
 <!-- PROFILE POPUP -->
@@ -683,6 +683,20 @@ oninput="filterMembers()">
     <div class="close-icon" onclick="closeMemberSelect()">✕</div>
 
     <div id="memberSelectContent"></div>
+
+  </div>
+</div>
+
+<!-- ================================= -->
+<!-- EDIT MEMBER FIELDS SHEET          -->
+<!-- ================================= -->
+   
+<div class="profile" id="editMemberSheet">
+  <div class="profile-box">
+
+    <div class="close-icon" onclick="closeEditMember()">✕</div>
+
+    <div id="editMemberContent"></div>
 
   </div>
 </div>
@@ -775,7 +789,7 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
-    console.log("Logged in:", user.email);
+    ("Logged in:", user.email);
 
     window.currentUser = user;
 
@@ -785,7 +799,7 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
 window.isSuperAdmin = SUPER_ADMINS.includes(email);
 window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
 
-console.log("Roles:", {
+("Roles:", {
   superAdmin: window.isSuperAdmin,
   churchAdmin: window.isChurchAdmin
 });
@@ -807,7 +821,7 @@ if (window.isChurchAdmin) {
     loadMembers();
 
   } else {
-    console.log("Logged out");
+    ("Logged out");
 
     window.currentUser = null;
 
@@ -912,11 +926,135 @@ function selectMemberForEdit(memberId){
     return;
   }
 
-  console.log("Selected member:", member);
+  openEditMember(member);
 
   // TEMP: just verify selection works
   // Next step will open edit sheet
 
+}
+
+/* ================================= */
+/* EDIT MEMBER SELECTION SHEET       */
+/* ================================= */
+   
+function openEditMember(member){
+
+  const f = member.fields;
+
+  const box = document.getElementById("editMemberContent");
+
+  box.innerHTML = `
+    <h2>Edit Member</h2>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <input id="editFirstName" placeholder="First Name" value="${f["First Name"] || ""}">
+      <input id="editLastName" placeholder="Last Name" value="${f["Last Name"] || ""}">
+      <input id="editPhone" placeholder="Phone" value="${f["Phone Number"] || ""}">
+      <input id="editEmail" placeholder="Email" value="${f["Email"] || ""}">
+      <input id="editAddress" placeholder="Address" value="${f["Address"] || ""}">
+      <input id="editCity" placeholder="City" value="${f["City"] || ""}">
+      <input id="editState" placeholder="State" value="${f["State"] || ""}">
+      <input id="editZip" placeholder="Zip Code" value="${f["Zip Code"] || ""}">
+
+      <button onclick="saveMemberChanges('${member.id}')"
+        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+        Save Changes
+      </button>
+
+      <button onclick="closeEditMember()">
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  const overlay = document.getElementById("editMemberSheet");
+  const sheet = overlay.querySelector(".profile-box");
+
+  overlay.classList.add("show");
+
+  setTimeout(()=>{
+    sheet.style.transform = "translateY(0)";
+  },10);
+}
+
+/* ================================= */
+/* CLOSE EDIT MEMBER SHEET           */
+/* ================================= */
+   
+function closeEditMember(){
+
+  const overlay = document.getElementById("editMemberSheet");
+  const sheet = overlay.querySelector(".profile-box");
+
+  sheet.style.transform = "translateY(100%)";
+
+  setTimeout(()=>{
+    overlay.classList.remove("show");
+  },300);
+}
+
+/* ================================= */
+/* SAVE MEMBER EDITS TO FIRESTORE    */
+/* ================================= */
+   
+async function saveMemberChanges(memberId){
+
+  const firstName = document.getElementById("editFirstName").value;
+  const lastName = document.getElementById("editLastName").value;
+  const phone = document.getElementById("editPhone").value;
+  const email = document.getElementById("editEmail").value;
+  const address = document.getElementById("editAddress").value;
+  const city = document.getElementById("editCity").value;
+  const state = document.getElementById("editState").value;
+  const zipCode = document.getElementById("editZip").value;
+
+  try {
+
+    const { updateDoc, doc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    await updateDoc(doc(db, "members", memberId), {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      phone,
+      email,
+      address,
+      city,
+      state,
+      zipCode,
+      lastUpdated: new Date().toISOString()
+    });
+
+    console.log("Member updated!");
+
+    // Update local state
+    const member = members.find(m => m.id === memberId);
+
+    if(member){
+      member.fields["First Name"] = firstName;
+      member.fields["Last Name"] = lastName;
+      member.fields["Full Name"] = `${firstName} ${lastName}`;
+      member.fields["Phone Number"] = phone;
+      member.fields["Email"] = email;
+      member.fields["Address"] = address;
+      member.fields["City"] = city;
+      member.fields["State"] = state;
+      member.fields["Zip Code"] = zipCode;
+    }
+
+    // Refresh UI
+    buildDirectory();
+
+    closeEditMember();
+
+  } catch (err) {
+    console.error("Update failed:", err);
+    alert("Failed to update member");
+  }
 }
    
 /* ================================= */
@@ -1665,6 +1803,9 @@ window.uploadPhoto = uploadPhoto;
 window.openMemberSelect = openMemberSelect;
 window.closeMemberSelect = closeMemberSelect;
 window.selectMemberForEdit = selectMemberForEdit;
+window.openEditMember = openEditMember;
+window.closeEditMember = closeEditMember;
+window.saveMemberChanges = saveMemberChanges;
    
 </script>
    
