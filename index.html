@@ -913,8 +913,6 @@ getRedirectResult(auth)
     await signOut(auth);
   };
 
-  console.log("Allowed check result:", allowed);
-
   onAuthStateChanged(auth, async (user) => {
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
@@ -925,6 +923,7 @@ getRedirectResult(auth)
   const email = user.email.toLowerCase().trim();
 
   const allowed = await isUserAllowed(email);
+     console.log("Allowed check result:", allowed);
 
   if(!allowed){
     alert("You are not authorized to access this directory.");
