@@ -644,9 +644,9 @@ oninput="filterMembers()">
   flex-wrap:wrap;
 ">
   <button onclick="openMemberSelect()">Edit Member</button>
-  <button>View Pending Changes</button>
+  <button onclick="openPendingChanges()">View Pending Changes</button>
 </div>
-
+   
 <!-- ================================= -->
 <!-- MEMBER DIRECTORY          -->
 <!-- ================================= -->
@@ -698,6 +698,17 @@ oninput="filterMembers()">
 
     <div id="editMemberContent"></div>
 
+  </div>
+</div>
+
+<!-- ================================= -->
+<!-- VIEW PENDING CHANGES SHEET        -->
+<!-- ================================= -->
+   
+<div class="profile" id="pendingChangesSheet">
+  <div class="profile-box">
+    <div class="close-icon" onclick="closePendingChanges()">✕</div>
+    <div id="pendingChangesContent"></div>
   </div>
 </div>
 
@@ -850,6 +861,21 @@ editorToggleBtn.onclick = () => {
    
 });
 
+/* ================================= */
+/* REUSEABLE SHEET OPENER            */
+/* ================================= */
+   
+function openSheet(id){
+  const overlay = document.getElementById(id);
+  const sheet = overlay.querySelector(".profile-box");
+
+  overlay.classList.add("show");
+
+  setTimeout(()=>{
+    sheet.style.transform = "translateY(0)";
+  },10);
+}
+   
 /* ================================= */
 /* SHOW / HIDE EDITOR UI             */
 /* ================================= */
@@ -1083,7 +1109,7 @@ if(isAdmin){
 }
 
 /* ================================= */
-/* MEMBER PENDING CHANGES SUBMIT     */
+/* MEMBER PENDING CHANGES SUBMISSION */
 /* ================================= */
    
 async function submitPendingChange(memberId, changes){
@@ -1108,6 +1134,172 @@ async function submitPendingChange(memberId, changes){
     console.error("Failed to submit change:", err);
   }
 
+}
+
+/* ================================= */
+/* BUILD PENDING CHANGES YEAR VIEW   */
+/* ================================= */
+   
+function buildYearView(changes){
+
+  const box = document.getElementById("pendingChangesContent");
+
+  const years = {};
+
+  changes.forEach(c => {
+    if(!c.createdAt) return;
+
+    const date = c.createdAt.toDate();
+    const year = date.getFullYear();
+
+    if(!years[year]) years[year] = [];
+    years[year].push(c);
+  });
+
+  let html = `<h2>Pending Changes</h2>`;
+
+  Object.keys(years)
+    .sort((a,b)=>b-a)
+    .forEach(year => {
+
+      html += `
+        <div onclick='buildMonthView(${year})'
+          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
+          ${year}
+        </div>
+      `;
+    });
+
+  window.pendingChangesData = changes;
+
+  box.innerHTML = html;
+
+  openSheet("pendingChangesSheet");
+}
+
+/* ================================= */
+/* BUILD PENDING CHANGES MONTH VIEW  */
+/* ================================= */
+   
+function buildMonthView(year){
+
+  const changes = window.pendingChangesData;
+
+  const months = {};
+
+  changes.forEach(c => {
+    if(!c.createdAt) return;
+
+    const d = c.createdAt.toDate();
+
+    if(d.getFullYear() !== year) return;
+
+    const month = d.getMonth();
+
+    if(!months[month]) months[month] = [];
+    months[month].push(c);
+  });
+
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  let html = `<h2>${year}</h2>`;
+
+  Object.keys(months)
+    .sort((a,b)=>b-a)
+    .forEach(m => {
+
+      html += `
+        <div onclick='buildDayList(${year}, ${m})'
+          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
+          ${monthNames[m]}
+        </div>
+      `;
+    });
+
+  document.getElementById("pendingChangesContent").innerHTML = html;
+}
+
+/* ================================= */
+/* BUILD PENDING CHANGES DAY VIEW    */
+/* ================================= */
+   
+function buildDayList(year, month){
+
+  const changes = window.pendingChangesData;
+
+  const filtered = changes
+    .filter(c => {
+      if(!c.createdAt) return false;
+      const d = c.createdAt.toDate();
+      return d.getFullYear() === year && d.getMonth() === month;
+    })
+    .sort((a,b)=>b.createdAt.seconds - a.createdAt.seconds);
+
+  let html = `<h2>Changes</h2>`;
+
+  filtered.forEach(c => {
+
+    const d = c.createdAt.toDate();
+
+    const label = d.toLocaleDateString("en-US", {
+      month:"short",
+      day:"numeric"
+    });
+
+    html += `
+      <div style="padding:12px;border-bottom:1px solid #eee;">
+        <strong>${label}</strong><br>
+        ${c.submittedBy}
+      </div>
+    `;
+  });
+
+  document.getElementById("pendingChangesContent").innerHTML = html;
+}
+   
+/* ================================= */
+/* LOAD PENDING CHANGES SHEET DATA   */
+/* ================================= */
+   
+async function loadPendingChanges(){
+
+  const { getDocs, collection } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const snapshot = await getDocs(collection(db, "pendingChanges"));
+
+  const changes = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  console.log("Pending changes:", changes);
+
+  buildYearView(changes);
+}
+   
+/* ================================= */
+/* OPEN PENDING CHANGES SHEET        */
+/* ================================= */
+   
+function openPendingChanges(){
+  loadPendingChanges();
+}
+
+/* ================================= */
+/* CLOSE PENDING CHANGES SHEET       */
+/* ================================= */
+   
+function closePendingChanges(){
+  const overlay = document.getElementById("pendingChangesSheet");
+  const sheet = overlay.querySelector(".profile-box");
+
+  sheet.style.transform = "translateY(100%)";
+
+  setTimeout(()=>{
+    overlay.classList.remove("show");
+  },300);
 }
    
 /* ================================= */
