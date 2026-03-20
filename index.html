@@ -927,10 +927,12 @@ getRedirectResult(auth)
   console.log("Allowed check result:", allowed);
 
   if(!allowed){
-    alert("You are not authorized to access this directory.");
-    await signOut(auth);
-    return;
-  }
+  console.warn("USER NOT ALLOWED:", email);
+  return; // ❌ remove signOut temporarily
+}
+  
+  
+  
 
   window.currentUser = user;
 
