@@ -891,7 +891,20 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
 
   loginBtn.onclick = async () => {
     try {
-      await signInWithPopup(auth, provider);
+      import { signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+await signInWithRedirect(auth, provider);
+
+       getRedirectResult(auth)
+  .then((result) => {
+    if (result?.user) {
+      console.log("Redirect login success:", result.user.email);
+    }
+  })
+  .catch((error) => {
+    console.error("Redirect login error:", error);
+  });
+       
     } catch (err) {
       console.error("Login error:", err);
     }
@@ -924,13 +937,14 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
 
 if(!profile){
   openOnboarding();
+  return; // STOP further execution
 }
 
 // role detection
 window.isSuperAdmin = SUPER_ADMINS.includes(email);
 window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
 
-("Roles:", {
+console.log("Roles:", {
   superAdmin: window.isSuperAdmin,
   churchAdmin: window.isChurchAdmin
 });
