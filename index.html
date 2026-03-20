@@ -1032,39 +1032,20 @@ hideEditorUI();
 /* BUTTON LOGIN LOGIC                */
 /* ================================= */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { 
   GoogleAuthProvider, 
   signInWithRedirect,
   getRedirectResult,
   onAuthStateChanged,
-  signOut,
-  getAuth 
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// Initialize Firebase app
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+  const provider = new GoogleAuthProvider();
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-// Initialize Firebase Authentication
-const auth = getAuth(app);
-
-const provider = new GoogleAuthProvider();
-
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-
-// Login functionality
-loginBtn.onclick = async () => {
+  loginBtn.onclick = async () => {
   try {
     await signInWithRedirect(auth, provider);
   } catch (err) {
@@ -1072,7 +1053,6 @@ loginBtn.onclick = async () => {
   }
 };
 
-// Redirect login result handling
 getRedirectResult(auth)
   .then((result) => {
     if (result?.user) {
@@ -1082,14 +1062,15 @@ getRedirectResult(auth)
   .catch((error) => {
     console.error("Redirect login error:", error);
   });
+   
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+  };
 
-// Logout functionality
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-};
+  console.log("Auth Object:", auth);
 
-// Auth state change listener
-onAuthStateChanged(auth, async (user) => {
+  onAuthStateChanged(auth, async (user) => {
+
   console.log("onAuthStateChanged fired");
   console.log("USER VALUE:", user);
 
@@ -1098,54 +1079,60 @@ onAuthStateChanged(auth, async (user) => {
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
-    console.log("Authenticated user:", user);
-    const email = user.email.toLowerCase().trim();
+  console.log("Authenticated user:", user);
+  const email = user.email.toLowerCase().trim();
 
-    const allowed = await isUserAllowed(email);
+  const allowed = await isUserAllowed(email);
 
-    console.log("Allowed check result:", allowed);
+  console.log("Allowed check result:", allowed);
 
-    if (!allowed) {
-      alert("You are not authorized to access this directory.");
-      await signOut(auth);
-      return;
-    }
+  if(!allowed){
+  alert("You are not authorized to access this directory.");
+  await signOut(auth);
+  return;
+}
+  
+  window.currentUser = user;
 
-    window.currentUser = user;
+  const profile = await getMemberProfileByEmail(email);
 
-    const profile = await getMemberProfileByEmail(email);
+// SHOW APP FIRST
+app.style.display = "block";
+loginScreen.style.display = "none";
+logoutBtn.style.display = "block";
 
+// THEN check onboarding
+if(!profile){
+  openOnboarding();
+}
+
+// role detection
+window.isSuperAdmin = SUPER_ADMINS.includes(email);
+window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
+
+console.log("Roles:", {
+  superAdmin: window.isSuperAdmin,
+  churchAdmin: window.isChurchAdmin
+});
+
+const editorToggleBtn = document.getElementById("editorToggleBtn");
+
+if (window.isChurchAdmin) {
+  editorToggleBtn.style.display = "block";
+} else {
+  editorToggleBtn.style.display = "none";
+}
+     
     // SHOW APP
     app.style.display = "block";
     loginScreen.style.display = "none";
     logoutBtn.style.display = "block";
 
-    // Then check onboarding
-    if (!profile) {
-      openOnboarding();
-    }
-
-    // Role detection
-    window.isSuperAdmin = SUPER_ADMINS.includes(email);
-    window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
-
-    console.log("Roles:", {
-      superAdmin: window.isSuperAdmin,
-      churchAdmin: window.isChurchAdmin
-    });
-
-    const editorToggleBtn = document.getElementById("editorToggleBtn");
-
-    if (window.isChurchAdmin) {
-      editorToggleBtn.style.display = "block";
-    } else {
-      editorToggleBtn.style.display = "none";
-    }
-
     // IMPORTANT: load your directory here
     loadMembers();
+
   } else {
-    console.log("No user (logged out state)");
+    ("Logged out");
 
     window.currentUser = null;
 
