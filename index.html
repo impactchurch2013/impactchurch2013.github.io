@@ -644,7 +644,7 @@ oninput="filterMembers()">
   flex-wrap:wrap;
 ">
   <button onclick="openMemberSelect()">Edit Member</button>
-  <button>View Edit History</button>
+  <button>View Pending Changes</button>
 </div>
 
 <!-- ================================= -->
@@ -957,7 +957,7 @@ function openEditMember(member){
       <input id="editState" placeholder="State" value="${f["State"] || ""}">
       <input id="editZip" placeholder="Zip Code" value="${f["Zip Code"] || ""}">
 
-      <button onclick="saveMemberChanges('${member.id}')"
+      <button onclick="saveMemberChanges('${}')"
         style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
         Save Changes
       </button>
@@ -1016,18 +1016,43 @@ async function saveMemberChanges(memberId){
       "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
     );
 
-    await updateDoc(doc(db, "members", memberId), {
-      firstName,
-      lastName,
-      fullName: `${firstName} ${lastName}`,
-      phone,
-      email,
-      address,
-      city,
-      state,
-      zipCode,
-      lastUpdated: new Date().toISOString()
-    });
+    const isAdmin = window.isChurchAdmin;
+
+if(isAdmin){
+
+  // ADMIN → direct update
+  await updateDoc(doc(db, "members", memberId), {
+  firstName,
+  lastName,
+  fullName: `${firstName} ${lastName}`,
+  phone,
+  email,
+  address,
+  city,
+  state,
+  zipCode,
+  lastUpdated: new Date().toISOString()
+  });
+
+  alert("Profile updated");
+
+} else {
+
+  // MEMBER → submit for approval
+  await submitPendingChange(member.id, {
+  firstName,
+  lastName,
+  fullName: `${firstName} ${lastName}`,
+  phone,
+  email,
+  address,
+  city,
+  state,
+  zipCode,
+  lastUpdated: new Date().toISOString()
+  });
+
+}
 
     console.log("Member updated!");
 
@@ -1055,6 +1080,34 @@ async function saveMemberChanges(memberId){
     console.error("Update failed:", err);
     alert("Failed to update member");
   }
+}
+
+/* ================================= */
+/* MEMBER PENDING CHANGES SUBMIT     */
+/* ================================= */
+   
+async function submitPendingChange(memberId, changes){
+
+  try {
+
+    const { addDoc, collection } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    await addDoc(collection(db, "pendingChanges"), {
+      memberId: memberId,
+      submittedBy: window.currentUser.email,
+      changes: changes,
+      status: "pending",
+      createdAt: new Date()
+    });
+
+    alert("Changes submitted for approval");
+
+  } catch (err) {
+    console.error("Failed to submit change:", err);
+  }
+
 }
    
 /* ================================= */
@@ -1169,7 +1222,7 @@ ${ministry ? `<p>${ministry}</p>` : ""}
 </div>
 `
 
-card.onclick=()=>showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated)
+card.onclick=()=>showProfile(record.id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated)
 
 directory.appendChild(card)
 
@@ -1253,7 +1306,7 @@ async function uploadPhoto(){
     return;
   }
 
-  if(!window.lastViewedProfile || !window.lastViewedProfile.name){
+  if(!window.lastViewedProfile || !window.lastViewedProfile.id){
     alert("Open a member profile first");
     return;
   }
@@ -1271,29 +1324,17 @@ async function uploadPhoto(){
 
     console.log("Uploaded image URL:", downloadURL);
 
-    // FIND MEMBER IN FIRESTORE
-    const querySnapshot = await getDocs(collection(db, "members"));
+    // UPDATE MEMBER PHOTO DIRECTLY USING DOC ID
 
-    let targetDoc = null;
+const { updateDoc, doc } = await import(
+  "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+);
 
-    querySnapshot.forEach(doc => {
-      if(doc.data().fullName === window.lastViewedProfile.name){
-        targetDoc = doc;
-      }
-    });
+await updateDoc(doc(db, "members", window.lastViewedProfile.id), {
+  photo: downloadURL
+});
 
-    if(!targetDoc){
-      alert("Member not found in database");
-      return;
-    }
-
-    const { updateDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-
-    await updateDoc(docRef(db, "members", targetDoc.id), {
-      photo: downloadURL
-    });
-
-    console.log("Photo updated!");
+console.log("Photo updated!");
 
     // UPDATE PROFILE IMAGE INSTANTLY
     const profileImg = document.getElementById("profilePhoto");
@@ -1314,27 +1355,6 @@ async function uploadPhoto(){
 }
 
 /* ================================= */
-/* NEW EDIT MEMBER DATA FUNCTION     */
-/* ================================= */
-   
-function openEditProfile(){
-  const m = window.lastViewedProfile;
-
-  const box = document.getElementById("profileContent");
-
-  box.innerHTML = `
-    <h2>Edit ${m.name}</h2>
-
-    <input id="editPhone" value="${m.phone || ""}">
-    <input id="editEmail" value="${m.email || ""}">
-    <input id="editAddress" value="${m.address || ""}">
-
-    <button onclick="saveProfileChanges()">Save</button>
-    <button onclick="goBackToProfile()">Cancel</button>
-  `;
-}
-
-/* ================================= */
 /* PUSH CHANGES TO FIRESTORE     */
 /* ================================= */
    
@@ -1343,7 +1363,7 @@ async function saveProfileChanges(){
   const phone = document.getElementById("editPhone").value;
   const email = document.getElementById("editEmail").value;
 
-  const member = members.find(m => m.id === window.lastViewedProfile.name)
+  const member = members.find(m => m.id === window.lastViewedProfile.id)
 
   const { updateDoc, doc } = await import(
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
@@ -1362,81 +1382,17 @@ async function saveProfileChanges(){
 }
    
 /* ================================= */
-/* EDIT PROFILE DETAIL DATA          */
-/* ================================= */
-   
-async function editField(fieldName){
-
-  const newValue = prompt(`Enter new ${fieldName}:`);
-
-  if(newValue === null) return;
-
-  const member = members.find(m => m.id === window.lastViewedProfile.name)
-
-  if(!member){
-    alert("Member not found");
-    return;
-  }
-
-  try {
-
-    const { updateDoc, doc } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    // Map field names → Firestore keys
-    const fieldMap = {
-  "Phone Number": "phone",
-  "Email": "email",
-  "Full Name": "fullName",
-  "First Name": "firstName",
-  "Last Name": "lastName",
-  "Ministry": "ministry",
-  "Household": "household"
-};
-
-    await updateDoc(doc(db, "members", member.id), {
-      [fieldMap[fieldName]]: newValue
-    });
-
-    // Update UI immediately
-    window.lastViewedProfile.phone = newValue;
-
-    showProfile(
-      window.lastViewedProfile.name,
-      window.lastViewedProfile.photo,
-      window.lastViewedProfile.ministry,
-      newValue,
-      window.lastViewedProfile.email,
-      window.lastViewedProfile.address,
-      window.lastViewedProfile.birthday,
-      window.lastViewedProfile.anniversary,
-      window.lastViewedProfile.household,
-      window.lastViewedProfile.updated
-    );
-
-  } catch (err) {
-    console.error("Update failed:", err);
-  }
-
-}
-   
-/* ================================= */
 /* PROFILE DISPLAY                   */
 /* ================================= */
 
-function showProfile(name,photo,ministry,phone,email,address,birthday,anniversary,household,updated){
+function showProfile(id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated){
 
 const rawPhone = phone ? phone.replace(/\D/g, '') : "";
-
-if (window.isEditorMode) {
-  html += `<button onclick="openEditProfile()">Edit Member</button>`;
-}
    
 birthday = formatShortDate(birthday);
 anniversary = formatShortDate(anniversary);
    
-window.lastViewedProfile = { name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
+window.lastViewedProfile = { id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
 
 window.selectedMemberName = name;
    
@@ -1665,6 +1621,7 @@ function goBackToProfile(){
 if(!lastViewedProfile) return
 
 showProfile(
+lastViewedProfile.id,
 lastViewedProfile.name,
 lastViewedProfile.photo,
 lastViewedProfile.ministry,
