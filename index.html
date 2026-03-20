@@ -34,7 +34,7 @@ overflow-x:hidden;
 
 @font-face{
 font-family:"Inter";
-src:url("fonts/Inter-VariableFont_opsz,wght.woff2") format("woff2");
+src:url("assets/fonts/Inter-VariableFont_opsz,wght.woff2") format("woff2");
 font-weight:100 900;
 font-style:normal;
 font-display:swap;
@@ -801,7 +801,7 @@ async function getMemberProfileByEmail(email){
 /* ================================= */
    
 function openOnboarding(){
-  console.log("Profile found:", profile);
+
   const box = document.getElementById("onboardingContent");
 
   box.innerHTML = `
@@ -845,8 +845,7 @@ async function submitOnboarding(){
     phone,
     address,
     email,
-    onboarding: true,
-    createdAt: new Date().toISOString()
+    onboarding: true
   });
 
   alert("Profile submitted for approval");
@@ -878,13 +877,12 @@ hideEditorUI();
 /* BUTTON LOGIN LOGIC                */
 /* ================================= */
 
-import { 
+import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ 
   GoogleAuthProvider, 
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup, 
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+}) => {
 
   const provider = new GoogleAuthProvider();
 
@@ -892,23 +890,13 @@ import {
   const logoutBtn = document.getElementById("logoutBtn");
 
   loginBtn.onclick = async () => {
-  try {
-    await signInWithRedirect(auth, provider);
-  } catch (err) {
-    console.error("Login error:", err);
-  }
-};
-
-getRedirectResult(auth)
-  .then((result) => {
-    if (result?.user) {
-      console.log("Redirect login success:", result.user.email);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error("Login error:", err);
     }
-  })
-  .catch((error) => {
-    console.error("Redirect login error:", error);
-  });
-   
+  };
+
   logoutBtn.onclick = async () => {
     await signOut(auth);
   };
@@ -923,7 +911,6 @@ getRedirectResult(auth)
   const email = user.email.toLowerCase().trim();
 
   const allowed = await isUserAllowed(email);
-     console.log("Allowed check result:", allowed);
 
   if(!allowed){
     alert("You are not authorized to access this directory.");
@@ -935,12 +922,6 @@ getRedirectResult(auth)
 
   const profile = await getMemberProfileByEmail(email);
 
-// SHOW APP FIRST
-app.style.display = "block";
-loginScreen.style.display = "none";
-logoutBtn.style.display = "block";
-
-// THEN check onboarding
 if(!profile){
   openOnboarding();
 }
@@ -949,7 +930,7 @@ if(!profile){
 window.isSuperAdmin = SUPER_ADMINS.includes(email);
 window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
 
-console.log("Roles:", {
+("Roles:", {
   superAdmin: window.isSuperAdmin,
   churchAdmin: window.isChurchAdmin
 });
@@ -997,6 +978,8 @@ editorToggleBtn.onclick = () => {
   }
 
 };
+   
+});
 
 /* ================================= */
 /* REUSEABLE SHEET OPENER            */
@@ -1384,16 +1367,11 @@ function buildDayList(year, month){
     });
 
     html += `
-  <div style="padding:12px;border-bottom:1px solid #eee;">
-    <strong>${label}</strong><br>
-    ${c.submittedBy}
-
-    <div style="margin-top:8px;">
-      <button onclick="approveChange('${c.id}')">Approve</button>
-      <button onclick="rejectChange('${c.id}')">Reject</button>
-    </div>
-  </div>
-`;
+      <div style="padding:12px;border-bottom:1px solid #eee;">
+        <strong>${label}</strong><br>
+        ${c.submittedBy}
+      </div>
+    `;
   });
 
   document.getElementById("pendingChangesContent").innerHTML = html;
@@ -1442,68 +1420,6 @@ function closePendingChanges(){
   setTimeout(()=>{
     overlay.classList.remove("show");
   },300);
-}
-
-/* ================================= */
-/* APPROVE PENDING CHANGES           */
-/* ================================= */
-   
-async function approveChange(changeId){
-
-  const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  const changeRef = doc(db, "pendingChanges", changeId);
-  const changeSnap = await getDoc(changeRef);
-
-  if(!changeSnap.exists()){
-    alert("Change not found");
-    return;
-  }
-
-  const change = changeSnap.data();
-
-  // 🔥 ONBOARDING CASE (new user)
-  if(change.changes.onboarding){
-
-    await addDoc(collection(db, "members"), {
-      ...change.changes,
-      createdAt: new Date().toISOString()
-    });
-
-  } else {
-
-    // 🔥 EDIT CASE (existing member)
-    await updateDoc(doc(db, "members", change.memberId), {
-      ...change.changes
-    });
-
-  }
-
-  // delete pending change
-  await deleteDoc(changeRef);
-
-  alert("Approved!");
-
-  loadPendingChanges(); // refresh
-}
-
-/* ================================= */
-/* REJECT PENDING CHANGES            */
-/* ================================= */
-   
-async function rejectChange(changeId){
-
-  const { doc, deleteDoc } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  await deleteDoc(doc(db, "pendingChanges", changeId));
-
-  alert("Rejected");
-
-  loadPendingChanges();
 }
    
 /* ================================= */
@@ -2161,9 +2077,6 @@ window.closeEditMember = closeEditMember;
 window.saveMemberChanges = saveMemberChanges;
 window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
-window.submitOnboarding = submitOnboarding;
-window.approveChange = approveChange;
-window.rejectChange = rejectChange;
    
 </script>
    
