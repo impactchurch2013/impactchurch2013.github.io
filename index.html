@@ -983,10 +983,10 @@ function openEditMember(member){
       <input id="editState" placeholder="State" value="${f["State"] || ""}">
       <input id="editZip" placeholder="Zip Code" value="${f["Zip Code"] || ""}">
 
-      <button onclick="saveMemberChanges('${}')"
-        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-        Save Changes
-      </button>
+      <button onclick="saveMemberChanges('${member.id}')"
+  style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+  Save Changes
+</button>
 
       <button onclick="closeEditMember()">
         Cancel
