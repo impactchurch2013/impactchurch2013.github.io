@@ -812,7 +812,7 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
     await signOut(auth);
   };
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
