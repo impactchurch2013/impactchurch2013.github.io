@@ -846,6 +846,7 @@ async function submitOnboarding(){
     address,
     email,
     onboarding: true
+    createdAt: new Date().toISOString()
   });
 
   alert("Profile submitted for approval");
@@ -1382,11 +1383,16 @@ function buildDayList(year, month){
     });
 
     html += `
-      <div style="padding:12px;border-bottom:1px solid #eee;">
-        <strong>${label}</strong><br>
-        ${c.submittedBy}
-      </div>
-    `;
+  <div style="padding:12px;border-bottom:1px solid #eee;">
+    <strong>${label}</strong><br>
+    ${c.submittedBy}
+
+    <div style="margin-top:8px;">
+      <button onclick="approveChange('${c.id}')">Approve</button>
+      <button onclick="rejectChange('${c.id}')">Reject</button>
+    </div>
+  </div>
+`;
   });
 
   document.getElementById("pendingChangesContent").innerHTML = html;
@@ -1435,6 +1441,68 @@ function closePendingChanges(){
   setTimeout(()=>{
     overlay.classList.remove("show");
   },300);
+}
+
+/* ================================= */
+/* APPROVE PENDING CHANGES           */
+/* ================================= */
+   
+async function approveChange(changeId){
+
+  const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const changeRef = doc(db, "pendingChanges", changeId);
+  const changeSnap = await getDoc(changeRef);
+
+  if(!changeSnap.exists()){
+    alert("Change not found");
+    return;
+  }
+
+  const change = changeSnap.data();
+
+  // 🔥 ONBOARDING CASE (new user)
+  if(change.changes.onboarding){
+
+    await addDoc(collection(db, "members"), {
+      ...change.changes,
+      createdAt: new Date().toISOString()
+    });
+
+  } else {
+
+    // 🔥 EDIT CASE (existing member)
+    await updateDoc(doc(db, "members", change.memberId), {
+      ...change.changes
+    });
+
+  }
+
+  // delete pending change
+  await deleteDoc(changeRef);
+
+  alert("Approved!");
+
+  loadPendingChanges(); // refresh
+}
+
+/* ================================= */
+/* REJECT PENDING CHANGES            */
+/* ================================= */
+   
+async function rejectChange(changeId){
+
+  const { doc, deleteDoc } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  await deleteDoc(doc(db, "pendingChanges", changeId));
+
+  alert("Rejected");
+
+  loadPendingChanges();
 }
    
 /* ================================= */
@@ -2092,6 +2160,9 @@ window.closeEditMember = closeEditMember;
 window.saveMemberChanges = saveMemberChanges;
 window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
+window.submitOnboarding = submitOnboarding;
+window.approveChange = approveChange;
+window.rejectChange = rejectChange;
    
 </script>
    
