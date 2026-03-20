@@ -913,6 +913,8 @@ getRedirectResult(auth)
     await signOut(auth);
   };
 
+  console.log("Allowed check result:", allowed);
+
   onAuthStateChanged(auth, async (user) => {
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
