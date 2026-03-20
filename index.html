@@ -920,73 +920,42 @@ getRedirectResult(auth)
   };
 
   onAuthStateChanged(auth, async (user) => {
-  console.log("AUTH STATE CHANGED:", user);
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
+    const email = user.email.toLowerCase().trim();
+    const allowed = await isUserAllowed(email);
 
-  const email = user.email.toLowerCase().trim();
-  console.log("Checking allowedUsers doc for:", email);
-  const allowed = await isUserAllowed(email);
+    if (!allowed) {
+      alert("You are not authorized to access this directory.");
+      await signOut(auth);
+      return; 
+    }
 
-  console.log("Allowed check result:", allowed);
+    window.currentUser = user;
+    const profile = await getMemberProfileByEmail(email);
 
-  if(!allowed){
-  alert("You are not authorized to access this directory.");
-  await signOut(auth);
-  return;
-}
-  
-  
-  
+    // Setup Roles
+    window.isSuperAdmin = SUPER_ADMINS.includes(email);
+    window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
 
-  window.currentUser = user;
+    const editorToggleBtn = document.getElementById("editorToggleBtn");
+    editorToggleBtn.style.display = window.isChurchAdmin ? "block" : "none";
 
-  const profile = await getMemberProfileByEmail(email);
-
-// SHOW APP FIRST
-app.style.display = "block";
-loginScreen.style.display = "none";
-logoutBtn.style.display = "block";
-
-// THEN check onboarding
-if(!profile){
-  openOnboarding();
-}
-
-// role detection
-window.isSuperAdmin = SUPER_ADMINS.includes(email);
-window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
-
-console.log("Roles:", {
-  superAdmin: window.isSuperAdmin,
-  churchAdmin: window.isChurchAdmin
-});
-
-const editorToggleBtn = document.getElementById("editorToggleBtn");
-
-if (window.isChurchAdmin) {
-  editorToggleBtn.style.display = "block";
-} else {
-  editorToggleBtn.style.display = "none";
-}
-     
-    // SHOW APP
+    // Show App
     app.style.display = "block";
     loginScreen.style.display = "none";
     logoutBtn.style.display = "block";
 
-    // IMPORTANT: load your directory here
-    loadMembers();
+    if (!profile) {
+      openOnboarding();
+    }
 
+    loadMembers(); // Ensure this function is defined!
   } else {
-    ("Logged out");
-
     window.currentUser = null;
-
-    // SHOW LOGIN
     app.style.display = "none";
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
