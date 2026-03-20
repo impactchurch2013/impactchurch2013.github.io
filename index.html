@@ -925,7 +925,9 @@ getRedirectResult(auth)
   if (user) {
     console.log("User logged in:", user.email);
     const email = user.email.toLowerCase().trim();
+    console.log("Checking allowedUsers doc for:", email);
     const allowed = await isUserAllowed(email);
+    console.log("Allowed check result:", allowed);
 
     if (!allowed) {
       alert("You are not authorized to access this directory.");
@@ -954,7 +956,7 @@ getRedirectResult(auth)
 
     loadMembers(); // Ensure this function is defined!
   } else {
-    console.log("User logged in:", user.email);
+    console.log("User logged in:");
     window.currentUser = null;
     app.style.display = "none";
     loginScreen.style.display = "block";
