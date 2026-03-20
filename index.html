@@ -801,7 +801,7 @@ async function getMemberProfileByEmail(email){
 /* ================================= */
    
 function openOnboarding(){
-
+  console.log("Profile found:", profile);
   const box = document.getElementById("onboardingContent");
 
   box.innerHTML = `
@@ -933,9 +933,14 @@ getRedirectResult(auth)
 
   const profile = await getMemberProfileByEmail(email);
 
+// SHOW APP FIRST
+app.style.display = "block";
+loginScreen.style.display = "none";
+logoutBtn.style.display = "block";
+
+// THEN check onboarding
 if(!profile){
   openOnboarding();
-  return; // STOP further execution
 }
 
 // role detection
