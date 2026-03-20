@@ -643,14 +643,22 @@ oninput="filterMembers()">
   justify-content:center;
   flex-wrap:wrap;
 ">
-  <button>Edit Member</button>
+  <button onclick="openMemberSelect()">Edit Member</button>
   <button>View Edit History</button>
 </div>
+
+<!-- ================================= -->
+<!-- DISPLAY MEMBER DIRECTORY          -->
+<!-- ================================= -->
    
 <!-- DIRECTORY GRID -->
 
 <div class="directory" id="directory"></div>
 
+<!-- ================================= -->
+<!-- DISPLAY MEMBER PROFILE SHEET      -->
+<!-- ================================= -->
+   
 <!-- PROFILE POPUP -->
 
 <div class="profile" id="profile">
@@ -663,6 +671,20 @@ oninput="filterMembers()">
 <div id="profileContent"></div>
 
 </div>
+</div>
+
+<!-- ================================= -->
+<!-- EDIT MEMBER SELECTION SHEET       -->
+<!-- ================================= -->
+   
+<div class="profile" id="memberSelectSheet">
+  <div class="profile-box">
+
+    <div class="close-icon" onclick="closeMemberSelect()">✕</div>
+
+    <div id="memberSelectContent"></div>
+
+  </div>
 </div>
 
 <!-- FULL PHOTO VIEWER -->
@@ -826,6 +848,75 @@ function showEditorUI(){
 function hideEditorUI(){
   document.getElementById("editorBanner").style.display = "none";
   document.getElementById("adminPanel").style.display = "none";
+}
+
+/* ================================= */
+/* OPEN MEMBER SELECTION SHEET       */
+/* ================================= */
+
+function openMemberSelect(){
+
+  const box = document.getElementById("memberSelectContent");
+
+  let html = `<h2>Select Member</h2>`;
+
+  members.forEach(m => {
+    const name = m.fields["Full Name"] || "";
+
+    html += `
+      <div onclick="selectMemberForEdit('${m.id}')"
+           style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
+        ${name}
+      </div>
+    `;
+  });
+
+  box.innerHTML = html;
+
+  const overlay = document.getElementById("memberSelectSheet");
+  const sheet = overlay.querySelector(".profile-box");
+
+  overlay.classList.add("show");
+
+  setTimeout(()=>{
+    sheet.style.transform = "translateY(0)";
+  },10);
+}
+
+/* ================================= */
+/* CLOSE MEMBER SELECTION SHEET      */
+/* ================================= */
+
+function closeMemberSelect(){
+
+  const overlay = document.getElementById("memberSelectSheet");
+  const sheet = overlay.querySelector(".profile-box");
+
+  sheet.style.transform = "translateY(100%)";
+
+  setTimeout(()=>{
+    overlay.classList.remove("show");
+  },300);
+}
+
+/* ================================= */
+/* HANDLE MEMBER SELECTION TARGET    */
+/* ================================= */
+
+function selectMemberForEdit(memberId){
+
+  const member = members.find(m => m.id === memberId);
+
+  if(!member){
+    alert("Member not found");
+    return;
+  }
+
+  console.log("Selected member:", member);
+
+  // TEMP: just verify selection works
+  // Next step will open edit sheet
+
 }
    
 /* ================================= */
