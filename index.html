@@ -849,30 +849,31 @@ async function loadMembers(){
 
     members = querySnapshot.docs.map(doc => {
 
-      const data = doc.data();
+  const data = doc.data();
 
-      return {
-  id: doc.id, // ADD THIS
-  fields: {
-    "Full Name": data.fullName || "",
-    "First Name": data.firstName || "",
-    "Last Name": data.lastName || "",
-    "Email": data.email || "",
-    "Phone Number": data.phone || "",
-    "Ministry": data.ministry || "",
-    "Household": data.household || "",
-    "Address": data.address || "",
-    "City": data.city || "",
-    "State": data.state || "",
-    "Zip Code": data.zipCode || "",
-    "Birthday": data.birthday || "",
-    "Anniversary": data.anniversary || "",
-    "Last Updated": data.lastUpdated || "",
-    "Photo": data.photo || ""
-  }
-};
+  return {
+    id: doc.id, // ✅ ADD THIS LINE
 
-    });
+    fields: {
+      "Full Name": data.fullName || "",
+      "First Name": data.firstName || "",
+      "Last Name": data.lastName || "",
+      "Email": data.email || "",
+      "Phone Number": data.phone || "",
+      "Ministry": data.ministry || "",
+      "Household": data.household || "",
+      "Address": data.address || "",
+      "City": data.city || "",
+      "State": data.state || "",
+      "Zip Code": data.zipCode || "",
+      "Birthday": data.birthday || "",
+      "Anniversary": data.anniversary || "",
+      "Last Updated": data.lastUpdated || "",
+      "Photo": data.photo || ""
+    }
+  };
+
+});
 
     console.log("Loaded members from Firestore:", members);
 
@@ -1113,9 +1114,7 @@ async function saveProfileChanges(){
   const phone = document.getElementById("editPhone").value;
   const email = document.getElementById("editEmail").value;
 
-  const member = members.find(m =>
-    m.fields["Full Name"] === window.lastViewedProfile.name
-  );
+  const member = members.find(m => m.id === window.lastViewedProfile.name)
 
   const { updateDoc, doc } = await import(
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
@@ -1143,9 +1142,7 @@ async function editField(fieldName){
 
   if(newValue === null) return;
 
-  const member = members.find(m => 
-    m.fields["Full Name"] === window.lastViewedProfile.name
-  );
+  const member = members.find(m => m.id === window.lastViewedProfile.name)
 
   if(!member){
     alert("Member not found");
@@ -1459,9 +1456,7 @@ lastViewedProfile.updated
 
 function showProfileFromMember(name){
 
-const member = members.find(m =>
-(m.fields["Full Name"] || "") === name
-)
+const member = members.find(m => m.id === name)
 
 if(!member) return
 
