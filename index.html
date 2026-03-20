@@ -915,14 +915,19 @@ getRedirectResult(auth)
     await signOut(auth);
   };
 
+  console.log("Auth Object:", auth);
+
   onAuthStateChanged(auth, async (user) => {
-  console.log("AUTH STATE CHANGED:", user);
+
+  console.log("onAuthStateChanged fired");
+  console.log("USER VALUE:", user);
+
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
-
+  console.log("Authenticated user:", user);
   const email = user.email.toLowerCase().trim();
 
   const allowed = await isUserAllowed(email);
@@ -935,9 +940,158 @@ getRedirectResult(auth)
   return;
 }
   
-  
-  
+  window.currentUser = user;
 
+  const profile = await getMemberProfileByEmail(email);
+
+// SHOW APP FIRST
+app.style.display = "block";
+loginScreen.style.display = "none";
+logoutBtn.style.display = "block";
+
+// THEN check onboarding
+if(!profile){
+  openOnboarding();
+}
+
+// role detection
+window.isSuperAdmin = SUPER_ADMINS.includes(email);
+window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
+
+console.log("Roles:", {
+  superAdmin: window.isSuperAdmin,
+  churchAdmin: window.isChurchAdmin
+});
+
+const editorToggleBtn = document.getElementById("editorToggleBtn");
+
+if (window.isChurchAdmin) {
+  editorToggleBtn.style.display = "block";
+} else {
+  editorToggleBtn.style.display = "none";
+}
+     
+    // SHOW APP
+    app.style.display = "block";
+    loginScreen.style.display = "none";
+    logoutBtn.style.display = "block";
+
+    // IMPORTANT: load your directory here
+    loadMembers();
+
+  /* ================================= */
+/* SUBMIT ONBOARDING PROFILE         */
+/* ================================= */
+   
+async function submitOnboarding(){
+
+  const firstName = document.getElementById("onboardFirstName").value;
+  const lastName = document.getElementById("onboardLastName").value;
+  const phone = document.getElementById("onboardPhone").value;
+  const address = document.getElementById("onboardAddress").value;
+
+  const email = window.currentUser.email;
+
+  await submitPendingChange(null, {
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`,
+    phone,
+    address,
+    email,
+    onboarding: true,
+    createdAt: new Date().toISOString()
+  });
+
+  alert("Profile submitted for approval");
+
+  location.reload();
+
+}
+   
+/* ================================= */
+/* ADMIN CONFIG                      */
+/* ================================= */
+
+const SUPER_ADMINS = [
+  "impactchurch2013@gmail.com"
+];
+
+const CHURCH_ADMINS = [
+  "admin1@church.com",
+  "admin2@church.com"
+];
+
+// derived role flags
+window.isSuperAdmin = false;
+window.isChurchAdmin = false;
+window.isEditor = false;
+hideEditorUI();
+   
+/* ================================= */
+/* BUTTON LOGIN LOGIC                */
+/* ================================= */
+
+import { 
+  GoogleAuthProvider, 
+  signInWithRedirect,
+  getRedirectResult,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const provider = new GoogleAuthProvider();
+
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  loginBtn.onclick = async () => {
+  try {
+    await signInWithRedirect(auth, provider);
+  } catch (err) {
+    console.error("Login error:", err);
+  }
+};
+
+getRedirectResult(auth)
+  .then((result) => {
+    if (result?.user) {
+      console.log("Redirect login success:", result.user.email);
+    }
+  })
+  .catch((error) => {
+    console.error("Redirect login error:", error);
+  });
+   
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+  };
+
+  console.log("Auth Object:", auth);
+
+  onAuthStateChanged(auth, async (user) => {
+
+  console.log("onAuthStateChanged fired");
+  console.log("USER VALUE:", user);
+
+  const app = document.getElementById("app");
+  const loginScreen = document.getElementById("loginScreen");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (user) {
+  console.log("Authenticated user:", user);
+  const email = user.email.toLowerCase().trim();
+
+  const allowed = await isUserAllowed(email);
+
+  console.log("Allowed check result:", allowed);
+
+  if(!allowed){
+  alert("You are not authorized to access this directory.");
+  await signOut(auth);
+  return;
+}
+  
   window.currentUser = user;
 
   const profile = await getMemberProfileByEmail(email);
@@ -987,6 +1141,23 @@ if (window.isChurchAdmin) {
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
   }
+});
+
+const editorToggleBtn = document.getElementById("editorToggleBtn");
+
+editorToggleBtn.onclick = () => {
+
+  window.isEditor = !window.isEditor;
+
+  if (window.isEditor) {
+    editorToggleBtn.textContent = "Disable Editor Mode";
+    showEditorUI();
+  } else {
+    editorToggleBtn.textContent = "Enable Editor Mode";
+    hideEditorUI();
+  }
+
+};
 });
 
 const editorToggleBtn = document.getElementById("editorToggleBtn");
@@ -1471,7 +1642,7 @@ async function approveChange(changeId){
 
   const change = changeSnap.data();
 
-  // 🔥 ONBOARDING CASE (new user)
+  // ONBOARDING CASE (new user)
   if(change.changes.onboarding){
 
     await addDoc(collection(db, "members"), {
@@ -1481,7 +1652,7 @@ async function approveChange(changeId){
 
   } else {
 
-    // 🔥 EDIT CASE (existing member)
+    // EDIT CASE (existing member)
     await updateDoc(doc(db, "members", change.memberId), {
       ...change.changes
     });
