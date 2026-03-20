@@ -646,6 +646,16 @@ oninput="filterMembers()">
   <button onclick="openMemberSelect()">Edit Member</button>
   <button onclick="openPendingChanges()">View Pending Changes</button>
 </div>
+
+<!-- ================================= -->
+<!-- ONBOARDING SHEET                  -->
+<!-- ================================= -->
+   
+<div class="profile" id="onboardingSheet">
+  <div class="profile-box">
+    <div id="onboardingContent"></div>
+  </div>
+</div>
    
 <!-- ================================= -->
 <!-- MEMBER DIRECTORY          -->
@@ -764,6 +774,85 @@ async function isUserAllowed(email){
   return userDoc.exists();
 
 }
+
+/* ================================= */
+/* USER EMAIL CHECK                  */
+/* ================================= */
+   
+async function getMemberProfileByEmail(email){
+
+  const { getDocs, collection } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const snapshot = await getDocs(collection(db, "members"));
+
+  const match = snapshot.docs.find(doc => {
+    const data = doc.data();
+    return (data.email || "").toLowerCase().trim() === email;
+  });
+
+  return match ? { id: match.id, ...match.data() } : null;
+
+}
+
+/* ================================= */
+/* USER ONBOARDING SHEET             */
+/* ================================= */
+   
+function openOnboarding(){
+
+  const box = document.getElementById("onboardingContent");
+
+  box.innerHTML = `
+    <h2>Complete Your Profile</h2>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <input id="onboardFirstName" placeholder="First Name">
+      <input id="onboardLastName" placeholder="Last Name">
+      <input id="onboardPhone" placeholder="Phone">
+      <input id="onboardAddress" placeholder="Address">
+
+      <button onclick="submitOnboarding()"
+        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+        Submit Profile
+      </button>
+
+    </div>
+  `;
+
+  openSheet("onboardingSheet");
+}
+
+/* ================================= */
+/* SUBMIT ONBOARDING PROFILE         */
+/* ================================= */
+   
+async function submitOnboarding(){
+
+  const firstName = document.getElementById("onboardFirstName").value;
+  const lastName = document.getElementById("onboardLastName").value;
+  const phone = document.getElementById("onboardPhone").value;
+  const address = document.getElementById("onboardAddress").value;
+
+  const email = window.currentUser.email;
+
+  await submitPendingChange(null, {
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`,
+    phone,
+    address,
+    email,
+    onboarding: true
+  });
+
+  alert("Profile submitted for approval");
+
+  location.reload();
+
+}
    
 /* ================================= */
 /* ADMIN CONFIG                      */
@@ -830,6 +919,13 @@ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({
   }
 
   window.currentUser = user;
+
+  const profile = await getMemberProfileByEmail(email);
+
+if(!profile){
+  openOnboarding();
+  return;
+}
 
 // role detection
 window.isSuperAdmin = SUPER_ADMINS.includes(email);
