@@ -742,6 +742,8 @@ oninput="filterMembers()">
 
 <script type="module">
 
+console.log("AUTH OBJECT:", auth);
+
 /* Import Firebase */
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -914,6 +916,7 @@ getRedirectResult(auth)
   };
 
   onAuthStateChanged(auth, async (user) => {
+  console.log("AUTH STATE CHANGED:", user);
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
@@ -927,8 +930,9 @@ getRedirectResult(auth)
   console.log("Allowed check result:", allowed);
 
   if(!allowed){
-  console.warn("USER NOT ALLOWED:", email);
-  return; // ❌ remove signOut temporarily
+  alert("You are not authorized to access this directory.");
+  await signOut(auth);
+  return;
 }
   
   
