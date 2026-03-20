@@ -923,6 +923,7 @@ getRedirectResult(auth)
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
+    console.log("User logged in:", user.email);
     const email = user.email.toLowerCase().trim();
     const allowed = await isUserAllowed(email);
 
@@ -953,6 +954,7 @@ getRedirectResult(auth)
 
     loadMembers(); // Ensure this function is defined!
   } else {
+    console.log("User logged in:", user.email);
     window.currentUser = null;
     app.style.display = "none";
     loginScreen.style.display = "block";
