@@ -746,7 +746,9 @@ oninput="filterMembers()">
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const { auth, db, authReady } = window.firebase;
+const { auth } = window.firebase;
+
+const db = getFirestore(window.firebase.app);
 
 /* Import Firebase storage */
 
@@ -799,6 +801,7 @@ async function getMemberProfileByEmail(email){
 /* ================================= */
    
 function openOnboarding(){
+
   const box = document.getElementById("onboardingContent");
 
   box.innerHTML = `
@@ -874,72 +877,86 @@ hideEditorUI();
 /* BUTTON LOGIN LOGIC                */
 /* ================================= */
 
-import { 
+import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ 
   GoogleAuthProvider, 
-  signInWithPopup,
+  signInWithPopup, 
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+}) => {
 
-const provider = new GoogleAuthProvider();
+  const provider = new GoogleAuthProvider();
 
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-loginBtn.onclick = async () => {
-  try {
-    await authReady;
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    console.error("Login error:", err);
-  }
-};
+  loginBtn.onclick = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error("Login error:", err);
+    }
+  };
 
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-};
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+  };
 
-await authReady;
-
-onAuthStateChanged(auth, async (user) => {
+  onAuthStateChanged(auth, async (user) => {
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (user) {
-    console.log("User logged in:", user.email);
-    const email = user.email.toLowerCase().trim();
-    console.log("Checking allowedUsers doc for:", email);
-    const allowed = await isUserAllowed(email);
-    console.log("Allowed check result:", allowed);
 
-    if (!allowed) {
-      alert("You are not authorized to access this directory.");
-      await signOut(auth);
-      return;
-    }
+  const email = user.email.toLowerCase().trim();
 
-    window.currentUser = user;
-    const profile = await getMemberProfileByEmail(email);
+  const allowed = await isUserAllowed(email);
 
-    window.isSuperAdmin = SUPER_ADMINS.includes(email);
-    window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
+  if(!allowed){
+    alert("You are not authorized to access this directory.");
+    await signOut(auth);
+    return;
+  }
 
-    const editorToggleBtn = document.getElementById("editorToggleBtn");
-    editorToggleBtn.style.display = window.isChurchAdmin ? "block" : "none";
+  window.currentUser = user;
 
+  const profile = await getMemberProfileByEmail(email);
+
+if(!profile){
+  openOnboarding();
+}
+
+// role detection
+window.isSuperAdmin = SUPER_ADMINS.includes(email);
+window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
+
+("Roles:", {
+  superAdmin: window.isSuperAdmin,
+  churchAdmin: window.isChurchAdmin
+});
+
+const editorToggleBtn = document.getElementById("editorToggleBtn");
+
+if (window.isChurchAdmin) {
+  editorToggleBtn.style.display = "block";
+} else {
+  editorToggleBtn.style.display = "none";
+}
+     
+    // SHOW APP
     app.style.display = "block";
     loginScreen.style.display = "none";
     logoutBtn.style.display = "block";
 
-    if (!profile) {
-      openOnboarding();
-    }
-
+    // IMPORTANT: load your directory here
     loadMembers();
+
   } else {
-    console.log("User logged out");
+    ("Logged out");
+
     window.currentUser = null;
+
+    // SHOW LOGIN
     app.style.display = "none";
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
@@ -961,6 +978,8 @@ editorToggleBtn.onclick = () => {
   }
 
 };
+   
+});
 
 /* ================================= */
 /* REUSEABLE SHEET OPENER            */

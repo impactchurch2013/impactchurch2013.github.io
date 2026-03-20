@@ -19,8 +19,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Enable persistence to keep user logged in across page reloads
-setPersistence(auth, browserLocalPersistence)
+// Persistence must settle before sign-in; index.html awaits authReady.
+const authReady = setPersistence(auth, browserLocalPersistence)
   .then(() => {
     console.log("Firebase Auth persistence set to Local.");
   })
@@ -28,7 +28,4 @@ setPersistence(auth, browserLocalPersistence)
     console.error("Error setting Firebase Auth persistence:", error);
   });
 
-// Expose Firebase to the window for access in other scripts
-window.firebase = { auth, db };
-
-console.log("Firebase initialized:", window.firebase);
+window.firebase = { app, auth, db, authReady };
