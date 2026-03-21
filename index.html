@@ -1449,6 +1449,8 @@ function buildYearView(changes){
 
   const box = document.getElementById("pendingChangesContent");
 
+  window.pendingChangesData = changes;
+
   const years = {};
 
   changes.forEach(c => {
@@ -1463,6 +1465,13 @@ function buildYearView(changes){
 
   let html = `<h2>Pending Changes</h2>`;
 
+  html += `
+    <div onclick="buildUnresolvedList()"
+      style="padding:14px;border-bottom:1px solid #e0e0e0;cursor:pointer;font-weight:600;background:#f5f7fa;">
+      Unresolved
+    </div>
+  `;
+
   Object.keys(years)
     .sort((a,b)=>b-a)
     .forEach(year => {
@@ -1474,8 +1483,6 @@ function buildYearView(changes){
         </div>
       `;
     });
-
-  window.pendingChangesData = changes;
 
   box.innerHTML = html;
 
@@ -1561,7 +1568,96 @@ function buildDayList(year, month){
 
   document.getElementById("pendingChangesContent").innerHTML = html;
 }
-   
+
+/* ================================= */
+/* PENDING CHANGES — UNRESOLVED LIST */
+/* ================================= */
+
+function restorePendingChangesYearView(){
+
+  if(!window.pendingChangesData){
+    return;
+  }
+
+  buildYearView(window.pendingChangesData);
+
+}
+
+function buildUnresolvedList(){
+
+  const changes = window.pendingChangesData;
+
+  const box = document.getElementById("pendingChangesContent");
+
+  if(!changes){
+    box.innerHTML = `
+      <div onclick="restorePendingChangesYearView()"
+        style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+        ← Back
+      </div>
+      <h2>Unresolved</h2>
+      <p style="padding:14px;">No pending changes loaded.</p>
+    `;
+    return;
+  }
+
+  const filtered = changes.filter(c => c.status === "pending");
+
+  filtered.sort((a,b)=>{
+
+    const ta = a.createdAt && a.createdAt.toDate
+      ? a.createdAt.toDate().getTime()
+      : 0;
+
+    const tb = b.createdAt && b.createdAt.toDate
+      ? b.createdAt.toDate().getTime()
+      : 0;
+
+    return tb - ta;
+
+  });
+
+  let html = `
+    <div onclick="restorePendingChangesYearView()"
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+      ← Back
+    </div>
+    <h2>Unresolved</h2>
+  `;
+
+  if(filtered.length === 0){
+
+    html += `<p style="padding:14px;">No unresolved items — nothing is still pending.</p>`;
+    box.innerHTML = html;
+    return;
+
+  }
+
+  filtered.forEach(c => {
+
+    const d = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate() : null;
+
+    const label = d
+      ? d.toLocaleDateString("en-US", {
+        month:"short",
+        day:"numeric",
+        year:"numeric"
+      })
+      : "—";
+
+    html += `
+      <div style="padding:12px;border-bottom:1px solid #eee;">
+        <strong>${label}</strong><br>
+        ${c.submittedBy || ""}
+      </div>
+    `;
+
+  });
+
+  box.innerHTML = html;
+
+}
+
 /* ================================= */
 /* LOAD PENDING CHANGES SHEET DATA   */
 /* ================================= */
@@ -2295,6 +2391,10 @@ window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
 window.openOnboarding = openOnboarding;
 window.submitOnboarding = submitOnboarding;
+window.buildMonthView = buildMonthView;
+window.buildDayList = buildDayList;
+window.buildUnresolvedList = buildUnresolvedList;
+window.restorePendingChangesYearView = restorePendingChangesYearView;
    
 </script>
    
