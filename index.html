@@ -1560,6 +1560,13 @@ function openEditMember(member){
         Cancel
       </button>
 
+      ${window.isChurchAdmin ? `
+      <button type="button" id="editDeleteMemberBtn"
+        style="margin-top:6px;padding:10px;border:1px solid #d4a0a0;color:#a32;background:#fff8f8;border-radius:8px;cursor:pointer;width:100%;">
+        Remove from directory
+      </button>
+      ` : ""}
+
     </div>
   `;
 
@@ -1571,6 +1578,12 @@ function openEditMember(member){
   setTimeout(()=>{
     sheet.style.transform = "translateY(0)";
   },10);
+
+  const delBtn = document.getElementById("editDeleteMemberBtn");
+  if(delBtn){
+    delBtn.onclick = () => deleteMemberFromDirectory(member.id);
+  }
+
 }
 
 /* ================================= */
@@ -1587,6 +1600,46 @@ function closeEditMember(){
   setTimeout(()=>{
     overlay.classList.remove("show");
   },300);
+}
+
+/* ================================= */
+/* DELETE MEMBER (ADMIN)             */
+/* ================================= */
+
+async function deleteMemberFromDirectory(memberId){
+
+  if(!window.isChurchAdmin){
+    alert("Only church admins can remove members from the directory.");
+    return;
+  }
+
+  const member = members.find(m => m.id === memberId);
+  const label = member
+    ? (member.fields["Full Name"] || `${member.fields["First Name"] || ""} ${member.fields["Last Name"] || ""}`.trim() || "this member")
+    : "this member";
+
+  if(!confirm(`Remove "${label}" from the directory?\n\nThis cannot be undone.`)){
+    return;
+  }
+
+  try{
+
+    const { deleteDoc, doc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    await deleteDoc(doc(db, "members", memberId));
+
+    alert("Member removed from the directory.");
+
+    closeEditMember();
+    await loadMembers();
+
+  }catch(err){
+    console.error("Delete member failed:", err);
+    alert("Could not remove this member. Check the console for details.");
+  }
+
 }
 
 /* ================================= */
@@ -2889,6 +2942,7 @@ window.selectMemberForEdit = selectMemberForEdit;
 window.openEditMember = openEditMember;
 window.closeEditMember = closeEditMember;
 window.saveMemberChanges = saveMemberChanges;
+window.deleteMemberFromDirectory = deleteMemberFromDirectory;
 window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
 window.openOnboarding = openOnboarding;
