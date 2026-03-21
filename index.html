@@ -869,7 +869,7 @@ function omitUndefined(obj){
 /* MEMBER PENDING CHANGES SUBMISSION */
 /* ================================= */
    
-async function submitPendingChange(memberId, changes){
+async function submitPendingChange(memberId, changes, opts = {}){
 
   try {
 
@@ -889,7 +889,14 @@ async function submitPendingChange(memberId, changes){
       changes: changesPayload
     });
 
-    alert("Changes submitted for approval");
+    if(opts.isOnboarding){
+      alert(
+        "Your profile details were successfully saved.\n\n" +
+        "Onboarding is complete. An Impact Church admin will review your profile soon..."
+      );
+    }else{
+      alert("Changes submitted for approval");
+    }
 
   } catch (err) {
     console.error("Failed to submit change:", err);
@@ -1050,7 +1057,7 @@ async function submitOnboarding(){
       birthday,
       anniversary,
       onboarding: true
-    });
+    }, { isOnboarding: true });
 
     location.reload();
 
