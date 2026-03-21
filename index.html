@@ -411,6 +411,118 @@ max-width:90%;
 max-height:90%;
 border-radius:10px;
 }
+
+/* ================================= */
+/* ADMIN EMAIL NOTIFICATION MODAL    */
+/* ================================= */
+
+.admin-email-modal{
+position:fixed;
+inset:0;
+z-index:5000;
+display:none;
+align-items:center;
+justify-content:center;
+padding:16px;
+box-sizing:border-box;
+}
+
+.admin-email-modal.show{
+display:flex;
+}
+
+.admin-email-modal-backdrop{
+position:absolute;
+inset:0;
+background:rgba(0,0,0,0.45);
+}
+
+.admin-email-modal-box{
+position:relative;
+background:#fff;
+border-radius:12px;
+max-width:520px;
+width:100%;
+max-height:90vh;
+overflow:auto;
+padding:20px;
+box-shadow:0 8px 32px rgba(0,0,0,0.22);
+z-index:1;
+}
+
+.admin-email-modal-box h3{
+margin:0 0 6px;
+font-size:1.15rem;
+}
+
+.admin-email-modal-box .admin-email-modal-note{
+margin:0 0 14px;
+font-size:13px;
+color:#555;
+line-height:1.4;
+}
+
+.admin-email-modal-box label{
+display:block;
+font-size:13px;
+font-weight:600;
+margin-bottom:4px;
+color:#333;
+}
+
+.admin-email-modal-box input[type="email"],
+.admin-email-modal-box input[type="text"]{
+width:100%;
+padding:8px 10px;
+margin-bottom:12px;
+border:1px solid #ccc;
+border-radius:8px;
+font-size:14px;
+box-sizing:border-box;
+}
+
+.admin-email-modal-box textarea{
+width:100%;
+min-height:160px;
+padding:10px;
+margin-bottom:10px;
+border:1px solid #ccc;
+border-radius:8px;
+font-size:14px;
+line-height:1.45;
+resize:vertical;
+box-sizing:border-box;
+font-family:inherit;
+}
+
+.admin-email-modal-actions{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:14px;
+}
+
+.admin-email-modal-actions button{
+padding:10px 14px;
+border-radius:8px;
+font-size:14px;
+cursor:pointer;
+border:1px solid #ccc;
+background:#f5f5f5;
+}
+
+.admin-email-modal-actions button.primary{
+background:#2b5cff;
+color:#fff;
+border-color:#2b5cff;
+}
+
+.admin-email-modal-hint{
+min-height:1.2em;
+font-size:13px;
+color:#2a6;
+margin-top:8px;
+}
    
 /* ================================= */
 /* FAMILY PAGE                       */
@@ -726,6 +838,27 @@ oninput="filterMembers()">
 
 <div id="photoViewer" class="photo-viewer" onclick="closePhoto()">
 <img id="photoViewerImg" alt="" loading="lazy" decoding="async">
+</div>
+
+<!-- ADMIN: EMAIL NOTIFICATION (approve / deny) -->
+<div id="adminEmailModal" class="admin-email-modal" aria-modal="true" role="dialog" style="display:none;">
+  <div class="admin-email-modal-backdrop" onclick="closeAdminEmailModal()"></div>
+  <div class="admin-email-modal-box" onclick="event.stopPropagation();">
+    <h3 id="adminEmailModalTitle">Email the member</h3>
+    <p class="admin-email-modal-note">Review or edit the message below, then send with your email app. If nothing opens, use Copy to clipboard.</p>
+    <label for="adminEmailTo">To</label>
+    <input type="email" id="adminEmailTo" autocomplete="email">
+    <label for="adminEmailSubject">Subject</label>
+    <input type="text" id="adminEmailSubject" autocomplete="off">
+    <label for="adminEmailBody">Message</label>
+    <textarea id="adminEmailBody" spellcheck="true"></textarea>
+    <div class="admin-email-modal-actions">
+      <button type="button" class="primary" onclick="sendAdminEmailFromModal()">Send email</button>
+      <button type="button" onclick="copyAdminEmailFromModal()">Copy to clipboard</button>
+      <button type="button" onclick="closeAdminEmailModal()">Close</button>
+    </div>
+    <p id="adminEmailModalHint" class="admin-email-modal-hint"></p>
+  </div>
 </div>
 
 </div>   
@@ -2503,17 +2636,93 @@ function openUnresolvedPendingDetail(pendingId){
 
 }
 
-function openMailtoForPendingNotification(to, subject, body){
+const ADMIN_EMAIL_SUBJECT_APPROVED = "Impact Church Directory — profile update approved";
+const ADMIN_EMAIL_SUBJECT_DENIED = "Impact Church Directory — profile update not approved";
 
-  const t = (to || "").trim();
+function openAdminEmailModal(opts){
 
-  if(!t){
+  const { to, subject, body, title } = opts;
+
+  const modal = document.getElementById("adminEmailModal");
+  const titleEl = document.getElementById("adminEmailModalTitle");
+  const hint = document.getElementById("adminEmailModalHint");
+
+  if(hint){
+    hint.textContent = "";
+  }
+
+  document.getElementById("adminEmailTo").value = (to || "").trim();
+  document.getElementById("adminEmailSubject").value = subject || "";
+  document.getElementById("adminEmailBody").value = body || "";
+
+  if(titleEl){
+    titleEl.textContent = title || "Email the member";
+  }
+
+  if(modal){
+    modal.classList.add("show");
+    modal.style.display = "flex";
+  }
+
+}
+
+function closeAdminEmailModal(){
+
+  const modal = document.getElementById("adminEmailModal");
+
+  if(modal){
+    modal.classList.remove("show");
+    modal.style.display = "none";
+  }
+
+}
+
+function sendAdminEmailFromModal(){
+
+  const to = document.getElementById("adminEmailTo").value.trim();
+  const subject = document.getElementById("adminEmailSubject").value;
+  const body = document.getElementById("adminEmailBody").value;
+
+  if(!to){
+    alert("Please enter the recipient email address.");
     return;
   }
 
-  const url = `mailto:${encodeURIComponent(t)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   window.location.href = url;
+
+}
+
+async function copyAdminEmailFromModal(){
+
+  const to = document.getElementById("adminEmailTo").value.trim();
+  const subject = document.getElementById("adminEmailSubject").value;
+  const body = document.getElementById("adminEmailBody").value;
+
+  const full = `To: ${to}\nSubject: ${subject}\n\n${body}`;
+
+  const hint = document.getElementById("adminEmailModalHint");
+
+  try{
+
+    await navigator.clipboard.writeText(full);
+
+    if(hint){
+      hint.textContent = "Copied to clipboard.";
+    }
+
+  }catch(err){
+
+    console.error(err);
+
+    if(hint){
+      hint.textContent = "";
+    }
+
+    alert("Could not copy automatically. Select the message in the box above and copy it manually (Ctrl+C / ⌘+C).");
+
+  }
 
 }
 
@@ -2583,11 +2792,12 @@ async function approvePendingChange(pendingId){
     alert("Approved. The directory has been updated.");
 
     if(memberEmail){
-      openMailtoForPendingNotification(
-        memberEmail,
-        "Impact Church Directory — profile update approved",
-        emailBody
-      );
+      openAdminEmailModal({
+        to: memberEmail,
+        subject: ADMIN_EMAIL_SUBJECT_APPROVED,
+        body: emailBody,
+        title: "Profile approved — notify the member"
+      });
     }
 
   }catch(err){
@@ -2641,11 +2851,12 @@ async function denyPendingChange(pendingId){
     alert("Request denied and removed from the queue.");
 
     if(memberEmail){
-      openMailtoForPendingNotification(
-        memberEmail,
-        "Impact Church Directory — profile update not approved",
-        emailBody
-      );
+      openAdminEmailModal({
+        to: memberEmail,
+        subject: ADMIN_EMAIL_SUBJECT_DENIED,
+        body: emailBody,
+        title: "Request denied — notify the member"
+      });
     }
 
   }catch(err){
@@ -3326,6 +3537,9 @@ window.restorePendingChangesYearView = restorePendingChangesYearView;
 window.openUnresolvedPendingDetail = openUnresolvedPendingDetail;
 window.approvePendingChange = approvePendingChange;
 window.denyPendingChange = denyPendingChange;
+window.closeAdminEmailModal = closeAdminEmailModal;
+window.sendAdminEmailFromModal = sendAdminEmailFromModal;
+window.copyAdminEmailFromModal = copyAdminEmailFromModal;
    
 </script>
    
