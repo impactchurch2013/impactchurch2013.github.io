@@ -1573,6 +1573,26 @@ function buildDayList(year, month){
 /* PENDING CHANGES — UNRESOLVED LIST */
 /* ================================= */
 
+function escapeHtml(s){
+
+  if(s == null || s === "") return "";
+
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+}
+
+function formatPendingDetailValue(v){
+
+  if(v == null || v === "") return "—";
+
+  return escapeHtml(v);
+
+}
+
 function restorePendingChangesYearView(){
 
   if(!window.pendingChangesData){
@@ -1646,15 +1666,229 @@ function buildUnresolvedList(){
       : "—";
 
     html += `
-      <div style="padding:12px;border-bottom:1px solid #eee;">
-        <strong>${label}</strong><br>
-        ${c.submittedBy || ""}
+      <div onclick="openUnresolvedPendingDetail('${c.id}')"
+        style="padding:12px;border-bottom:1px solid #eee;cursor:pointer;">
+        <strong>${escapeHtml(label)}</strong><br>
+        ${escapeHtml(c.submittedBy || "")}
       </div>
     `;
 
   });
 
   box.innerHTML = html;
+
+}
+
+/* ================================= */
+/* UNRESOLVED — DETAIL + APPROVE     */
+/* ================================= */
+
+function mapChangesToMember(ch){
+
+  const zipVal = ch.zip != null && ch.zip !== ""
+    ? ch.zip
+    : (ch.zipCode != null ? ch.zipCode : "");
+
+  const ministryParts = [ch.ministry, ch.role].filter(Boolean);
+  const ministry = ministryParts.length ? ministryParts.join(" · ") : "";
+
+  const first = (ch.firstName || "").trim();
+  const last = (ch.lastName || "").trim();
+
+  return {
+    firstName: first,
+    lastName: last,
+    fullName: ch.fullName || `${first} ${last}`.trim(),
+    email: ch.email || "",
+    phone: ch.phone || "",
+    ministry,
+    address: ch.address || "",
+    city: ch.city || "",
+    state: ch.state || "",
+    zipCode: zipVal,
+    birthday: ch.birthday || "",
+    anniversary: ch.anniversary || "",
+    household: ch.household || "",
+    photo: ch.photo || "",
+    lastUpdated: new Date().toISOString()
+  };
+
+}
+
+async function refreshPendingChangesCache(){
+
+  const { getDocs, collection } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const snapshot = await getDocs(collection(db, "pendingChanges"));
+
+  const changes = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  window.pendingChangesData = changes;
+
+  return changes;
+
+}
+
+function openUnresolvedPendingDetail(pendingId){
+
+  const list = window.pendingChangesData || [];
+  const item = list.find(x => x.id === pendingId);
+
+  if(!item){
+    alert("That entry could not be found.");
+    return;
+  }
+
+  const ch = item.changes || {};
+  const created = item.createdAt && item.createdAt.toDate
+    ? item.createdAt.toDate().toLocaleString()
+    : "—";
+
+  const isOnboarding = ch.onboarding === true;
+
+  const rows = [
+    ["Submitted by", item.submittedBy || "—"],
+    ["Submitted at", created],
+    ["Type", isOnboarding ? "New member (onboarding)" : "Profile update"],
+    ...(item.memberId ? [["Member document ID", item.memberId]] : []),
+    ["First name", ch.firstName],
+    ["Last name", ch.lastName],
+    ["Full name", ch.fullName],
+    ["Email", ch.email],
+    ["Phone", ch.phone],
+    ["Ministry", ch.ministry],
+    ["Role", ch.role],
+    ["Address", ch.address],
+    ["City", ch.city],
+    ["State", ch.state],
+    ["ZIP", ch.zip != null && ch.zip !== "" ? ch.zip : ch.zipCode],
+    ["Birthday", ch.birthday],
+    ["Anniversary", ch.anniversary]
+  ];
+
+  const body = rows.map(([label, val]) => `
+    <p style="margin:0 0 10px;font-size:14px;line-height:1.4;">
+      <strong>${escapeHtml(label)}</strong><br>
+      <span style="color:#333;">${formatPendingDetailValue(val)}</span>
+    </p>
+  `).join("");
+
+  const admin = window.isChurchAdmin;
+
+  const buttons = admin
+    ? `<div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #eee;flex-shrink:0;">
+         <button type="button" id="pendingApproveBtn"
+           style="flex:1;padding:12px;background:#2b5cff;color:white;border:none;border-radius:8px;font-size:15px;">
+           Approve
+         </button>
+         <button type="button" id="pendingDenyBtn"
+           style="flex:1;padding:12px;background:#eee;color:#111;border:none;border-radius:8px;font-size:15px;">
+           Deny
+         </button>
+       </div>`
+    : `<p style="color:#666;font-size:13px;margin-top:12px;">Only church admins can approve or deny.</p>`;
+
+  const box = document.getElementById("pendingChangesContent");
+
+  box.innerHTML = `
+    <div onclick="buildUnresolvedList()"
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+      ← Back to Unresolved
+    </div>
+    <h2 style="margin:12px 0;">Review pending change</h2>
+    <div style="padding:4px 0 8px;max-height:50vh;overflow-y:auto;">
+      ${body}
+    </div>
+    ${buttons}
+  `;
+
+  if(admin){
+
+    document.getElementById("pendingApproveBtn").onclick = () => {
+      approvePendingChange(pendingId);
+    };
+
+    document.getElementById("pendingDenyBtn").onclick = () => {
+      denyPendingChange(pendingId);
+    };
+
+  }
+
+}
+
+async function approvePendingChange(pendingId){
+
+  if(!window.isChurchAdmin){
+    alert("Only church admins can approve changes.");
+    return;
+  }
+
+  if(!confirm("Approve this change? The directory will update for everyone.")){
+    return;
+  }
+
+  try {
+
+    const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const changeRef = doc(db, "pendingChanges", pendingId);
+    const snap = await getDoc(changeRef);
+
+    if(!snap.exists()){
+      alert("This pending change is no longer in Firestore.");
+      await refreshPendingChangesCache();
+      buildUnresolvedList();
+      return;
+    }
+
+    const row = snap.data();
+    const ch = row.changes || {};
+
+    const memberPayload = mapChangesToMember(ch);
+
+    if(ch.onboarding){
+
+      await addDoc(collection(db, "members"), {
+        ...memberPayload,
+        createdAt: new Date().toISOString()
+      });
+
+    }else if(row.memberId){
+
+      await updateDoc(doc(db, "members", row.memberId), memberPayload);
+
+    }else{
+
+      alert("This entry is missing a member reference and is not marked as onboarding. It cannot be approved automatically.");
+      return;
+
+    }
+
+    await deleteDoc(changeRef);
+
+    alert("Approved. The directory has been updated.");
+
+    await refreshPendingChangesCache();
+    buildUnresolvedList();
+    await loadMembers();
+
+  }catch(err){
+    console.error("Approve failed:", err);
+    alert("Could not approve this change. Check the console for details.");
+  }
+
+}
+
+function denyPendingChange(pendingId){
+
+  alert("Deny is not set up yet. You can remove or reject this entry manually in Firebase if needed.");
 
 }
 
@@ -2395,6 +2629,9 @@ window.buildMonthView = buildMonthView;
 window.buildDayList = buildDayList;
 window.buildUnresolvedList = buildUnresolvedList;
 window.restorePendingChangesYearView = restorePendingChangesYearView;
+window.openUnresolvedPendingDetail = openUnresolvedPendingDetail;
+window.approvePendingChange = approvePendingChange;
+window.denyPendingChange = denyPendingChange;
    
 </script>
    
