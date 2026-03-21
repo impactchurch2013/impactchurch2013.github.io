@@ -819,8 +819,28 @@ function openOnboarding(){
         <input id="onboardLastName" placeholder="Last name" autocomplete="family-name">
       </label>
       <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Ministry (if applicable)</span>
-        <input id="onboardMinistry" placeholder="Ministry (if applicable)">
+        <span>Ministries and Roles</span>
+        <select id="onboardMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="">— Optional —</option>
+          <optgroup label="Ministries">
+            <option value="Children's Ministry">Children's Ministry</option>
+            <option value="Hospitality Ministry">Hospitality Ministry</option>
+            <option value="Men's Ministry">Men's Ministry</option>
+            <option value="Outreach Ministry">Outreach Ministry</option>
+            <option value="Pastor Ministry">Pastor Ministry</option>
+            <option value="Prayer Ministry">Prayer Ministry</option>
+            <option value="Teaching Ministry">Teaching Ministry</option>
+            <option value="Women's Ministry">Women's Ministry</option>
+            <option value="Worship Ministry">Worship Ministry</option>
+            <option value="Youth Ministry">Youth Ministry</option>
+          </optgroup>
+          <optgroup label="Roles">
+            <option value="Admin">Admin</option>
+            <option value="Sound">Sound</option>
+            <option value="Security">Security</option>
+            <option value="Volunteer">Volunteer</option>
+          </optgroup>
+        </select>
       </label>
       <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
         <span>Email</span>
@@ -848,11 +868,13 @@ function openOnboarding(){
       </label>
       <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
         <span>Birthday</span>
-        <input id="onboardBirthday" type="date">
+        <input id="onboardBirthday" type="text" placeholder="e.g. Feb 25" inputmode="text" autocomplete="off" aria-describedby="onboardBirthdayHint">
+        <span id="onboardBirthdayHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Feb 25).</span>
       </label>
       <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
         <span>Anniversary</span>
-        <input id="onboardAnniversary" type="date">
+        <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint">
+        <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
       </label>
 
       <button type="button" id="onboardSubmitBtn"
@@ -1651,11 +1673,40 @@ card.style.display="none"
 /* FORMAT DATE                       */
 /* ================================= */
    
+/* Parses full dates (e.g. ISO) or month-day text without a year (e.g. "Feb 25"). */
+function parseMonthDayOrFullDate(dateString){
+
+if(!dateString) return null
+
+const t = String(dateString).trim()
+
+if(!t) return null
+
+if(/^\d{4}-\d{2}-\d{2}/.test(t)){
+
+const d = new Date(t.length === 10 ? t + "T12:00:00" : t)
+
+return isNaN(d.getTime()) ? null : d
+
+}
+
+let d = new Date(t)
+
+if(!isNaN(d.getTime())) return d
+
+d = new Date(t + (/,/.test(t) ? "" : ", 2000"))
+
+return isNaN(d.getTime()) ? null : d
+
+}
+
 function formatShortDate(dateString){
 
 if(!dateString) return ""
 
-const d = new Date(dateString)
+const d = parseMonthDayOrFullDate(dateString)
+
+if(!d) return String(dateString).trim()
 
 const months = [
 "Jan","Feb","Mar","Apr","May","Jun",
@@ -2117,10 +2168,12 @@ function formatMonthDay(dateString){
 
 if(!dateString) return ""
 
-const d = new Date(dateString)
+const d = parseMonthDayOrFullDate(dateString)
+
+if(!d) return String(dateString).trim()
 
 return d.toLocaleDateString("en-US",{
-month:"long",
+month:"short",
 day:"numeric"
 })
 
