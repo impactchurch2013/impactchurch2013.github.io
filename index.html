@@ -2503,6 +2503,20 @@ function openUnresolvedPendingDetail(pendingId){
 
 }
 
+function openMailtoForPendingNotification(to, subject, body){
+
+  const t = (to || "").trim();
+
+  if(!t){
+    return;
+  }
+
+  const url = `mailto:${encodeURIComponent(t)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  window.location.href = url;
+
+}
+
 async function approvePendingChange(pendingId){
 
   if(!window.isChurchAdmin){
@@ -2555,11 +2569,26 @@ async function approvePendingChange(pendingId){
 
     await deleteDoc(changeRef);
 
-    alert("Approved. The directory has been updated.");
+    const memberEmail = (ch.email || "").trim();
+    const firstName = (ch.firstName || "").trim() || "there";
+
+    const emailBody =
+      `Hello ${firstName},\n\n` +
+      "The changes you requested for your member profile in the Impact Church Directory have been approved.";
 
     await refreshPendingChangesCache();
     buildUnresolvedList();
     await loadMembers();
+
+    alert("Approved. The directory has been updated.");
+
+    if(memberEmail){
+      openMailtoForPendingNotification(
+        memberEmail,
+        "Impact Church Directory — profile update approved",
+        emailBody
+      );
+    }
 
   }catch(err){
     console.error("Approve failed:", err);
@@ -2568,9 +2597,61 @@ async function approvePendingChange(pendingId){
 
 }
 
-function denyPendingChange(pendingId){
+async function denyPendingChange(pendingId){
 
-  alert("Deny is not set up yet. You can remove or reject this entry manually in Firebase if needed.");
+  if(!window.isChurchAdmin){
+    alert("Only church admins can deny changes.");
+    return;
+  }
+
+  if(!confirm("Deny this request? It will be removed from the queue.")){
+    return;
+  }
+
+  try{
+
+    const { doc, getDoc, deleteDoc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const changeRef = doc(db, "pendingChanges", pendingId);
+    const snap = await getDoc(changeRef);
+
+    if(!snap.exists()){
+      alert("This pending change is no longer in Firestore.");
+      await refreshPendingChangesCache();
+      buildUnresolvedList();
+      return;
+    }
+
+    const row = snap.data();
+    const ch = row.changes || {};
+
+    const memberEmail = (ch.email || "").trim();
+
+    await deleteDoc(changeRef);
+
+    await refreshPendingChangesCache();
+    buildUnresolvedList();
+
+    const emailBody =
+      "The changes you requested for your member profile in the Impact Church Directory have been denied.\n\n" +
+      "<Delete this and enter the reason(s) the request was denied.>";
+
+    alert("Request denied and removed from the queue.");
+
+    if(memberEmail){
+      openMailtoForPendingNotification(
+        memberEmail,
+        "Impact Church Directory — profile update not approved",
+        emailBody
+      );
+    }
+
+  }catch(err){
+    console.error("Deny failed:", err);
+    alert("Could not deny this change. Check the console for details.");
+  }
 
 }
 
