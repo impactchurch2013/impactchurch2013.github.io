@@ -725,7 +725,7 @@ oninput="filterMembers()">
 <!-- FULL PHOTO VIEWER -->
 
 <div id="photoViewer" class="photo-viewer" onclick="closePhoto()">
-<img id="photoViewerImg">
+<img id="photoViewerImg" alt="" loading="lazy" decoding="async">
 </div>
 
 </div>   
@@ -754,6 +754,178 @@ import { getStorage, ref, uploadBytes, getDownloadURL }
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const storage = getStorage(window.firebase.app);
+
+/* ================================= */
+/* PROFILE IMAGES — COMPRESS (JPEG)  */
+/* ================================= */
+
+const PROFILE_IMAGE_MAX_FILE_BYTES = 10 * 1024 * 1024;
+const PROFILE_IMAGE_MAX_WIDTH = 800;
+const PROFILE_IMAGE_JPEG_QUALITY = 0.7;
+
+function fileToDataUrl(file){
+
+  return new Promise((resolve, reject) => {
+
+    const r = new FileReader();
+
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+
+  });
+
+}
+
+function loadHtmlImage(src){
+
+  return new Promise((resolve, reject) => {
+
+    const im = new Image();
+
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error("Could not load image"));
+    im.src = src;
+
+  });
+
+}
+
+async function compressImageFileToJpegBlob(file, options = {}){
+
+  const maxWidth = options.maxWidth ?? PROFILE_IMAGE_MAX_WIDTH;
+  const quality = options.quality ?? PROFILE_IMAGE_JPEG_QUALITY;
+
+  let source;
+  let bitmap = null;
+
+  if(typeof createImageBitmap === "function"){
+
+    try{
+
+      bitmap = await createImageBitmap(file);
+      source = bitmap;
+
+    }catch{
+
+      const dataUrl = await fileToDataUrl(file);
+      source = await loadHtmlImage(dataUrl);
+
+    }
+
+  }else{
+
+    const dataUrl = await fileToDataUrl(file);
+    source = await loadHtmlImage(dataUrl);
+
+  }
+
+  const sw = source.width || source.naturalWidth;
+  const sh = source.height || source.naturalHeight;
+
+  let tw = sw;
+  let th = sh;
+
+  if(sw > maxWidth){
+
+    tw = maxWidth;
+    th = Math.round((sh * maxWidth) / sw);
+
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = tw;
+  canvas.height = th;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(source, 0, 0, tw, th);
+
+  if(bitmap && bitmap.close){
+    bitmap.close();
+  }
+
+  return new Promise((resolve, reject) => {
+
+    canvas.toBlob(
+      blob => {
+        if(blob){
+          resolve(blob);
+        }else{
+          reject(new Error("Could not compress image"));
+        }
+      },
+      "image/jpeg",
+      quality
+    );
+
+  });
+
+}
+
+function clearOnboardingPhotoPreviewState(){
+
+  if(window.__onboardingPreviewUrl){
+
+    URL.revokeObjectURL(window.__onboardingPreviewUrl);
+    window.__onboardingPreviewUrl = null;
+
+  }
+
+  window.__onboardingPhotoJpegBlob = null;
+
+}
+
+async function onOnboardPhotoInputChange(){
+
+  const input = document.getElementById("onboardPhoto");
+  const preview = document.getElementById("onboardPhotoPreview");
+  const previewImg = document.getElementById("onboardPhotoPreviewImg");
+
+  clearOnboardingPhotoPreviewState();
+
+  if(!input || !preview || !previewImg){
+    return;
+  }
+
+  const file = input.files && input.files[0] ? input.files[0] : null;
+
+  if(!file){
+
+    preview.style.display = "none";
+    previewImg.removeAttribute("src");
+    return;
+
+  }
+
+  if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+
+    alert("Please choose an image of 10 MB or smaller.");
+    input.value = "";
+    return;
+
+  }
+
+  try{
+
+    const blob = await compressImageFileToJpegBlob(file);
+    window.__onboardingPhotoJpegBlob = blob;
+
+    const url = URL.createObjectURL(blob);
+    window.__onboardingPreviewUrl = url;
+
+    previewImg.src = url;
+    previewImg.alt = "Compressed profile photo preview";
+    preview.style.display = "block";
+
+  }catch(err){
+
+    console.error(err);
+    alert("Could not process that image. Try a JPEG or PNG.");
+    input.value = "";
+
+  }
+
+}
 
 /* ================================= */
 /* LOGIN AUTH GATING                 */
@@ -910,6 +1082,9 @@ async function submitPendingChange(memberId, changes, opts = {}){
 /* ================================= */
    
 function openOnboarding(){
+
+  clearOnboardingPhotoPreviewState();
+
   const box = document.getElementById("onboardingContent");
   const defaultEmail = (window.currentUser && window.currentUser.email)
     ? window.currentUser.email.replace(/"/g, "&quot;")
@@ -987,6 +1162,16 @@ function openOnboarding(){
         <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint">
         <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
       </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Profile photo (optional)</span>
+        <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
+        <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload. Only a link is stored in Firestore.</span>
+      </label>
+      <div id="onboardPhotoPreview" style="display:none;margin-top:4px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (how it will look)</p>
+        <img id="onboardPhotoPreviewImg" alt="" width="400" height="300" loading="lazy"
+          style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+      </div>
 
       <button type="button" id="onboardSubmitBtn"
         style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
@@ -997,6 +1182,11 @@ function openOnboarding(){
   `;
 
   document.getElementById("onboardSubmitBtn").onclick = () => submitOnboarding();
+
+  const photoEl = document.getElementById("onboardPhoto");
+  if(photoEl){
+    photoEl.addEventListener("change", onOnboardPhotoInputChange);
+  }
 
   openSheet("onboardingSheet");
 }
@@ -1042,7 +1232,56 @@ async function submitOnboarding(){
 
   try {
 
-    await submitPendingChange(null, {
+    const photoInput = document.getElementById("onboardPhoto");
+    const file = photoInput && photoInput.files && photoInput.files[0]
+      ? photoInput.files[0]
+      : null;
+
+    if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+      alert("Please choose an image of 10 MB or smaller.");
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = "Submit profile";
+      }
+      return;
+    }
+
+    let photoURL = "";
+
+    let jpegBlob = window.__onboardingPhotoJpegBlob || null;
+
+    if(file && !jpegBlob){
+      btn.textContent = "Preparing photo…";
+      try{
+        jpegBlob = await compressImageFileToJpegBlob(file);
+        window.__onboardingPhotoJpegBlob = jpegBlob;
+      }catch(compErr){
+        console.error(compErr);
+        alert("Could not process the photo. Try another image.");
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = "Submit profile";
+        }
+        return;
+      }
+    }
+
+    if(jpegBlob){
+
+      btn.textContent = "Uploading photo…";
+
+      const uid = window.currentUser.uid
+        || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
+
+      const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
+      const storageRef = ref(storage, path);
+
+      await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
+      photoURL = await getDownloadURL(storageRef);
+
+    }
+
+    const pendingPayload = {
       firstName,
       lastName,
       fullName: `${firstName} ${lastName}`,
@@ -1057,7 +1296,13 @@ async function submitOnboarding(){
       birthday,
       anniversary,
       onboarding: true
-    }, { isOnboarding: true });
+    };
+
+    if(photoURL){
+      pendingPayload.photoURL = photoURL;
+    }
+
+    await submitPendingChange(null, pendingPayload, { isOnboarding: true });
 
     location.reload();
 
@@ -1709,7 +1954,7 @@ function mapChangesToMember(ch){
     birthday: ch.birthday || "",
     anniversary: ch.anniversary || "",
     household: ch.household || "",
-    photo: ch.photo || "",
+    photo: ch.photoURL || ch.photo || "",
     lastUpdated: new Date().toISOString()
   };
 
@@ -1751,6 +1996,19 @@ function openUnresolvedPendingDetail(pendingId){
 
   const isOnboarding = ch.onboarding === true;
 
+  const photoURL = ch.photoURL || ch.photo;
+  const safePhotoUrl = typeof photoURL === "string" && /^https:\/\//i.test(photoURL.trim())
+    ? photoURL.trim()
+    : "";
+
+  const photoBlock = safePhotoUrl
+    ? `<div style="margin:12px 0;text-align:center;">
+        <p style="margin:0 0 8px;font-size:14px;"><strong>Profile photo</strong></p>
+        <img src="${escapeHtml(safePhotoUrl)}" alt="Profile photo" referrerpolicy="no-referrer" loading="lazy"
+          style="max-width:100%;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid #eee;">
+      </div>`
+    : "";
+
   const rows = [
     ["Submitted by", item.submittedBy || "—"],
     ["Submitted at", created],
@@ -1771,7 +2029,7 @@ function openUnresolvedPendingDetail(pendingId){
     ["Anniversary", ch.anniversary]
   ];
 
-  const body = rows.map(([label, val]) => `
+  const body = photoBlock + rows.map(([label, val]) => `
     <p style="margin:0 0 10px;font-size:14px;line-height:1.4;">
       <strong>${escapeHtml(label)}</strong><br>
       <span style="color:#333;">${formatPendingDetailValue(val)}</span>
@@ -2042,7 +2300,7 @@ const card = document.createElement("div")
 card.className="card"
 
 card.innerHTML=`
-<img src="${photo}" loading="lazy" width="260" height="260">
+<img src="${photo}" loading="lazy" width="260" height="260" alt="">
 <div class="card-info">
 <h3>${name}</h3>
 ${ministry ? `<p>${ministry}</p>` : ""}
@@ -2157,6 +2415,12 @@ async function uploadPhoto(){
     return;
   }
 
+  if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+    alert("Please choose an image of 10 MB or smaller.");
+    fileInput.value = "";
+    return;
+  }
+
   // MOVE CONFIRM HERE
   if (!confirm("Upload this photo?")) {
     return;
@@ -2169,13 +2433,12 @@ async function uploadPhoto(){
 
   try {
 
-    const fileName = Date.now() + "_" + file.name;
+    const jpegBlob = await compressImageFileToJpegBlob(file);
+    const fileName = Date.now() + "_profile.jpg";
     const storageRef = ref(storage, "member-photos/" + fileName);
 
-    // Upload
-    await uploadBytes(storageRef, file);
+    await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
 
-    // Get URL
     const downloadURL = await getDownloadURL(storageRef);
 
     console.log("Uploaded image URL:", downloadURL);
@@ -2204,8 +2467,11 @@ console.log("Photo updated!");
     // OPTIONAL refresh
     loadMembers();
 
+    fileInput.value = "";
+
   } catch (error) {
     console.error("Upload failed:", error);
+    alert("Photo upload failed. Try a smaller image or a JPEG/PNG.");
   }
 
 }
@@ -2262,6 +2528,8 @@ box.innerHTML = `
     id="profilePhoto"
     src="${photo}" 
     loading="lazy"
+    decoding="async"
+    alt=""
     onclick="openPhoto('${photo}')"
     style="cursor:pointer">
 
@@ -2449,7 +2717,7 @@ const photo = f.Photo || "images/default.jpg"
 html += `
 <div class="family-member" onclick="showFamilyMemberProfile('${name}','${householdName}')">
 
-<img src="${photo}" loading="lazy">
+<img src="${photo}" loading="lazy" width="200" height="200" alt="">
 
 <div class="family-member-name">${name}</div>
 
