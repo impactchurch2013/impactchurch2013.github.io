@@ -795,6 +795,42 @@ async function getMemberProfileByEmail(email){
 }
 
 /* ================================= */
+/* PENDING ONBOARDING (awaiting approval) */
+/* ================================= */
+
+async function hasPendingOnboardingSubmission(userEmail){
+
+  const clean = (userEmail || "").toLowerCase().trim();
+
+  const { getDocs, collection, query, where } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const variants = [...new Set([clean, userEmail].filter(Boolean))];
+
+  for(const candidate of variants){
+
+    const snapshot = await getDocs(query(
+      collection(db, "pendingChanges"),
+      where("submittedBy", "==", candidate)
+    ));
+
+    const found = snapshot.docs.some(doc => {
+      const data = doc.data();
+      if(data.status !== "pending") return false;
+      const ch = data.changes;
+      return ch && ch.onboarding === true;
+    });
+
+    if(found) return true;
+
+  }
+
+  return false;
+
+}
+
+/* ================================= */
 /* MINISTRY / ROLE (pending payload) */
 /* ================================= */
 
@@ -845,7 +881,7 @@ async function submitPendingChange(memberId, changes){
 
     await addDoc(collection(db, "pendingChanges"), {
       memberId: memberId != null ? memberId : null,
-      submittedBy: window.currentUser.email,
+      submittedBy: window.currentUser.email.toLowerCase().trim(),
       status: "pending",
       createdAt: serverTimestamp(),
       resolvedAt: null,
@@ -1099,6 +1135,7 @@ onAuthStateChanged(auth, async (user) => {
 
     window.currentUser = user;
     const profile = await getMemberProfileByEmail(email);
+    const onboardingPending = await hasPendingOnboardingSubmission(user.email);
 
     window.isSuperAdmin = SUPER_ADMINS.includes(email);
     window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
@@ -1110,7 +1147,7 @@ onAuthStateChanged(auth, async (user) => {
     loginScreen.style.display = "none";
     logoutBtn.style.display = "block";
 
-    if (!profile) {
+    if (!profile && !onboardingPending) {
       openOnboarding();
     }
 
