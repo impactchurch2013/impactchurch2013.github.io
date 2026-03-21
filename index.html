@@ -795,6 +795,74 @@ async function getMemberProfileByEmail(email){
 }
 
 /* ================================= */
+/* MINISTRY / ROLE (pending payload) */
+/* ================================= */
+
+const ONBOARDING_ROLE_OPTIONS = new Set([
+  "Admin",
+  "Sound",
+  "Security",
+  "Volunteer"
+]);
+
+function splitMinistryAndRole(selectedValue){
+
+  const v = (selectedValue || "").trim();
+
+  if(!v){
+    return { ministry: "", role: "" };
+  }
+
+  if(ONBOARDING_ROLE_OPTIONS.has(v)){
+    return { ministry: "", role: v };
+  }
+
+  return { ministry: v, role: "" };
+
+}
+
+function omitUndefined(obj){
+
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, val]) => val !== undefined)
+  );
+
+}
+
+/* ================================= */
+/* MEMBER PENDING CHANGES SUBMISSION */
+/* ================================= */
+   
+async function submitPendingChange(memberId, changes){
+
+  try {
+
+    const { addDoc, collection, serverTimestamp } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const changesPayload = omitUndefined(changes);
+
+    await addDoc(collection(db, "pendingChanges"), {
+      memberId: memberId != null ? memberId : null,
+      submittedBy: window.currentUser.email,
+      status: "pending",
+      createdAt: serverTimestamp(),
+      resolvedAt: null,
+      resolvedBy: null,
+      changes: changesPayload
+    });
+
+    alert("Changes submitted for approval");
+
+  } catch (err) {
+    console.error("Failed to submit change:", err);
+    throw err;
+  }
+
+}
+
+/* ================================= */
 /* USER ONBOARDING SHEET             */
 /* ================================= */
    
@@ -898,12 +966,14 @@ async function submitOnboarding(){
 
   const firstName = (document.getElementById("onboardFirstName").value || "").trim();
   const lastName = (document.getElementById("onboardLastName").value || "").trim();
-  const ministry = (document.getElementById("onboardMinistry").value || "").trim();
+  const { ministry, role } = splitMinistryAndRole(
+    document.getElementById("onboardMinistry").value
+  );
   const phone = (document.getElementById("onboardPhone").value || "").trim();
   const address = (document.getElementById("onboardAddress").value || "").trim();
   const city = (document.getElementById("onboardCity").value || "").trim();
   const state = (document.getElementById("onboardState").value || "").trim();
-  const zipCode = (document.getElementById("onboardZip").value || "").trim();
+  const zip = (document.getElementById("onboardZip").value || "").trim();
   const birthday = (document.getElementById("onboardBirthday").value || "").trim();
   const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
 
@@ -934,12 +1004,13 @@ async function submitOnboarding(){
       lastName,
       fullName: `${firstName} ${lastName}`,
       ministry,
+      role,
       email,
       phone,
       address,
       city,
       state,
-      zipCode,
+      zip,
       birthday,
       anniversary,
       onboarding: true
@@ -1244,6 +1315,8 @@ async function saveMemberChanges(memberId){
   const state = document.getElementById("editState").value;
   const zipCode = document.getElementById("editZip").value;
 
+  const member = members.find(m => m.id === memberId);
+
   try {
 
     const { updateDoc, doc } = await import(
@@ -1251,6 +1324,13 @@ async function saveMemberChanges(memberId){
     );
 
     const isAdmin = window.isChurchAdmin;
+
+    const existingMinistryLabel = member
+      ? (member.fields["Ministry"] || "")
+      : "";
+
+    const { ministry: pendingMinistry, role: pendingRole } =
+      splitMinistryAndRole(existingMinistryLabel);
 
 if(isAdmin){
 
@@ -1273,16 +1353,18 @@ if(isAdmin){
 } else {
 
   // MEMBER → submit for approval
-  await submitPendingChange(member.id, {
+  await submitPendingChange(memberId, {
   firstName,
   lastName,
   fullName: `${firstName} ${lastName}`,
+  ministry: pendingMinistry,
+  role: pendingRole,
   phone,
   email,
   address,
   city,
   state,
-  zipCode,
+  zip: zipCode,
   lastUpdated: new Date().toISOString()
   });
 
@@ -1291,7 +1373,6 @@ if(isAdmin){
     console.log("Member updated!");
 
     // Update local state
-    const member = members.find(m => m.id === memberId);
 
     if(member){
       member.fields["First Name"] = firstName;
@@ -1314,35 +1395,6 @@ if(isAdmin){
     console.error("Update failed:", err);
     alert("Failed to update member");
   }
-}
-
-/* ================================= */
-/* MEMBER PENDING CHANGES SUBMISSION */
-/* ================================= */
-   
-async function submitPendingChange(memberId, changes){
-
-  try {
-
-    const { addDoc, collection } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    await addDoc(collection(db, "pendingChanges"), {
-      memberId: memberId,
-      submittedBy: window.currentUser.email,
-      changes: changes,
-      status: "pending",
-      createdAt: new Date()
-    });
-
-    alert("Changes submitted for approval");
-
-  } catch (err) {
-    console.error("Failed to submit change:", err);
-    throw err;
-  }
-
 }
 
 /* ================================= */
