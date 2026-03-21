@@ -800,24 +800,70 @@ async function getMemberProfileByEmail(email){
    
 function openOnboarding(){
   const box = document.getElementById("onboardingContent");
+  const defaultEmail = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.replace(/"/g, "&quot;")
+    : "";
 
   box.innerHTML = `
     <h2>Complete Your Profile</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:#555;">Fill in what you would like to share. Optional fields can be left blank. Email is taken from your Google account.</p>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
 
-      <input id="onboardFirstName" placeholder="First Name">
-      <input id="onboardLastName" placeholder="Last Name">
-      <input id="onboardPhone" placeholder="Phone">
-      <input id="onboardAddress" placeholder="Address">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>First name</span>
+        <input id="onboardFirstName" placeholder="First name" autocomplete="given-name">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Last name</span>
+        <input id="onboardLastName" placeholder="Last name" autocomplete="family-name">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Ministry (if applicable)</span>
+        <input id="onboardMinistry" placeholder="Ministry (if applicable)">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Email</span>
+        <input id="onboardEmail" type="email" placeholder="Email" value="${defaultEmail}" autocomplete="email" readonly style="background:#f5f5f5;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Phone</span>
+        <input id="onboardPhone" type="tel" placeholder="Phone" autocomplete="tel">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Address</span>
+        <input id="onboardAddress" placeholder="Street address" autocomplete="street-address">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>City</span>
+        <input id="onboardCity" placeholder="City" autocomplete="address-level2">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>State</span>
+        <input id="onboardState" placeholder="State" autocomplete="address-level1">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>ZIP</span>
+        <input id="onboardZip" placeholder="ZIP code" autocomplete="postal-code">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Birthday</span>
+        <input id="onboardBirthday" type="date">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Anniversary</span>
+        <input id="onboardAnniversary" type="date">
+      </label>
 
-      <button onclick="submitOnboarding()"
+      <button type="button" id="onboardSubmitBtn"
         style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-        Submit Profile
+        Submit profile
       </button>
 
     </div>
   `;
+
+  document.getElementById("onboardSubmitBtn").onclick = () => submitOnboarding();
 
   openSheet("onboardingSheet");
 }
@@ -828,26 +874,65 @@ function openOnboarding(){
    
 async function submitOnboarding(){
 
-  const firstName = document.getElementById("onboardFirstName").value;
-  const lastName = document.getElementById("onboardLastName").value;
-  const phone = document.getElementById("onboardPhone").value;
-  const address = document.getElementById("onboardAddress").value;
+  const firstName = (document.getElementById("onboardFirstName").value || "").trim();
+  const lastName = (document.getElementById("onboardLastName").value || "").trim();
+  const ministry = (document.getElementById("onboardMinistry").value || "").trim();
+  const phone = (document.getElementById("onboardPhone").value || "").trim();
+  const address = (document.getElementById("onboardAddress").value || "").trim();
+  const city = (document.getElementById("onboardCity").value || "").trim();
+  const state = (document.getElementById("onboardState").value || "").trim();
+  const zipCode = (document.getElementById("onboardZip").value || "").trim();
+  const birthday = (document.getElementById("onboardBirthday").value || "").trim();
+  const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
 
-  const email = window.currentUser.email;
+  const email = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.toLowerCase().trim()
+    : "";
 
-  await submitPendingChange(null, {
-    firstName,
-    lastName,
-    fullName: `${firstName} ${lastName}`,
-    phone,
-    address,
-    email,
-    onboarding: true
-  });
+  if (!email) {
+    alert("You must be signed in to save your profile.");
+    return;
+  }
 
-  alert("Profile submitted for approval");
+  if (!firstName || !lastName) {
+    alert("Please enter your first and last name.");
+    return;
+  }
 
-  location.reload();
+  const btn = document.getElementById("onboardSubmitBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+  }
+
+  try {
+
+    await submitPendingChange(null, {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      ministry,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      zipCode,
+      birthday,
+      anniversary,
+      onboarding: true
+    });
+
+    location.reload();
+
+  } catch (err) {
+    console.error("Onboarding submit failed:", err);
+    alert("Could not submit your profile for approval. Please try again.");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Submit profile";
+    }
+  }
 
 }
    
@@ -1233,6 +1318,7 @@ async function submitPendingChange(memberId, changes){
 
   } catch (err) {
     console.error("Failed to submit change:", err);
+    throw err;
   }
 
 }
@@ -2058,6 +2144,8 @@ window.closeEditMember = closeEditMember;
 window.saveMemberChanges = saveMemberChanges;
 window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
+window.openOnboarding = openOnboarding;
+window.submitOnboarding = submitOnboarding;
    
 </script>
    
