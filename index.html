@@ -2413,8 +2413,10 @@ function openUnresolvedPendingDetail(pendingId){
   const photoBlock = safePhotoUrl
     ? `<div style="margin:12px 0;text-align:center;">
         <p style="margin:0 0 8px;font-size:14px;"><strong>Profile photo</strong></p>
-        <img src="${escapeHtml(safePhotoUrl)}" alt="Profile photo" referrerpolicy="no-referrer" loading="lazy"
-          style="max-width:100%;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid #eee;">
+        <p style="margin:0 0 6px;font-size:12px;color:#666;">Click image to enlarge</p>
+        <img id="pendingChangePhotoImg" src="${escapeHtml(safePhotoUrl)}" alt="Profile photo" referrerpolicy="no-referrer" loading="lazy"
+          title="View full size"
+          style="max-width:100%;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid #eee;cursor:pointer;">
       </div>`
     : "";
 
@@ -2483,6 +2485,19 @@ function openUnresolvedPendingDetail(pendingId){
     document.getElementById("pendingDenyBtn").onclick = () => {
       denyPendingChange(pendingId);
     };
+
+  }
+
+  if(safePhotoUrl){
+
+    const pendingImg = document.getElementById("pendingChangePhotoImg");
+
+    if(pendingImg){
+      pendingImg.onclick = (e) => {
+        e.stopPropagation();
+        openPhoto(safePhotoUrl);
+      };
+    }
 
   }
 
