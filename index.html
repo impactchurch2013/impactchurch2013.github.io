@@ -1029,6 +1029,42 @@ function splitMinistryAndRole(selectedValue){
 
 }
 
+function ministryStringToSelectValue(stored){
+
+  const raw = (stored || "").trim();
+
+  if(!raw){
+    return "";
+  }
+
+  const parts = raw.split(/\s*·\s*/).map(p => p.trim()).filter(Boolean);
+
+  if(parts.length === 2){
+
+    const [a, b] = parts;
+
+    if(ONBOARDING_ROLE_OPTIONS.has(b)){
+      return b;
+    }
+
+    if(ONBOARDING_ROLE_OPTIONS.has(a)){
+      return a;
+    }
+
+    return a;
+
+  }
+
+  if(parts.length === 1){
+
+    return parts[0];
+
+  }
+
+  return raw;
+
+}
+
 function omitUndefined(obj){
 
   return Object.fromEntries(
@@ -1082,6 +1118,8 @@ async function submitPendingChange(memberId, changes, opts = {}){
 /* ================================= */
    
 function openOnboarding(){
+
+  window.__editMyProfileMemberId = null;
 
   clearOnboardingPhotoPreviewState();
 
@@ -1316,7 +1354,311 @@ async function submitOnboarding(){
   }
 
 }
-   
+
+/* ================================= */
+/* EDIT MY PROFILE (member)          */
+/* ================================= */
+
+function openEditMyProfileSheet(){
+
+  if(!window.currentUser || !window.currentUser.email){
+    return;
+  }
+
+  if(!window.lastViewedProfile || !window.lastViewedProfile.id){
+    return;
+  }
+
+  const cu = window.currentUser.email.toLowerCase().trim();
+
+  const profileEmail = String(window.lastViewedProfile.email || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim()
+    .toLowerCase();
+
+  if(!profileEmail || profileEmail !== cu){
+    alert("You can only edit your own profile.");
+    return;
+  }
+
+  const member = members.find(m => m.id === window.lastViewedProfile.id);
+
+  if(!member){
+    alert("Could not load your profile. Try refreshing the page.");
+    return;
+  }
+
+  window.__editMyProfileMemberId = member.id;
+
+  closeProfile();
+
+  setTimeout(() => {
+    openEditMyProfileForm(member);
+  }, 320);
+
+}
+
+function openEditMyProfileForm(member){
+
+  clearOnboardingPhotoPreviewState();
+
+  const f = member.fields;
+  const defaultEmail = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.replace(/"/g, "&quot;")
+    : "";
+
+  const v = (key) => escapeHtml(f[key] || "");
+
+  const box = document.getElementById("onboardingContent");
+
+  box.innerHTML = `
+    <h2>Edit my profile</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:#555;">Update what you would like to share. Changes are sent for admin approval before they appear in the directory. Email stays tied to your Google account.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>First name</span>
+        <input id="onboardFirstName" placeholder="First name" autocomplete="given-name" value="${v("First Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Last name</span>
+        <input id="onboardLastName" placeholder="Last name" autocomplete="family-name" value="${v("Last Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Ministries and Roles</span>
+        <select id="onboardMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="">— Optional —</option>
+          <optgroup label="Ministries">
+            <option value="Children's Ministry">Children's Ministry</option>
+            <option value="Hospitality Ministry">Hospitality Ministry</option>
+            <option value="Men's Ministry">Men's Ministry</option>
+            <option value="Outreach Ministry">Outreach Ministry</option>
+            <option value="Pastor Ministry">Pastor Ministry</option>
+            <option value="Prayer Ministry">Prayer Ministry</option>
+            <option value="Teaching Ministry">Teaching Ministry</option>
+            <option value="Women's Ministry">Women's Ministry</option>
+            <option value="Worship Ministry">Worship Ministry</option>
+            <option value="Youth Ministry">Youth Ministry</option>
+          </optgroup>
+          <optgroup label="Roles">
+            <option value="Admin">Admin</option>
+            <option value="Sound">Sound</option>
+            <option value="Security">Security</option>
+            <option value="Volunteer">Volunteer</option>
+          </optgroup>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Email</span>
+        <input id="onboardEmail" type="email" placeholder="Email" value="${defaultEmail}" autocomplete="email" readonly style="background:#f5f5f5;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Phone</span>
+        <input id="onboardPhone" type="tel" placeholder="Phone" autocomplete="tel" value="${v("Phone Number")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Address</span>
+        <input id="onboardAddress" placeholder="Street address" autocomplete="street-address" value="${v("Address")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>City</span>
+        <input id="onboardCity" placeholder="City" autocomplete="address-level2" value="${v("City")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>State</span>
+        <input id="onboardState" placeholder="State" autocomplete="address-level1" value="${v("State")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>ZIP</span>
+        <input id="onboardZip" placeholder="ZIP code" autocomplete="postal-code" value="${v("Zip Code")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Birthday</span>
+        <input id="onboardBirthday" type="text" placeholder="e.g. Feb 25" inputmode="text" autocomplete="off" aria-describedby="onboardBirthdayHint" value="${v("Birthday")}">
+        <span id="onboardBirthdayHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Feb 25).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Anniversary</span>
+        <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint" value="${v("Anniversary")}">
+        <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Profile photo (optional)</span>
+        <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
+        <span style="font-size:12px;color:#666;">Upload a new photo to replace your current one, or leave unchanged. Up to 10 MB; images are resized and saved as JPEG before upload.</span>
+      </label>
+      <div id="onboardPhotoPreview" style="display:none;margin-top:4px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (new photo)</p>
+        <img id="onboardPhotoPreviewImg" alt="" width="400" height="300" loading="lazy"
+          style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+      </div>
+
+      <button type="button" id="onboardSubmitBtn"
+        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+        Submit changes for approval
+      </button>
+
+    </div>
+  `;
+
+  const sel = document.getElementById("onboardMinistry");
+  if(sel){
+    sel.value = ministryStringToSelectValue(f.Ministry || "");
+  }
+
+  document.getElementById("onboardSubmitBtn").onclick = () => submitEditMyProfile();
+
+  const photoEl = document.getElementById("onboardPhoto");
+  if(photoEl){
+    photoEl.addEventListener("change", onOnboardPhotoInputChange);
+  }
+
+  openSheet("onboardingSheet");
+
+}
+
+async function submitEditMyProfile(){
+
+  const memberId = window.__editMyProfileMemberId;
+
+  if(!memberId){
+    alert("Missing profile reference. Try opening your profile again.");
+    return;
+  }
+
+  const firstName = (document.getElementById("onboardFirstName").value || "").trim();
+  const lastName = (document.getElementById("onboardLastName").value || "").trim();
+  const { ministry, role } = splitMinistryAndRole(
+    document.getElementById("onboardMinistry").value
+  );
+  const phone = (document.getElementById("onboardPhone").value || "").trim();
+  const address = (document.getElementById("onboardAddress").value || "").trim();
+  const city = (document.getElementById("onboardCity").value || "").trim();
+  const state = (document.getElementById("onboardState").value || "").trim();
+  const zip = (document.getElementById("onboardZip").value || "").trim();
+  const birthday = (document.getElementById("onboardBirthday").value || "").trim();
+  const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
+
+  const email = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.toLowerCase().trim()
+    : "";
+
+  if(!email){
+    alert("You must be signed in.");
+    return;
+  }
+
+  if(!firstName || !lastName){
+    alert("Please enter your first and last name.");
+    return;
+  }
+
+  const btn = document.getElementById("onboardSubmitBtn");
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+  }
+
+  try{
+
+    const photoInput = document.getElementById("onboardPhoto");
+    const file = photoInput && photoInput.files && photoInput.files[0]
+      ? photoInput.files[0]
+      : null;
+
+    if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+      alert("Please choose an image of 10 MB or smaller.");
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = "Submit changes for approval";
+      }
+      return;
+    }
+
+    let photoURL = "";
+
+    let jpegBlob = window.__onboardingPhotoJpegBlob || null;
+
+    if(file && !jpegBlob){
+      btn.textContent = "Preparing photo…";
+      try{
+        jpegBlob = await compressImageFileToJpegBlob(file);
+        window.__onboardingPhotoJpegBlob = jpegBlob;
+      }catch(compErr){
+        console.error(compErr);
+        alert("Could not process the photo. Try another image.");
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = "Submit changes for approval";
+        }
+        return;
+      }
+    }
+
+    if(jpegBlob){
+
+      btn.textContent = "Uploading photo…";
+
+      const uid = window.currentUser.uid
+        || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
+
+      const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
+      const storageRef = ref(storage, path);
+
+      await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
+      photoURL = await getDownloadURL(storageRef);
+
+    }
+
+    const member = members.find(m => m.id === memberId);
+    const existingPhoto = member && member.fields
+      ? (member.fields.Photo || "").trim()
+      : "";
+
+    if(!photoURL && existingPhoto){
+      photoURL = existingPhoto;
+    }
+
+    const pendingPayload = {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      ministry,
+      role,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      zip,
+      birthday,
+      anniversary,
+      lastUpdated: new Date().toISOString()
+    };
+
+    if(photoURL){
+      pendingPayload.photoURL = photoURL;
+    }
+
+    await submitPendingChange(memberId, pendingPayload, { isOnboarding: false });
+
+    window.__editMyProfileMemberId = null;
+
+    location.reload();
+
+  }catch(err){
+    console.error("Edit profile submit failed:", err);
+    alert("Could not submit your changes. Please try again.");
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = "Submit changes for approval";
+    }
+  }
+
+}
+
 /* ================================= */
 /* ADMIN CONFIG                      */
 /* ================================= */
@@ -1462,9 +1804,12 @@ function hideEditorUI(){
 /* OPEN MEMBER SELECTION SHEET       */
 /* ================================= */
 
-function openMemberSelect(){
+function renderMemberSelectContent(){
 
   const box = document.getElementById("memberSelectContent");
+  if(!box){
+    return;
+  }
 
   let html = `<h2>Select Member</h2>`;
 
@@ -1474,12 +1819,18 @@ function openMemberSelect(){
     html += `
       <div onclick="selectMemberForEdit('${m.id}')"
            style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
-        ${name}
+        ${escapeHtml(name)}
       </div>
     `;
   });
 
   box.innerHTML = html;
+
+}
+
+function openMemberSelect(){
+
+  renderMemberSelectContent();
 
   const overlay = document.getElementById("memberSelectSheet");
   const sheet = overlay.querySelector(".profile-box");
@@ -1634,6 +1985,11 @@ async function deleteMemberFromDirectory(memberId){
 
     closeEditMember();
     await loadMembers();
+
+    const memberSelectSheet = document.getElementById("memberSelectSheet");
+    if(memberSelectSheet && memberSelectSheet.classList.contains("show")){
+      renderMemberSelectContent();
+    }
 
   }catch(err){
     console.error("Delete member failed:", err);
@@ -2455,81 +2811,6 @@ return months[d.getMonth()] + " " + d.getDate()
 }
 
 /* ================================= */
-/* UPLOAD PHOTOS                     */
-/* ================================= */
-
-async function uploadPhoto(){
-
-  const fileInput = document.getElementById("photoUpload");
-  const file = fileInput.files[0];
-
-  if(!file){
-    alert("Select a file first");
-    return;
-  }
-
-  if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-    alert("Please choose an image of 10 MB or smaller.");
-    fileInput.value = "";
-    return;
-  }
-
-  // MOVE CONFIRM HERE
-  if (!confirm("Upload this photo?")) {
-    return;
-  }
-
-  if(!window.lastViewedProfile || !window.lastViewedProfile.id){
-    alert("Open a member profile first");
-    return;
-  }
-
-  try {
-
-    const jpegBlob = await compressImageFileToJpegBlob(file);
-    const fileName = Date.now() + "_profile.jpg";
-    const storageRef = ref(storage, "member-photos/" + fileName);
-
-    await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
-
-    const downloadURL = await getDownloadURL(storageRef);
-
-    console.log("Uploaded image URL:", downloadURL);
-
-    // UPDATE MEMBER PHOTO DIRECTLY USING DOC ID
-
-const { updateDoc, doc } = await import(
-  "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-);
-
-await updateDoc(doc(db, "members", window.lastViewedProfile.id), {
-  photo: downloadURL
-});
-
-console.log("Photo updated!");
-
-    // UPDATE PROFILE IMAGE INSTANTLY
-    const profileImg = document.getElementById("profilePhoto");
-    if (profileImg) {
-      profileImg.src = downloadURL;
-    }
-
-    // KEEP STATE IN SYNC
-    window.lastViewedProfile.photo = downloadURL;
-
-    // OPTIONAL refresh
-    loadMembers();
-
-    fileInput.value = "";
-
-  } catch (error) {
-    console.error("Upload failed:", error);
-    alert("Photo upload failed. Try a smaller image or a JPEG/PNG.");
-  }
-
-}
-
-/* ================================= */
 /* PUSH CHANGES TO FIRESTORE     */
 /* ================================= */
    
@@ -2570,10 +2851,24 @@ anniversary = formatShortDate(anniversary);
 window.lastViewedProfile = { id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
 
 window.selectedMemberName = name;
+
+const cu = (window.currentUser && window.currentUser.email)
+  ? window.currentUser.email.toLowerCase().trim()
+  : "";
+
+const emailPlain = String(email || "")
+  .replace(/<[^>]+>/g, "")
+  .replace(/&nbsp;/g, " ")
+  .trim()
+  .toLowerCase();
+
+const isOwnProfile = !!(cu && emailPlain && cu === emailPlain);
    
 const box = document.getElementById("profileContent");
 
 box.innerHTML = `
+
+${isOwnProfile ? `<div class="profile-own-edit-link" style="width:100%;padding:8px 12px 0 12px;margin:0;box-sizing:border-box;font-size:13px;line-height:1.35;text-align:left;"><a href="#" onclick="openEditMyProfileSheet();return false;" style="color:#2b5cff;">Edit my profile</a></div>` : ""}
 
 <div style="position:relative; display:inline-block;">
   
@@ -2586,29 +2881,7 @@ box.innerHTML = `
     onclick="openPhoto('${photo}')"
     style="cursor:pointer">
 
-  <span 
-    onclick="document.getElementById('photoUpload').click()"
-    style="
-      position:absolute;
-      bottom:8px;
-      right:8px;
-      font-size:18px;
-      background:rgba(0,0,0,0.6);
-      color:white;
-      border-radius:50%;
-      padding:4px;
-      line-height:1;
-      cursor:pointer;
-    "
-  >✏️</span>
-
 </div>
-
-<input 
-  type="file" 
-  id="photoUpload" 
-  style="display:none" 
-  onchange="uploadPhoto()">
 
 <div class="profile-info-group">
 <h2>${name}</h2>
@@ -2820,11 +3093,13 @@ lastViewedProfile.updated
 function showProfileFromMember(name){
 
 const member = members.find(m => m.id === name)
+  || members.find(m => (m.fields["Full Name"] || "") === name)
 
 if(!member) return
 
 const f = member.fields
 
+const displayName = f["Full Name"] || ""
 const photo = f.Photo || ""
 const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
@@ -2840,7 +3115,8 @@ const household = f.Household || ""
 const updated = formatDate(f["Last Updated"])
 
 showProfile(
-name,
+member.id,
+displayName,
 photo,
 ministry,
 phone,
@@ -2935,7 +3211,7 @@ window.showFamilyMemberProfile = showFamilyMemberProfile;
 window.showProfileFromMember = showProfileFromMember;
 window.openPhoto = openPhoto;
 window.closePhoto = closePhoto;
-window.uploadPhoto = uploadPhoto;
+window.openEditMyProfileSheet = openEditMyProfileSheet;
 window.openMemberSelect = openMemberSelect;
 window.closeMemberSelect = closeMemberSelect;
 window.selectMemberForEdit = selectMemberForEdit;
