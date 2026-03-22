@@ -1081,6 +1081,81 @@ function clearOnboardingPhotoPreviewState(){
 
 }
 
+function clearEditMemberPhotoState(){
+
+window.__editMemberPhotoJpegBlob = null;
+window.__editMemberRemovePhoto = false;
+
+}
+
+async function onEditMemberPhotoInputChange(){
+
+const input = document.getElementById("editMemberPhoto");
+const preview = document.getElementById("editMemberPhotoNewPreview");
+const previewImg = document.getElementById("editMemberPhotoNewPreviewImg");
+
+if(!input || !preview || !previewImg){
+return;
+}
+
+const prevUrl = previewImg.dataset.objectUrl;
+if(prevUrl){
+URL.revokeObjectURL(prevUrl);
+delete previewImg.dataset.objectUrl;
+}
+
+window.__editMemberPhotoJpegBlob = null;
+window.__editMemberRemovePhoto = false;
+
+const removedNote = document.getElementById("editMemberPhotoRemovedNote");
+if(removedNote){
+removedNote.style.display = "none";
+}
+
+const curWrap = document.getElementById("editMemberCurrentPhotoWrap");
+if(curWrap){
+curWrap.style.display = "";
+}
+
+const file = input.files && input.files[0] ? input.files[0] : null;
+
+if(!file){
+
+preview.style.display = "none";
+previewImg.removeAttribute("src");
+return;
+
+}
+
+if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+
+alert("Please choose an image of 10 MB or smaller.");
+input.value = "";
+return;
+
+}
+
+try{
+
+const blob = await compressImageFileToJpegBlob(file);
+window.__editMemberPhotoJpegBlob = blob;
+
+const url = URL.createObjectURL(blob);
+previewImg.dataset.objectUrl = url;
+previewImg.src = url;
+previewImg.alt = "New profile photo preview";
+preview.style.display = "block";
+
+}catch(err){
+
+console.error(err);
+alert("Could not process that image. Try a JPEG or PNG.");
+input.value = "";
+
+}
+
+}
+
 async function onOnboardPhotoInputChange(){
 
   const input = document.getElementById("onboardPhoto");
@@ -2216,30 +2291,121 @@ function selectMemberForEdit(memberId){
    
 function openEditMember(member){
 
+  clearEditMemberPhotoState();
+
   const f = member.fields;
+
+  const v = (key) => escapeHtml(String(f[key] || ""));
+
+  const currentPhoto = String(f.Photo || "").trim();
+  const showCurrentPhoto = currentPhoto && !currentPhoto.startsWith("images/default");
 
   const box = document.getElementById("editMemberContent");
 
   box.innerHTML = `
     <h2>Edit Member</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:#555;">${window.isChurchAdmin ? "Update any profile fields. Changes save directly to the directory." : "Changes are sent for admin approval before they appear in the directory."}</p>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
 
-      <input id="editFirstName" placeholder="First Name" value="${f["First Name"] || ""}">
-      <input id="editLastName" placeholder="Last Name" value="${f["Last Name"] || ""}">
-      <input id="editPhone" placeholder="Phone" value="${f["Phone Number"] || ""}">
-      <input id="editEmail" placeholder="Email" value="${f["Email"] || ""}">
-      <input id="editAddress" placeholder="Address" value="${f["Address"] || ""}">
-      <input id="editCity" placeholder="City" value="${f["City"] || ""}">
-      <input id="editState" placeholder="State" value="${f["State"] || ""}">
-      <input id="editZip" placeholder="Zip Code" value="${f["Zip Code"] || ""}">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>First name</span>
+        <input id="editFirstName" placeholder="First name" autocomplete="given-name" value="${v("First Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Last name</span>
+        <input id="editLastName" placeholder="Last name" autocomplete="family-name" value="${v("Last Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Ministries and Roles</span>
+        <select id="editMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="">— Optional —</option>
+          <optgroup label="Ministries">
+            <option value="Children's Ministry">Children's Ministry</option>
+            <option value="Hospitality Ministry">Hospitality Ministry</option>
+            <option value="Men's Ministry">Men's Ministry</option>
+            <option value="Outreach Ministry">Outreach Ministry</option>
+            <option value="Pastor Ministry">Pastor Ministry</option>
+            <option value="Prayer Ministry">Prayer Ministry</option>
+            <option value="Teaching Ministry">Teaching Ministry</option>
+            <option value="Women's Ministry">Women's Ministry</option>
+            <option value="Worship Ministry">Worship Ministry</option>
+            <option value="Youth Ministry">Youth Ministry</option>
+          </optgroup>
+          <optgroup label="Roles">
+            <option value="Admin">Admin</option>
+            <option value="Sound">Sound</option>
+            <option value="Security">Security</option>
+            <option value="Volunteer">Volunteer</option>
+          </optgroup>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Household</span>
+        <input id="editHousehold" placeholder="Household (optional)" value="${v("Household")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Email</span>
+        <input id="editEmail" type="email" placeholder="Email" autocomplete="email" value="${v("Email")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Phone</span>
+        <input id="editPhone" type="tel" placeholder="Phone" autocomplete="tel" value="${v("Phone Number")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Address</span>
+        <input id="editAddress" placeholder="Street address" autocomplete="street-address" value="${v("Address")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>City</span>
+        <input id="editCity" placeholder="City" autocomplete="address-level2" value="${v("City")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>State</span>
+        <input id="editState" placeholder="State" autocomplete="address-level1" value="${v("State")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>ZIP</span>
+        <input id="editZip" placeholder="ZIP code" autocomplete="postal-code" value="${v("Zip Code")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Birthday</span>
+        <input id="editBirthday" type="text" placeholder="e.g. Feb 25" value="${v("Birthday")}">
+        <span style="font-size:12px;color:#666;">Month and day (example: Feb 25).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Anniversary</span>
+        <input id="editAnniversary" type="text" placeholder="e.g. Jun 12" value="${v("Anniversary")}">
+        <span style="font-size:12px;color:#666;">Month and day (example: Jun 12).</span>
+      </label>
 
-      <button onclick="saveMemberChanges('${member.id}')"
-  style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-  Save Changes
-</button>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+        <span><strong>Profile photo</strong></span>
+        ${showCurrentPhoto ? `
+        <div id="editMemberCurrentPhotoWrap" style="text-align:center;">
+          <p style="margin:0 0 6px;font-size:12px;color:#666;">Current photo</p>
+          <img id="editMemberCurrentPhotoImg" src="${escapeHtml(currentPhoto)}" alt="" loading="lazy"
+            style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+        </div>` : `<div id="editMemberCurrentPhotoWrap" style="display:none;"></div>`}
+        <input id="editMemberPhoto" type="file" accept="image/*" style="font-size:14px;">
+        <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload.</span>
+        <button type="button" id="editMemberRemovePhotoBtn" style="align-self:flex-start;padding:8px 12px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;">
+          Remove photo
+        </button>
+        <p id="editMemberPhotoRemovedNote" style="display:none;margin:0;font-size:13px;color:#a32;">Photo will be removed when you save.</p>
+        <div id="editMemberPhotoNewPreview" style="display:none;margin-top:4px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (new photo)</p>
+          <img id="editMemberPhotoNewPreviewImg" alt="" width="400" height="300" loading="lazy"
+            style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+        </div>
+      </div>
 
-      <button onclick="closeEditMember()">
+      <button type="button" onclick="saveMemberChanges('${member.id}')"
+        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+        Save Changes
+      </button>
+
+      <button type="button" onclick="closeEditMember()">
         Cancel
       </button>
 
@@ -2252,6 +2418,48 @@ function openEditMember(member){
 
     </div>
   `;
+
+  const sel = document.getElementById("editMinistry");
+  if(sel){
+    sel.value = ministryStringToSelectValue(f.Ministry || "");
+  }
+
+  const photoIn = document.getElementById("editMemberPhoto");
+  if(photoIn){
+    photoIn.addEventListener("change", onEditMemberPhotoInputChange);
+  }
+
+  const removeBtn = document.getElementById("editMemberRemovePhotoBtn");
+  if(removeBtn){
+    removeBtn.onclick = () => {
+      window.__editMemberRemovePhoto = true;
+      window.__editMemberPhotoJpegBlob = null;
+      const inp = document.getElementById("editMemberPhoto");
+      if(inp){
+        inp.value = "";
+      }
+      const newPrev = document.getElementById("editMemberPhotoNewPreview");
+      const newImg = document.getElementById("editMemberPhotoNewPreviewImg");
+      if(newImg && newImg.dataset.objectUrl){
+        URL.revokeObjectURL(newImg.dataset.objectUrl);
+        delete newImg.dataset.objectUrl;
+      }
+      if(newPrev){
+        newPrev.style.display = "none";
+      }
+      if(newImg){
+        newImg.removeAttribute("src");
+      }
+      const curWrap = document.getElementById("editMemberCurrentPhotoWrap");
+      if(curWrap){
+        curWrap.style.display = "none";
+      }
+      const note = document.getElementById("editMemberPhotoRemovedNote");
+      if(note){
+        note.style.display = "block";
+      }
+    };
+  }
 
   const overlay = document.getElementById("editMemberSheet");
   const sheet = overlay.querySelector(".profile-box");
@@ -2274,6 +2482,13 @@ function openEditMember(member){
 /* ================================= */
    
 function closeEditMember(){
+
+  const newImg = document.getElementById("editMemberPhotoNewPreviewImg");
+  if(newImg && newImg.dataset.objectUrl){
+    URL.revokeObjectURL(newImg.dataset.objectUrl);
+  }
+
+  clearEditMemberPhotoState();
 
   const overlay = document.getElementById("editMemberSheet");
   const sheet = overlay.querySelector(".profile-box");
@@ -2359,16 +2574,34 @@ async function deleteMemberFromDirectory(memberId){
    
 async function saveMemberChanges(memberId){
 
-  const firstName = document.getElementById("editFirstName").value;
-  const lastName = document.getElementById("editLastName").value;
-  const phone = document.getElementById("editPhone").value;
-  const email = document.getElementById("editEmail").value;
-  const address = document.getElementById("editAddress").value;
-  const city = document.getElementById("editCity").value;
-  const state = document.getElementById("editState").value;
-  const zipCode = document.getElementById("editZip").value;
+  const firstName = (document.getElementById("editFirstName").value || "").trim();
+  const lastName = (document.getElementById("editLastName").value || "").trim();
+  const { ministry: pendingMinistry, role: pendingRole } = splitMinistryAndRole(
+    document.getElementById("editMinistry").value
+  );
+  const household = (document.getElementById("editHousehold").value || "").trim();
+  const phone = (document.getElementById("editPhone").value || "").trim();
+  const email = (document.getElementById("editEmail").value || "").trim();
+  const address = (document.getElementById("editAddress").value || "").trim();
+  const city = (document.getElementById("editCity").value || "").trim();
+  const state = (document.getElementById("editState").value || "").trim();
+  const zipCode = (document.getElementById("editZip").value || "").trim();
+  const birthday = (document.getElementById("editBirthday").value || "").trim();
+  const anniversary = (document.getElementById("editAnniversary").value || "").trim();
+
+  const ministryParts = [pendingMinistry, pendingRole].filter(Boolean);
+  const ministryField = ministryParts.length ? ministryParts.join(" · ") : "";
+
+  if(!firstName || !lastName){
+    alert("Please enter first and last name.");
+    return;
+  }
 
   const member = members.find(m => m.id === memberId);
+
+  const existingPhoto = member
+    ? String(member.fields.Photo || "").trim()
+    : "";
 
   try {
 
@@ -2378,68 +2611,106 @@ async function saveMemberChanges(memberId){
 
     const isAdmin = window.isChurchAdmin;
 
-    const existingMinistryLabel = member
-      ? (member.fields["Ministry"] || "")
-      : "";
-
-    const { ministry: pendingMinistry, role: pendingRole } =
-      splitMinistryAndRole(existingMinistryLabel);
+    let photoOut = existingPhoto;
 
 if(isAdmin){
 
-  // ADMIN → direct update
+  if(window.__editMemberRemovePhoto){
+    photoOut = "";
+  }else if(window.__editMemberPhotoJpegBlob){
+
+    const path = `profilePhotos/members/${memberId}/${Date.now()}_profile.jpg`;
+    const storageRef = ref(storage, path);
+
+    await uploadBytes(storageRef, window.__editMemberPhotoJpegBlob, { contentType: "image/jpeg" });
+    photoOut = await getDownloadURL(storageRef);
+
+  }
+
   await updateDoc(doc(db, "members", memberId), {
-  firstName,
-  lastName,
-  fullName: `${firstName} ${lastName}`,
-  phone,
-  email,
-  address,
-  city,
-  state,
-  zipCode,
-  lastUpdated: new Date().toISOString()
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`.trim(),
+    ministry: ministryField,
+    household,
+    phone,
+    email,
+    address,
+    city,
+    state,
+    zipCode,
+    birthday,
+    anniversary,
+    photo: photoOut,
+    lastUpdated: new Date().toISOString()
   });
 
   alert("Profile updated");
 
-} else {
+}else{
 
-  // MEMBER → submit for approval
-  await submitPendingChange(memberId, {
-  firstName,
-  lastName,
-  fullName: `${firstName} ${lastName}`,
-  ministry: pendingMinistry,
-  role: pendingRole,
-  phone,
-  email,
-  address,
-  city,
-  state,
-  zip: zipCode,
-  lastUpdated: new Date().toISOString()
-  });
+  let photoURL = existingPhoto;
+
+  if(window.__editMemberRemovePhoto){
+    photoURL = "";
+  }else if(window.__editMemberPhotoJpegBlob){
+
+    const uid = window.currentUser.uid
+      || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
+
+    const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
+    const storageRef = ref(storage, path);
+
+    await uploadBytes(storageRef, window.__editMemberPhotoJpegBlob, { contentType: "image/jpeg" });
+    photoURL = await getDownloadURL(storageRef);
+
+  }
+
+  const pendingPayload = {
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`.trim(),
+    ministry: pendingMinistry,
+    role: pendingRole,
+    household,
+    phone,
+    email,
+    address,
+    city,
+    state,
+    zip: zipCode,
+    birthday,
+    anniversary,
+    lastUpdated: new Date().toISOString(),
+    photoURL
+  };
+
+  await submitPendingChange(memberId, pendingPayload, { isOnboarding: false });
 
 }
 
     console.log("Member updated!");
 
-    // Update local state
+    clearEditMemberPhotoState();
 
-    if(member){
+    if(member && isAdmin){
       member.fields["First Name"] = firstName;
       member.fields["Last Name"] = lastName;
-      member.fields["Full Name"] = `${firstName} ${lastName}`;
+      member.fields["Full Name"] = `${firstName} ${lastName}`.trim();
+      member.fields["Ministry"] = ministryField;
+      member.fields["Household"] = household;
       member.fields["Phone Number"] = phone;
       member.fields["Email"] = email;
       member.fields["Address"] = address;
       member.fields["City"] = city;
       member.fields["State"] = state;
       member.fields["Zip Code"] = zipCode;
+      member.fields["Birthday"] = birthday;
+      member.fields["Anniversary"] = anniversary;
+      member.fields["Photo"] = photoOut;
+      member.fields["Last Updated"] = new Date().toISOString();
     }
 
-    // Refresh UI
     buildDirectory(getCurrentMemberSearchQuery());
 
     closeEditMember();
@@ -2662,7 +2933,7 @@ function buildUnresolvedList(){
 
   if(filtered.length === 0){
 
-    html += `<p style="padding:14px;">No unresolved items — nothing is still pending.</p>`;
+    html += `<p style="padding:14px;">No unresolved items — nothing is pending.</p>`;
     box.innerHTML = html;
     return;
 
@@ -2710,6 +2981,12 @@ function mapChangesToMember(ch){
   const first = (ch.firstName || "").trim();
   const last = (ch.lastName || "").trim();
 
+  const hasPhotoURL = Object.prototype.hasOwnProperty.call(ch, "photoURL");
+  const hasPhoto = Object.prototype.hasOwnProperty.call(ch, "photo");
+  const photoVal = hasPhotoURL
+    ? (ch.photoURL ?? "")
+    : (hasPhoto ? (ch.photo ?? "") : "");
+
   return {
     firstName: first,
     lastName: last,
@@ -2724,7 +3001,7 @@ function mapChangesToMember(ch){
     birthday: ch.birthday || "",
     anniversary: ch.anniversary || "",
     household: ch.household || "",
-    photo: ch.photoURL || ch.photo || "",
+    photo: photoVal,
     lastUpdated: new Date().toISOString()
   };
 
