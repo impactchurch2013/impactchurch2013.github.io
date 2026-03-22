@@ -122,6 +122,51 @@ background:rgba(255,255,255,.2);
 }
 
 /* ================================= */
+/* EDITOR MODE (in header)           */
+/* ================================= */
+
+.editor-banner{
+display:none;
+max-width:1200px;
+margin:0 auto;
+padding:10px 20px;
+text-align:center;
+font-weight:600;
+font-size:15px;
+color:#f0e6a8;
+border-top:1px solid rgba(255,255,255,.12);
+box-sizing:border-box;
+}
+
+.admin-panel{
+display:none;
+max-width:1200px;
+margin:0 auto;
+padding:0 20px 14px 20px;
+flex-direction:row;
+flex-wrap:wrap;
+gap:12px;
+justify-content:center;
+align-items:center;
+border-top:1px solid rgba(255,255,255,.08);
+box-sizing:border-box;
+}
+
+.admin-panel button{
+font:inherit;
+background:rgba(255,255,255,.12);
+color:#fff;
+border:1px solid rgba(255,255,255,.35);
+border-radius:8px;
+padding:8px 14px;
+cursor:pointer;
+}
+
+.admin-panel button:hover{
+background:rgba(255,255,255,.2);
+}
+
+/* ================================= */
 /* SEARCH BAR                        */
 /* ================================= */
 
@@ -753,36 +798,16 @@ oninput="filterMembers()">
   <button id="logoutBtn" style="display:none;">Logout</button>
 </div>
 
-</header>
-
-<!-- ================================= -->
-<!-- EDITOR MODE BANNER + ADMIN PANEL -->
-<!-- ================================= -->
-
-<div id="editorBanner" style="
-  display:none;
-  background:#ffefc2;
-  padding:12px;
-  text-align:center;
-  font-weight:600;
-  border-bottom:1px solid #e5d48a;
-">
+<div id="editorBanner" class="editor-banner">
   ✏️ Directory is in Editor Mode
 </div>
 
-<div id="adminPanel" style="
-  display:none;
-  background:white;
-  padding:12px;
-  border-bottom:1px solid #ddd;
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-">
-  <button onclick="openMemberSelect()">Edit Member</button>
-  <button onclick="openPendingChanges()">View Pending Changes</button>
+<div id="adminPanel" class="admin-panel">
+  <button type="button" onclick="openMemberSelect()">Edit Member</button>
+  <button type="button" onclick="openPendingChanges()">View Pending Changes</button>
 </div>
+
+</header>
 
 <!-- ================================= -->
 <!-- ONBOARDING SHEET                  -->
@@ -3637,6 +3662,7 @@ day:"numeric"
 console.log("From main script:", window.firebase);
 
 // Make functions available to HTML onclick handlers
+window.filterMembers = filterMembers;
 window.closeProfile = closeProfile;
 window.showHousehold = showHousehold;
 window.showFamilyMemberProfile = showFamilyMemberProfile;
