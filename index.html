@@ -99,17 +99,26 @@ margin:0 auto;
 padding:10px 20px 12px 20px;
 display:flex;
 align-items:center;
-justify-content:flex-start;
+justify-content:flex-end;
 flex-wrap:wrap;
 gap:12px;
-background:#fff;
+background:#000;
 border-top:1px solid rgba(255,255,255,.12);
-box-shadow:0 2px 8px rgba(0,0,0,.12);
 box-sizing:border-box;
 }
 
 .directory-toolbar button{
 font:inherit;
+background:rgba(255,255,255,.12);
+color:#fff;
+border:1px solid rgba(255,255,255,.35);
+border-radius:8px;
+padding:8px 14px;
+cursor:pointer;
+}
+
+.directory-toolbar button:hover{
+background:rgba(255,255,255,.2);
 }
 
 /* ================================= */
@@ -738,10 +747,10 @@ oninput="filterMembers()">
 </div>
 
 <div class="directory-toolbar">
-  <button id="logoutBtn" style="display:none;">Logout</button>
   <button id="editorToggleBtn" style="display:none;">
     Enable Editor Mode
   </button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
 </div>
 
 </header>
@@ -2294,7 +2303,7 @@ if(isAdmin){
     }
 
     // Refresh UI
-    buildDirectory();
+    buildDirectory(getCurrentMemberSearchQuery());
 
     closeEditMember();
 
@@ -3036,7 +3045,7 @@ async function loadMembers(){
 
     console.log("Loaded members from Firestore:", members);
 
-    buildDirectory();
+    buildDirectory(getCurrentMemberSearchQuery());
 
   } catch (error) {
     console.error("Error loading members:", error);
@@ -3048,13 +3057,36 @@ async function loadMembers(){
 /* BUILD DIRECTORY                   */
 /* ================================= */
 
-function buildDirectory(){
+function getCurrentMemberSearchQuery(){
 
-const directory = document.getElementById("directory")
+const el = document.getElementById("memberSearch")
 
-directory.innerHTML = ""
+return el ? el.value.trim().toLowerCase() : ""
 
-members.sort((a,b)=>{
+}
+
+function getMemberNameParts(record){
+
+const f = record.fields || {}
+
+return{
+first:String(f["First Name"] || "").trim().toLowerCase(),
+last:String(f["Last Name"] || "").trim().toLowerCase()
+}
+
+}
+
+function memberMatchesNamePrefix(record, q){
+
+if(!q) return true
+
+const { first, last } = getMemberNameParts(record)
+
+return first.startsWith(q) || last.startsWith(q)
+
+}
+
+function compareMembersDefaultSort(a, b){
 
 const aLast = a.fields["Last Name"] || ""
 const bLast = b.fields["Last Name"] || ""
@@ -3067,9 +3099,48 @@ if(aLast > bLast) return 1
 
 return aFirst.localeCompare(bFirst)
 
-})
+}
 
-members.forEach(record=>{
+function compareMembersSearchSort(a, b, q){
+
+const A = getMemberNameParts(a)
+const B = getMemberNameParts(b)
+
+const aFirstHit = A.first.startsWith(q)
+const bFirstHit = B.first.startsWith(q)
+
+if(aFirstHit !== bFirstHit) return aFirstHit ? -1 : 1
+
+const c1 = A.first.localeCompare(B.first)
+
+if(c1 !== 0) return c1
+
+return A.last.localeCompare(B.last)
+
+}
+
+function buildDirectory(searchQuery){
+
+const directory = document.getElementById("directory")
+
+directory.innerHTML = ""
+
+const q = String(searchQuery || "").trim().toLowerCase()
+
+let list = members.slice()
+
+if(q){
+
+list = list.filter(m => memberMatchesNamePrefix(m, q))
+list.sort((a, b) => compareMembersSearchSort(a, b, q))
+
+}else{
+
+list.sort(compareMembersDefaultSort)
+
+}
+
+list.forEach(record=>{
 
 const f = record.fields
 
@@ -3116,32 +3187,10 @@ function filterMembers(){
 const search = document
 .getElementById("memberSearch")
 .value
+.trim()
 .toLowerCase()
 
-const cards = document.querySelectorAll(".card")
-
-cards.forEach(card=>{
-
-const fullName = card
-.querySelector("h3")
-.textContent
-.toLowerCase()
-
-const parts = fullName.split(" ")
-
-const first = parts[0] || ""
-const last = parts[1] || ""
-
-if(
-first.startsWith(search) ||
-last.startsWith(search)
-){
-card.style.display="block"
-}else{
-card.style.display="none"
-}
-
-})
+buildDirectory(search)
 
 }
 
