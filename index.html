@@ -99,12 +99,30 @@ margin:0 auto;
 padding:10px 20px 12px 20px;
 display:flex;
 align-items:center;
-justify-content:flex-end;
+justify-content:space-between;
 flex-wrap:wrap;
 gap:12px;
 background:#000;
 border-top:1px solid rgba(255,255,255,.12);
 box-sizing:border-box;
+}
+
+.pending-changes-count{
+flex:1 1 200px;
+min-width:0;
+color:rgba(255,255,255,.92);
+font-size:14px;
+line-height:1.35;
+padding-right:8px;
+}
+
+.directory-toolbar-actions{
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+align-items:center;
+justify-content:flex-end;
+flex-shrink:0;
 }
 
 .directory-toolbar button{
@@ -792,10 +810,15 @@ oninput="filterMembers()">
 </div>
 
 <div class="directory-toolbar">
-  <button id="editorToggleBtn" style="display:none;">
-    Enable Editor Mode
-  </button>
-  <button id="logoutBtn" style="display:none;">Logout</button>
+  <div class="pending-changes-count" id="pendingChangesCountWrap" style="display:none;" aria-live="polite">
+    <span id="pendingChangesCountText"></span>
+  </div>
+  <div class="directory-toolbar-actions">
+    <button id="editorToggleBtn" style="display:none;">
+      Enable Editor Mode
+    </button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+  </div>
 </div>
 
 <div id="editorBanner" class="editor-banner">
@@ -1934,6 +1957,8 @@ onAuthStateChanged(auth, async (user) => {
     loginScreen.style.display = "none";
     logoutBtn.style.display = "inline-flex";
 
+    await startPendingChangesCountListener();
+
     if (!profile && !onboardingPending) {
       openOnboarding();
     }
@@ -1942,6 +1967,11 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     console.log("User logged out");
     window.currentUser = null;
+    stopPendingChangesCountListener();
+    const pcw = document.getElementById("pendingChangesCountWrap");
+    if (pcw) {
+      pcw.style.display = "none";
+    }
     app.style.display = "none";
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
@@ -2018,6 +2048,88 @@ function showEditorUI(){
 function hideEditorUI(){
   document.getElementById("editorBanner").style.display = "none";
   document.getElementById("adminPanel").style.display = "none";
+}
+
+/* ================================= */
+/* PENDING CHANGES COUNT (ADMINS)    */
+/* ================================= */
+
+let pendingChangesCountUnsub = null;
+
+function stopPendingChangesCountListener(){
+
+if(typeof pendingChangesCountUnsub === "function"){
+pendingChangesCountUnsub();
+pendingChangesCountUnsub = null;
+}
+
+}
+
+function setPendingChangesCountText(n){
+
+const textEl = document.getElementById("pendingChangesCountText");
+const wrap = document.getElementById("pendingChangesCountWrap");
+
+if(!textEl || !wrap){
+return;
+}
+
+if(!window.isChurchAdmin){
+wrap.style.display = "none";
+return;
+}
+
+if(n === 1){
+textEl.textContent = "There is 1 pending change request.";
+}else{
+textEl.textContent = `There are ${n} pending change requests.`;
+}
+
+wrap.style.display = "block";
+
+}
+
+async function startPendingChangesCountListener(){
+
+stopPendingChangesCountListener();
+
+const wrap = document.getElementById("pendingChangesCountWrap");
+
+if(!wrap){
+return;
+}
+
+if(!window.isChurchAdmin){
+wrap.style.display = "none";
+return;
+}
+
+const { onSnapshot, collection } = await import(
+"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+);
+
+pendingChangesCountUnsub = onSnapshot(
+collection(db, "pendingChanges"),
+(snapshot) => {
+
+let n = 0;
+
+snapshot.forEach((docSnap) => {
+
+if(docSnap.data().status === "pending"){
+n++;
+}
+
+});
+
+setPendingChangesCountText(n);
+
+},
+(err) => {
+console.error("pendingChanges listener:", err);
+}
+);
+
 }
 
 /* ================================= */
@@ -2360,12 +2472,18 @@ function buildYearView(changes){
     years[year].push(c);
   });
 
+  const pendingCount = changes.filter(c => c.status === "pending").length;
+
+  const unresolvedRowLabel = pendingCount === 0
+    ? "No pending changes"
+    : "Unresolved pending changes";
+
   let html = `<h2>Pending Changes</h2>`;
 
   html += `
     <div onclick="buildUnresolvedList()"
       style="padding:14px;border-bottom:1px solid #e0e0e0;cursor:pointer;font-weight:600;background:#f5f7fa;">
-      Unresolved
+      ${unresolvedRowLabel}
     </div>
   `;
 
