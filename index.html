@@ -2104,6 +2104,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: "select_account" });
 
 const loginBtn = document.getElementById("loginBtn");
 const passwordLoginBtn = document.getElementById("passwordLoginBtn");
