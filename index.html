@@ -32,6 +32,102 @@ min-height:100vh;
 overflow-x:hidden;
 }
 
+#loginScreen{
+max-width:460px;
+margin:40px auto 20px auto;
+padding:24px 20px;
+background:#fff;
+border-radius:14px;
+box-shadow:0 12px 30px rgba(0,0,0,.2);
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+#loginScreen h2{
+margin:0 0 6px 0;
+font-size:24px;
+color:#133245;
+text-align:center;
+}
+
+.login-help{
+margin:0;
+font-size:14px;
+line-height:1.4;
+color:#4f6470;
+text-align:center;
+}
+
+.login-label{
+font-size:13px;
+font-weight:600;
+color:#244a5d;
+}
+
+.login-input{
+width:100%;
+box-sizing:border-box;
+padding:11px 12px;
+font-size:15px;
+border:1px solid #bdd0db;
+border-radius:8px;
+outline:none;
+}
+
+.login-input:focus{
+border-color:#2b5cff;
+box-shadow:0 0 0 3px rgba(43,92,255,.12);
+}
+
+.login-actions{
+display:flex;
+flex-direction:column;
+gap:10px;
+margin-top:2px;
+}
+
+.login-actions button{
+font:inherit;
+font-weight:600;
+padding:10px 12px;
+border-radius:8px;
+border:1px solid #3156d3;
+background:#3156d3;
+color:#fff;
+cursor:pointer;
+}
+
+.login-actions button.secondary{
+background:#fff;
+color:#3156d3;
+}
+
+.login-divider{
+margin:2px 0;
+text-align:center;
+font-size:12px;
+font-weight:600;
+letter-spacing:.08em;
+text-transform:uppercase;
+color:#6a7f8a;
+}
+
+.login-feedback{
+min-height:1.2em;
+font-size:13px;
+line-height:1.35;
+margin:2px 0 0 0;
+}
+
+.login-feedback.info{
+color:#2a6;
+}
+
+.login-feedback.error{
+color:#b3261e;
+}
+
 @font-face{
 font-family:"Inter";
 src:url("assets/fonts/Inter-VariableFont_opsz,wght.woff2") format("woff2");
@@ -771,7 +867,23 @@ height:90px;
    
 <div id="loginScreen">
   <h2>Church Directory Login</h2>
-  <button id="loginBtn">Sign in with Google</button>
+  <p class="login-help">Sign in with Google, or use your invited email and password.</p>
+
+  <label class="login-label" for="loginEmail">Email / Username</label>
+  <input class="login-input" type="email" id="loginEmail" autocomplete="email" placeholder="name@example.com">
+
+  <label class="login-label" for="loginPassword">Password</label>
+  <input class="login-input" type="password" id="loginPassword" autocomplete="current-password" placeholder="Enter password">
+
+  <div class="login-actions">
+    <button id="passwordLoginBtn" type="button">Sign in with Password</button>
+    <button id="createAccountBtn" class="secondary" type="button">Create password account (invite only)</button>
+    <button id="resetPasswordBtn" class="secondary" type="button">Reset password</button>
+  </div>
+
+  <div class="login-divider">or</div>
+  <button id="loginBtn" type="button">Sign in with Google</button>
+  <p id="loginFeedback" class="login-feedback" aria-live="polite"></p>
 </div>
    
 <!-- ================================= -->
@@ -1984,22 +2096,189 @@ import {
   GoogleAuthProvider, 
   signInWithPopup,
   onAuthStateChanged,
-  signOut
+  signOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const provider = new GoogleAuthProvider();
 
 const loginBtn = document.getElementById("loginBtn");
+const passwordLoginBtn = document.getElementById("passwordLoginBtn");
+const createAccountBtn = document.getElementById("createAccountBtn");
+const resetPasswordBtn = document.getElementById("resetPasswordBtn");
+const loginEmailInput = document.getElementById("loginEmail");
+const loginPasswordInput = document.getElementById("loginPassword");
+const loginFeedback = document.getElementById("loginFeedback");
 const logoutBtn = document.getElementById("logoutBtn");
+
+function setLoginFeedback(message, tone = "info"){
+  if(!loginFeedback){
+    return;
+  }
+
+  loginFeedback.textContent = message || "";
+  loginFeedback.className = `login-feedback ${tone}`;
+}
+
+function normalizeLoginEmail(value){
+  return (value || "").trim().toLowerCase();
+}
+
+function getLoginCredentials(requirePassword = true){
+  const email = normalizeLoginEmail(loginEmailInput ? loginEmailInput.value : "");
+  const password = loginPasswordInput ? loginPasswordInput.value : "";
+
+  if(!email){
+    throw new Error("Please enter your email.");
+  }
+
+  if(requirePassword && !password){
+    throw new Error("Please enter your password.");
+  }
+
+  return { email, password };
+}
+
+async function ensureAllowedEmail(email){
+  const allowed = await isUserAllowed(email);
+  if(!allowed){
+    throw new Error("This email is not invited for directory access.");
+  }
+}
 
 loginBtn.onclick = async () => {
   try {
+    setLoginFeedback("");
     await authReady;
     await signInWithPopup(auth, provider);
   } catch (err) {
     console.error("Login error:", err);
+    setLoginFeedback("Google sign-in failed. Please try again.", "error");
   }
 };
+
+passwordLoginBtn.onclick = async () => {
+  try{
+    setLoginFeedback("");
+    const { email, password } = getLoginCredentials(true);
+    await authReady;
+    await signInWithEmailAndPassword(auth, email, password);
+  }catch(err){
+    console.error("Email/password sign-in error:", err);
+
+    if(err && err.message && !err.code){
+      setLoginFeedback(err.message, "error");
+      return;
+    }
+
+    let detail = "Unable to sign in with email/password.";
+    const email = normalizeLoginEmail(loginEmailInput ? loginEmailInput.value : "");
+
+    if(email){
+      try{
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if(methods.includes("google.com") && !methods.includes("password")){
+          detail = "This email is set up for Google sign-in. Use the Google button.";
+        }else if(err.code === "auth/invalid-credential"){
+          detail = "Invalid email or password.";
+        }
+      }catch(fetchErr){
+        console.warn("Could not inspect sign-in methods:", fetchErr);
+      }
+    }
+
+    if(err.code === "auth/invalid-email"){
+      detail = "Please enter a valid email address.";
+    }else if(err.code === "auth/too-many-requests"){
+      detail = "Too many attempts. Please wait and try again.";
+    }
+
+    setLoginFeedback(detail, "error");
+  }
+};
+
+createAccountBtn.onclick = async () => {
+  try{
+    setLoginFeedback("");
+    const { email, password } = getLoginCredentials(true);
+
+    if(password.length < 8){
+      throw new Error("Use at least 8 characters for the password.");
+    }
+
+    await authReady;
+    await ensureAllowedEmail(email);
+
+    const methods = await fetchSignInMethodsForEmail(auth, email);
+    if(methods.includes("password")){
+      throw new Error("This account already has a password. Sign in instead.");
+    }
+    if(methods.includes("google.com")){
+      throw new Error("This email already uses Google sign-in. Use the Google button.");
+    }
+
+    await createUserWithEmailAndPassword(auth, email, password);
+    setLoginFeedback("Account created. Signing you in now...", "info");
+  }catch(err){
+    console.error("Create account error:", err);
+
+    if(err && err.message && !err.code){
+      setLoginFeedback(err.message, "error");
+      return;
+    }
+
+    let detail = "Could not create account.";
+    if(err.code === "auth/email-already-in-use"){
+      detail = "An account already exists for this email. Try signing in.";
+    }else if(err.code === "auth/invalid-email"){
+      detail = "Please enter a valid email address.";
+    }else if(err.code === "auth/weak-password"){
+      detail = "Password is too weak. Use at least 8 characters.";
+    }else if(err.code === "auth/operation-not-allowed"){
+      detail = "Email/password sign-in is not enabled in Firebase Auth yet.";
+    }
+
+    setLoginFeedback(detail, "error");
+  }
+};
+
+resetPasswordBtn.onclick = async () => {
+  try{
+    setLoginFeedback("");
+    const { email } = getLoginCredentials(false);
+    await authReady;
+    await ensureAllowedEmail(email);
+    await sendPasswordResetEmail(auth, email);
+    setLoginFeedback("Password reset email sent (if this account exists).", "info");
+  }catch(err){
+    console.error("Reset password error:", err);
+
+    if(err && err.message && !err.code){
+      setLoginFeedback(err.message, "error");
+      return;
+    }
+
+    let detail = "Could not send reset email.";
+    if(err.code === "auth/invalid-email"){
+      detail = "Please enter a valid email address.";
+    }else if(err.code === "auth/user-not-found"){
+      detail = "No account found for that email.";
+    }
+
+    setLoginFeedback(detail, "error");
+  }
+};
+
+if(loginPasswordInput){
+  loginPasswordInput.addEventListener("keydown", (event) => {
+    if(event.key === "Enter"){
+      passwordLoginBtn.click();
+    }
+  });
+}
 
 logoutBtn.onclick = async () => {
   await signOut(auth);
@@ -2058,6 +2337,10 @@ onAuthStateChanged(auth, async (user) => {
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
     document.getElementById("editorToggleBtn").style.display = "none";
+    if(loginPasswordInput){
+      loginPasswordInput.value = "";
+    }
+    setLoginFeedback("");
   }
 });
 

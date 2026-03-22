@@ -7,6 +7,12 @@ Run this checklist after each small refactor slice.
 - Click Google sign-in and confirm successful login.
 - Confirm logout returns to the login screen.
 - Refresh the page and confirm auth persistence still works.
+- Sign in with password using an invited email and confirm successful login.
+- Try password sign-in with a wrong password and confirm friendly error feedback.
+- Create a password account with an invited email and confirm account is created.
+- Try creating a password account with a non-invited email and confirm it is blocked.
+- Trigger reset password for an existing email and confirm reset email flow.
+- If an email is Google-only, confirm UI message directs user to Google sign-in.
 
 ## Directory
 - Confirm member cards render on initial load.
