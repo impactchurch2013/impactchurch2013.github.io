@@ -34,7 +34,7 @@ overflow-x:hidden;
 
 @font-face{
 font-family:"Inter";
-src:url("fonts/Inter-VariableFont_opsz,wght.woff2") format("woff2");
+src:url("assets/fonts/Inter-VariableFont_opsz,wght.woff2") format("woff2");
 font-weight:100 900;
 font-style:normal;
 font-display:swap;
@@ -89,10 +89,99 @@ display:block;
 margin:auto;
 }
 
-.header-controls{
+/* ================================= */
+/* DIRECTORY TOOLBAR (below logo + search) */
+/* ================================= */
+
+.directory-toolbar{
+max-width:1200px;
+margin:0 auto;
+padding:10px 20px 12px 20px;
 display:flex;
+align-items:center;
+justify-content:space-between;
+flex-wrap:wrap;
+gap:12px;
+background:#000;
+border-top:1px solid rgba(255,255,255,.12);
+box-sizing:border-box;
+}
+
+.pending-changes-count{
+flex:1 1 200px;
+min-width:0;
+color:rgba(255,255,255,.92);
+font-size:14px;
+line-height:1.35;
+padding-right:8px;
+}
+
+.directory-toolbar-actions{
+display:flex;
+flex-wrap:wrap;
 gap:12px;
 align-items:center;
+justify-content:flex-end;
+flex-shrink:0;
+}
+
+.directory-toolbar button{
+font:inherit;
+background:rgba(255,255,255,.12);
+color:#fff;
+border:1px solid rgba(255,255,255,.35);
+border-radius:8px;
+padding:8px 14px;
+cursor:pointer;
+}
+
+.directory-toolbar button:hover{
+background:rgba(255,255,255,.2);
+}
+
+/* ================================= */
+/* EDITOR MODE (in header)           */
+/* ================================= */
+
+.editor-banner{
+display:none;
+max-width:1200px;
+margin:0 auto;
+padding:10px 20px;
+text-align:center;
+font-weight:600;
+font-size:15px;
+color:#f0e6a8;
+border-top:1px solid rgba(255,255,255,.12);
+box-sizing:border-box;
+}
+
+.admin-panel{
+display:none;
+max-width:1200px;
+margin:0 auto;
+padding:0 20px 14px 20px;
+flex-direction:row;
+flex-wrap:wrap;
+gap:12px;
+justify-content:center;
+align-items:center;
+border-top:1px solid rgba(255,255,255,.08);
+box-sizing:border-box;
+}
+
+.admin-panel button{
+font:inherit;
+background:rgba(255,255,255,.12);
+color:#fff;
+border:1px solid rgba(255,255,255,.35);
+border-radius:8px;
+padding:8px 14px;
+cursor:pointer;
+}
+
+.admin-panel button:hover{
+background:rgba(255,255,255,.2);
 }
 
 /* ================================= */
@@ -133,7 +222,7 @@ padding:0 16px;
 max-width:1200px;
 width:100%;
 margin:auto;
-scroll-margin-top:140px;
+scroll-margin-top:200px;
 justify-content:center;
 }
 
@@ -411,7 +500,112 @@ max-width:90%;
 max-height:90%;
 border-radius:10px;
 }
-   
+
+/* ================================= */
+/* ADMIN EMAIL NOTIFICATION MODAL    */
+/* ================================= */
+
+.admin-email-modal{
+position:fixed;
+inset:0;
+z-index:5000;
+display:none;
+align-items:center;
+justify-content:center;
+padding:16px;
+box-sizing:border-box;
+}
+
+.admin-email-modal.show{
+display:flex;
+}
+
+.admin-email-modal-backdrop{
+position:absolute;
+inset:0;
+background:rgba(0,0,0,0.45);
+}
+
+.admin-email-modal-box{
+position:relative;
+background:#fff;
+border-radius:12px;
+max-width:520px;
+width:100%;
+max-height:90vh;
+overflow:auto;
+padding:20px;
+box-shadow:0 8px 32px rgba(0,0,0,0.22);
+z-index:1;
+}
+
+.admin-email-modal-box h3{
+margin:0 0 6px;
+font-size:1.15rem;
+}
+
+.admin-email-modal-box .admin-email-modal-note{
+margin:0 0 14px;
+font-size:13px;
+color:#555;
+line-height:1.4;
+}
+
+.admin-email-modal-box label{
+display:block;
+font-size:13px;
+font-weight:600;
+margin-bottom:4px;
+color:#333;
+}
+
+.admin-email-modal-box input[type="email"],
+.admin-email-modal-box input[type="text"]{
+width:100%;
+padding:8px 10px;
+margin-bottom:12px;
+border:1px solid #ccc;
+border-radius:8px;
+font-size:14px;
+box-sizing:border-box;
+}
+
+.admin-email-modal-box textarea{
+width:100%;
+min-height:160px;
+padding:10px;
+margin-bottom:10px;
+border:1px solid #ccc;
+border-radius:8px;
+font-size:14px;
+line-height:1.45;
+resize:vertical;
+box-sizing:border-box;
+font-family:inherit;
+}
+
+.admin-email-modal-actions{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:14px;
+}
+
+.admin-email-modal-actions button{
+padding:10px 14px;
+border-radius:8px;
+font-size:14px;
+cursor:pointer;
+border:1px solid #ccc;
+background:#f5f5f5;
+}
+
+.admin-email-modal-actions button.primary{
+background:#2b5cff;
+color:#fff;
+border-color:#2b5cff;
+}
+
 /* ================================= */
 /* FAMILY PAGE                       */
 /* ================================= */
@@ -598,14 +792,6 @@ height:90px;
 <img src="images/impact logo.png" alt="Impact Directory">
 </div>
 
-<div class="header-controls">
-  <button id="editorToggleBtn" style="display:none;">
-    Enable Editor Mode
-  </button>
-
-  <button id="logoutBtn" style="display:none;">Logout</button>
-</div>
-
 </div>
 
 <div class="search-bar">
@@ -616,36 +802,29 @@ placeholder="Search members..."
 oninput="filterMembers()">
 </div>
 
-</header>
+<div class="directory-toolbar">
+  <div class="pending-changes-count" id="pendingChangesCountWrap" style="display:none;" aria-live="polite">
+    <span id="pendingChangesCountText"></span>
+  </div>
+  <div class="directory-toolbar-actions">
+    <button id="editorToggleBtn" style="display:none;">
+      Enable Editor Mode
+    </button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+  </div>
+</div>
 
-<!-- ================================= -->
-<!-- EDITOR MODE BANNER + ADMIN PANEL -->
-<!-- ================================= -->
-
-<div id="editorBanner" style="
-  display:none;
-  background:#ffefc2;
-  padding:12px;
-  text-align:center;
-  font-weight:600;
-  border-bottom:1px solid #e5d48a;
-">
+<div id="editorBanner" class="editor-banner">
   ✏️ Directory is in Editor Mode
 </div>
 
-<div id="adminPanel" style="
-  display:none;
-  background:white;
-  padding:12px;
-  border-bottom:1px solid #ddd;
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-">
-  <button onclick="openMemberSelect()">Edit Member</button>
-  <button onclick="openPendingChanges()">View Pending Changes</button>
+<div id="adminPanel" class="admin-panel">
+  <button type="button" onclick="openInviteMemberDialog()">Invite member</button>
+  <button type="button" onclick="openMemberSelect()">Edit Member</button>
+  <button type="button" onclick="openPendingChanges()">View Pending Changes</button>
 </div>
+
+</header>
 
 <!-- ================================= -->
 <!-- ONBOARDING SHEET                  -->
@@ -725,7 +904,41 @@ oninput="filterMembers()">
 <!-- FULL PHOTO VIEWER -->
 
 <div id="photoViewer" class="photo-viewer" onclick="closePhoto()">
-<img id="photoViewerImg">
+<img id="photoViewerImg" alt="" loading="lazy" decoding="async">
+</div>
+
+<!-- ADMIN: EMAIL NOTIFICATION (approve / deny) -->
+<div id="adminEmailModal" class="admin-email-modal" aria-modal="true" role="dialog" style="display:none;">
+  <div class="admin-email-modal-backdrop" onclick="closeAdminEmailModal()"></div>
+  <div class="admin-email-modal-box" onclick="event.stopPropagation();">
+    <h3 id="adminEmailModalTitle">Email the member</h3>
+    <p class="admin-email-modal-note">Review or edit the message below, then tap Send email to open your mail app with a draft.</p>
+    <label for="adminEmailTo">To</label>
+    <input type="email" id="adminEmailTo" autocomplete="email">
+    <label for="adminEmailSubject">Subject</label>
+    <input type="text" id="adminEmailSubject" autocomplete="off">
+    <label for="adminEmailBody">Message</label>
+    <textarea id="adminEmailBody" spellcheck="true"></textarea>
+    <div class="admin-email-modal-actions">
+      <button type="button" class="primary" onclick="sendAdminEmailFromModal()">Send email</button>
+      <button type="button" onclick="closeAdminEmailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN: INVITE MEMBER (allowlist + mailto) -->
+<div id="inviteMemberModal" class="admin-email-modal" aria-modal="true" role="dialog" style="display:none;">
+  <div class="admin-email-modal-backdrop" onclick="closeInviteMemberDialog()"></div>
+  <div class="admin-email-modal-box" onclick="event.stopPropagation();">
+    <h3 id="inviteMemberModalTitle">Invite member</h3>
+    <p class="admin-email-modal-note">Enter the person&apos;s email. They will be added to the directory allowlist, then your email app will open with a draft invitation.</p>
+    <label for="inviteMemberEmail">Email address</label>
+    <input type="email" id="inviteMemberEmail" autocomplete="email" placeholder="name@example.com">
+    <div class="admin-email-modal-actions">
+      <button type="button" class="primary" onclick="submitInviteMember()">Invite member</button>
+      <button type="button" onclick="closeInviteMemberDialog()">Cancel</button>
+    </div>
+  </div>
 </div>
 
 </div>   
@@ -746,9 +959,7 @@ oninput="filterMembers()">
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const { auth, db } = window.firebase;
-
-console.log("AUTH OBJECT:", auth);
+const { auth, db, authReady } = window.firebase;
 
 /* Import Firebase storage */
 
@@ -758,25 +969,268 @@ from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 const storage = getStorage(window.firebase.app);
 
 /* ================================= */
+/* PROFILE IMAGES — COMPRESS (JPEG)  */
+/* ================================= */
+
+const PROFILE_IMAGE_MAX_FILE_BYTES = 10 * 1024 * 1024;
+const PROFILE_IMAGE_MAX_WIDTH = 800;
+const PROFILE_IMAGE_JPEG_QUALITY = 0.7;
+
+function fileToDataUrl(file){
+
+  return new Promise((resolve, reject) => {
+
+    const r = new FileReader();
+
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+
+  });
+
+}
+
+function loadHtmlImage(src){
+
+  return new Promise((resolve, reject) => {
+
+    const im = new Image();
+
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error("Could not load image"));
+    im.src = src;
+
+  });
+
+}
+
+async function compressImageFileToJpegBlob(file, options = {}){
+
+  const maxWidth = options.maxWidth ?? PROFILE_IMAGE_MAX_WIDTH;
+  const quality = options.quality ?? PROFILE_IMAGE_JPEG_QUALITY;
+
+  let source;
+  let bitmap = null;
+
+  if(typeof createImageBitmap === "function"){
+
+    try{
+
+      bitmap = await createImageBitmap(file);
+      source = bitmap;
+
+    }catch{
+
+      const dataUrl = await fileToDataUrl(file);
+      source = await loadHtmlImage(dataUrl);
+
+    }
+
+  }else{
+
+    const dataUrl = await fileToDataUrl(file);
+    source = await loadHtmlImage(dataUrl);
+
+  }
+
+  const sw = source.width || source.naturalWidth;
+  const sh = source.height || source.naturalHeight;
+
+  let tw = sw;
+  let th = sh;
+
+  if(sw > maxWidth){
+
+    tw = maxWidth;
+    th = Math.round((sh * maxWidth) / sw);
+
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = tw;
+  canvas.height = th;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(source, 0, 0, tw, th);
+
+  if(bitmap && bitmap.close){
+    bitmap.close();
+  }
+
+  return new Promise((resolve, reject) => {
+
+    canvas.toBlob(
+      blob => {
+        if(blob){
+          resolve(blob);
+        }else{
+          reject(new Error("Could not compress image"));
+        }
+      },
+      "image/jpeg",
+      quality
+    );
+
+  });
+
+}
+
+function clearOnboardingPhotoPreviewState(){
+
+  if(window.__onboardingPreviewUrl){
+
+    URL.revokeObjectURL(window.__onboardingPreviewUrl);
+    window.__onboardingPreviewUrl = null;
+
+  }
+
+  window.__onboardingPhotoJpegBlob = null;
+
+}
+
+function clearEditMemberPhotoState(){
+
+window.__editMemberPhotoJpegBlob = null;
+window.__editMemberRemovePhoto = false;
+
+}
+
+async function onEditMemberPhotoInputChange(){
+
+const input = document.getElementById("editMemberPhoto");
+const preview = document.getElementById("editMemberPhotoNewPreview");
+const previewImg = document.getElementById("editMemberPhotoNewPreviewImg");
+
+if(!input || !preview || !previewImg){
+return;
+}
+
+const prevUrl = previewImg.dataset.objectUrl;
+if(prevUrl){
+URL.revokeObjectURL(prevUrl);
+delete previewImg.dataset.objectUrl;
+}
+
+window.__editMemberPhotoJpegBlob = null;
+window.__editMemberRemovePhoto = false;
+
+const removedNote = document.getElementById("editMemberPhotoRemovedNote");
+if(removedNote){
+removedNote.style.display = "none";
+}
+
+const curWrap = document.getElementById("editMemberCurrentPhotoWrap");
+if(curWrap){
+curWrap.style.display = "";
+}
+
+const file = input.files && input.files[0] ? input.files[0] : null;
+
+if(!file){
+
+preview.style.display = "none";
+previewImg.removeAttribute("src");
+return;
+
+}
+
+if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+
+alert("Please choose an image of 10 MB or smaller.");
+input.value = "";
+return;
+
+}
+
+try{
+
+const blob = await compressImageFileToJpegBlob(file);
+window.__editMemberPhotoJpegBlob = blob;
+
+const url = URL.createObjectURL(blob);
+previewImg.dataset.objectUrl = url;
+previewImg.src = url;
+previewImg.alt = "New profile photo preview";
+preview.style.display = "block";
+
+}catch(err){
+
+console.error(err);
+alert("Could not process that image. Try a JPEG or PNG.");
+input.value = "";
+
+}
+
+}
+
+async function onOnboardPhotoInputChange(){
+
+  const input = document.getElementById("onboardPhoto");
+  const preview = document.getElementById("onboardPhotoPreview");
+  const previewImg = document.getElementById("onboardPhotoPreviewImg");
+
+  clearOnboardingPhotoPreviewState();
+
+  if(!input || !preview || !previewImg){
+    return;
+  }
+
+  const file = input.files && input.files[0] ? input.files[0] : null;
+
+  if(!file){
+
+    preview.style.display = "none";
+    previewImg.removeAttribute("src");
+    return;
+
+  }
+
+  if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+
+    alert("Please choose an image of 10 MB or smaller.");
+    input.value = "";
+    return;
+
+  }
+
+  try{
+
+    const blob = await compressImageFileToJpegBlob(file);
+    window.__onboardingPhotoJpegBlob = blob;
+
+    const url = URL.createObjectURL(blob);
+    window.__onboardingPreviewUrl = url;
+
+    previewImg.src = url;
+    previewImg.alt = "Compressed profile photo preview";
+    preview.style.display = "block";
+
+  }catch(err){
+
+    console.error(err);
+    alert("Could not process that image. Try a JPEG or PNG.");
+    input.value = "";
+
+  }
+
+}
+
+/* ================================= */
 /* LOGIN AUTH GATING                 */
 /* ================================= */
    
 async function isUserAllowed(email){
-  try {
-    const { getDoc, doc } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
 
-    const cleanEmail = email.toLowerCase().trim();
-    
-    const userDoc = await getDoc(doc(db, "allowedUsers", cleanEmail));
+  const { getDoc, doc } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
 
-    return userDoc.exists();
+  const cleanEmail = email.toLowerCase().trim();
 
-  } catch (err) {
-    console.error("Allowed user check failed:", err);
-    return false;
-  }
+  const userDoc = await getDoc(doc(db, "allowedUsers", cleanEmail));
+
+  return userDoc.exists();
+
 }
 
 /* ================================= */
@@ -801,30 +1255,264 @@ async function getMemberProfileByEmail(email){
 }
 
 /* ================================= */
+/* PENDING ONBOARDING (awaiting approval) */
+/* ================================= */
+
+async function hasPendingOnboardingSubmission(userEmail){
+
+  const clean = (userEmail || "").toLowerCase().trim();
+
+  const { getDocs, collection, query, where } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const variants = [...new Set([clean, userEmail].filter(Boolean))];
+
+  for(const candidate of variants){
+
+    const snapshot = await getDocs(query(
+      collection(db, "pendingChanges"),
+      where("submittedBy", "==", candidate)
+    ));
+
+    const found = snapshot.docs.some(doc => {
+      const data = doc.data();
+      if(data.status !== "pending") return false;
+      const ch = data.changes;
+      return ch && ch.onboarding === true;
+    });
+
+    if(found) return true;
+
+  }
+
+  return false;
+
+}
+
+/* ================================= */
+/* MINISTRY / ROLE (pending payload) */
+/* ================================= */
+
+const ONBOARDING_ROLE_OPTIONS = new Set([
+  "Admin",
+  "Sound",
+  "Security",
+  "Volunteer"
+]);
+
+function splitMinistryAndRole(selectedValue){
+
+  const v = (selectedValue || "").trim();
+
+  if(!v){
+    return { ministry: "", role: "" };
+  }
+
+  if(ONBOARDING_ROLE_OPTIONS.has(v)){
+    return { ministry: "", role: v };
+  }
+
+  return { ministry: v, role: "" };
+
+}
+
+function ministryStringToSelectValue(stored){
+
+  const raw = (stored || "").trim();
+
+  if(!raw){
+    return "";
+  }
+
+  const parts = raw.split(/\s*·\s*/).map(p => p.trim()).filter(Boolean);
+
+  if(parts.length === 2){
+
+    const [a, b] = parts;
+
+    if(ONBOARDING_ROLE_OPTIONS.has(b)){
+      return b;
+    }
+
+    if(ONBOARDING_ROLE_OPTIONS.has(a)){
+      return a;
+    }
+
+    return a;
+
+  }
+
+  if(parts.length === 1){
+
+    return parts[0];
+
+  }
+
+  return raw;
+
+}
+
+function omitUndefined(obj){
+
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, val]) => val !== undefined)
+  );
+
+}
+
+/* ================================= */
+/* MEMBER PENDING CHANGES SUBMISSION */
+/* ================================= */
+   
+async function submitPendingChange(memberId, changes, opts = {}){
+
+  try {
+
+    const { addDoc, collection, serverTimestamp } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const changesPayload = omitUndefined(changes);
+
+    await addDoc(collection(db, "pendingChanges"), {
+      memberId: memberId != null ? memberId : null,
+      submittedBy: window.currentUser.email.toLowerCase().trim(),
+      status: "pending",
+      createdAt: serverTimestamp(),
+      resolvedAt: null,
+      resolvedBy: null,
+      changes: changesPayload
+    });
+
+    if(opts.isOnboarding){
+      alert(
+        "Your profile details were successfully saved.\n\n" +
+        "Onboarding is complete. An Impact Church admin will review your profile soon..."
+      );
+    }else{
+      alert("Changes submitted for approval");
+    }
+
+  } catch (err) {
+    console.error("Failed to submit change:", err);
+    throw err;
+  }
+
+}
+
+/* ================================= */
 /* USER ONBOARDING SHEET             */
 /* ================================= */
    
 function openOnboarding(){
-  console.log("Profile found:", profile);
+
+  window.__editMyProfileMemberId = null;
+
+  clearOnboardingPhotoPreviewState();
+
   const box = document.getElementById("onboardingContent");
+  const defaultEmail = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.replace(/"/g, "&quot;")
+    : "";
 
   box.innerHTML = `
     <h2>Complete Your Profile</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:#555;">Fill in what you would like to share. Optional fields can be left blank. Email is taken from your Google account.</p>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
 
-      <input id="onboardFirstName" placeholder="First Name">
-      <input id="onboardLastName" placeholder="Last Name">
-      <input id="onboardPhone" placeholder="Phone">
-      <input id="onboardAddress" placeholder="Address">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>First name</span>
+        <input id="onboardFirstName" placeholder="First name" autocomplete="given-name">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Last name</span>
+        <input id="onboardLastName" placeholder="Last name" autocomplete="family-name">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Ministries and Roles</span>
+        <select id="onboardMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="">— Optional —</option>
+          <optgroup label="Ministries">
+            <option value="Children's Ministry">Children's Ministry</option>
+            <option value="Hospitality Ministry">Hospitality Ministry</option>
+            <option value="Men's Ministry">Men's Ministry</option>
+            <option value="Outreach Ministry">Outreach Ministry</option>
+            <option value="Pastor Ministry">Pastor Ministry</option>
+            <option value="Prayer Ministry">Prayer Ministry</option>
+            <option value="Teaching Ministry">Teaching Ministry</option>
+            <option value="Women's Ministry">Women's Ministry</option>
+            <option value="Worship Ministry">Worship Ministry</option>
+            <option value="Youth Ministry">Youth Ministry</option>
+          </optgroup>
+          <optgroup label="Roles">
+            <option value="Admin">Admin</option>
+            <option value="Sound">Sound</option>
+            <option value="Security">Security</option>
+            <option value="Volunteer">Volunteer</option>
+          </optgroup>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Email</span>
+        <input id="onboardEmail" type="email" placeholder="Email" value="${defaultEmail}" autocomplete="email" readonly style="background:#f5f5f5;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Phone</span>
+        <input id="onboardPhone" type="tel" placeholder="Phone" autocomplete="tel">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Address</span>
+        <input id="onboardAddress" placeholder="Street address" autocomplete="street-address">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>City</span>
+        <input id="onboardCity" placeholder="City" autocomplete="address-level2">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>State</span>
+        <input id="onboardState" placeholder="State" autocomplete="address-level1">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>ZIP</span>
+        <input id="onboardZip" placeholder="ZIP code" autocomplete="postal-code">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Birthday</span>
+        <input id="onboardBirthday" type="text" placeholder="e.g. Feb 25" inputmode="text" autocomplete="off" aria-describedby="onboardBirthdayHint">
+        <span id="onboardBirthdayHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Feb 25).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Anniversary</span>
+        <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint">
+        <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Profile photo (optional)</span>
+        <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
+        <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload. Only a link is stored in Firestore.</span>
+      </label>
+      <div id="onboardPhotoPreview" style="display:none;margin-top:4px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (how it will look)</p>
+        <img id="onboardPhotoPreviewImg" alt="" width="400" height="300" loading="lazy"
+          style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+      </div>
 
-      <button onclick="submitOnboarding()"
+      <button type="button" id="onboardSubmitBtn"
         style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-        Submit Profile
+        Submit profile
       </button>
 
     </div>
   `;
+
+  document.getElementById("onboardSubmitBtn").onclick = () => submitOnboarding();
+
+  const photoEl = document.getElementById("onboardPhoto");
+  if(photoEl){
+    photoEl.addEventListener("change", onOnboardPhotoInputChange);
+  }
 
   openSheet("onboardingSheet");
 }
@@ -835,30 +1523,440 @@ function openOnboarding(){
    
 async function submitOnboarding(){
 
-  const firstName = document.getElementById("onboardFirstName").value;
-  const lastName = document.getElementById("onboardLastName").value;
-  const phone = document.getElementById("onboardPhone").value;
-  const address = document.getElementById("onboardAddress").value;
+  const firstName = (document.getElementById("onboardFirstName").value || "").trim();
+  const lastName = (document.getElementById("onboardLastName").value || "").trim();
+  const { ministry, role } = splitMinistryAndRole(
+    document.getElementById("onboardMinistry").value
+  );
+  const phone = (document.getElementById("onboardPhone").value || "").trim();
+  const address = (document.getElementById("onboardAddress").value || "").trim();
+  const city = (document.getElementById("onboardCity").value || "").trim();
+  const state = (document.getElementById("onboardState").value || "").trim();
+  const zip = (document.getElementById("onboardZip").value || "").trim();
+  const birthday = (document.getElementById("onboardBirthday").value || "").trim();
+  const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
 
-  const email = window.currentUser.email;
+  const email = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.toLowerCase().trim()
+    : "";
 
-  await submitPendingChange(null, {
-    firstName,
-    lastName,
-    fullName: `${firstName} ${lastName}`,
-    phone,
-    address,
-    email,
-    onboarding: true,
-    createdAt: new Date().toISOString()
-  });
+  if (!email) {
+    alert("You must be signed in to save your profile.");
+    return;
+  }
 
-  alert("Profile submitted for approval");
+  if (!firstName || !lastName) {
+    alert("Please enter your first and last name.");
+    return;
+  }
 
-  location.reload();
+  const btn = document.getElementById("onboardSubmitBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+  }
+
+  try {
+
+    const photoInput = document.getElementById("onboardPhoto");
+    const file = photoInput && photoInput.files && photoInput.files[0]
+      ? photoInput.files[0]
+      : null;
+
+    if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+      alert("Please choose an image of 10 MB or smaller.");
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = "Submit profile";
+      }
+      return;
+    }
+
+    let photoURL = "";
+
+    let jpegBlob = window.__onboardingPhotoJpegBlob || null;
+
+    if(file && !jpegBlob){
+      btn.textContent = "Preparing photo…";
+      try{
+        jpegBlob = await compressImageFileToJpegBlob(file);
+        window.__onboardingPhotoJpegBlob = jpegBlob;
+      }catch(compErr){
+        console.error(compErr);
+        alert("Could not process the photo. Try another image.");
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = "Submit profile";
+        }
+        return;
+      }
+    }
+
+    if(jpegBlob){
+
+      btn.textContent = "Uploading photo…";
+
+      const uid = window.currentUser.uid
+        || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
+
+      const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
+      const storageRef = ref(storage, path);
+
+      await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
+      photoURL = await getDownloadURL(storageRef);
+
+    }
+
+    const pendingPayload = {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      ministry,
+      role,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      zip,
+      birthday,
+      anniversary,
+      onboarding: true
+    };
+
+    if(photoURL){
+      pendingPayload.photoURL = photoURL;
+    }
+
+    await submitPendingChange(null, pendingPayload, { isOnboarding: true });
+
+    location.reload();
+
+  } catch (err) {
+    console.error("Onboarding submit failed:", err);
+    alert("Could not submit your profile for approval. Please try again.");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Submit profile";
+    }
+  }
 
 }
-   
+
+/* ================================= */
+/* EDIT MY PROFILE (member)          */
+/* ================================= */
+
+function openEditMyProfileSheet(){
+
+  if(!window.currentUser || !window.currentUser.email){
+    return;
+  }
+
+  if(!window.lastViewedProfile || !window.lastViewedProfile.id){
+    return;
+  }
+
+  const cu = window.currentUser.email.toLowerCase().trim();
+
+  const profileEmail = String(window.lastViewedProfile.email || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim()
+    .toLowerCase();
+
+  if(!profileEmail || profileEmail !== cu){
+    alert("You can only edit your own profile.");
+    return;
+  }
+
+  const member = members.find(m => m.id === window.lastViewedProfile.id);
+
+  if(!member){
+    alert("Could not load your profile. Try refreshing the page.");
+    return;
+  }
+
+  window.__editMyProfileMemberId = member.id;
+
+  closeProfile();
+
+  setTimeout(() => {
+    openEditMyProfileForm(member);
+  }, 320);
+
+}
+
+function openEditMyProfileForm(member){
+
+  clearOnboardingPhotoPreviewState();
+
+  const f = member.fields;
+  const defaultEmail = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.replace(/"/g, "&quot;")
+    : "";
+
+  const v = (key) => escapeHtml(f[key] || "");
+
+  const box = document.getElementById("onboardingContent");
+
+  box.innerHTML = `
+    <h2>Edit my profile</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:#555;">Update what you would like to share. Changes are sent for admin approval before they appear in the directory. Email stays tied to your Google account.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>First name</span>
+        <input id="onboardFirstName" placeholder="First name" autocomplete="given-name" value="${v("First Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Last name</span>
+        <input id="onboardLastName" placeholder="Last name" autocomplete="family-name" value="${v("Last Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Ministries and Roles</span>
+        <select id="onboardMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="">— Optional —</option>
+          <optgroup label="Ministries">
+            <option value="Children's Ministry">Children's Ministry</option>
+            <option value="Hospitality Ministry">Hospitality Ministry</option>
+            <option value="Men's Ministry">Men's Ministry</option>
+            <option value="Outreach Ministry">Outreach Ministry</option>
+            <option value="Pastor Ministry">Pastor Ministry</option>
+            <option value="Prayer Ministry">Prayer Ministry</option>
+            <option value="Teaching Ministry">Teaching Ministry</option>
+            <option value="Women's Ministry">Women's Ministry</option>
+            <option value="Worship Ministry">Worship Ministry</option>
+            <option value="Youth Ministry">Youth Ministry</option>
+          </optgroup>
+          <optgroup label="Roles">
+            <option value="Admin">Admin</option>
+            <option value="Sound">Sound</option>
+            <option value="Security">Security</option>
+            <option value="Volunteer">Volunteer</option>
+          </optgroup>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Email</span>
+        <input id="onboardEmail" type="email" placeholder="Email" value="${defaultEmail}" autocomplete="email" readonly style="background:#f5f5f5;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Phone</span>
+        <input id="onboardPhone" type="tel" placeholder="Phone" autocomplete="tel" value="${v("Phone Number")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Address</span>
+        <input id="onboardAddress" placeholder="Street address" autocomplete="street-address" value="${v("Address")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>City</span>
+        <input id="onboardCity" placeholder="City" autocomplete="address-level2" value="${v("City")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>State</span>
+        <input id="onboardState" placeholder="State" autocomplete="address-level1" value="${v("State")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>ZIP</span>
+        <input id="onboardZip" placeholder="ZIP code" autocomplete="postal-code" value="${v("Zip Code")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Birthday</span>
+        <input id="onboardBirthday" type="text" placeholder="e.g. Feb 25" inputmode="text" autocomplete="off" aria-describedby="onboardBirthdayHint" value="${v("Birthday")}">
+        <span id="onboardBirthdayHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Feb 25).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Anniversary</span>
+        <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint" value="${v("Anniversary")}">
+        <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Profile photo (optional)</span>
+        <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
+        <span style="font-size:12px;color:#666;">Upload a new photo to replace your current one, or leave unchanged. Up to 10 MB; images are resized and saved as JPEG before upload.</span>
+      </label>
+      <div id="onboardPhotoPreview" style="display:none;margin-top:4px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (new photo)</p>
+        <img id="onboardPhotoPreviewImg" alt="" width="400" height="300" loading="lazy"
+          style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+      </div>
+
+      <button type="button" id="onboardSubmitBtn"
+        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+        Submit changes for approval
+      </button>
+
+      <button type="button" id="onboardCancelBtn"
+        style="padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;">
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  const sel = document.getElementById("onboardMinistry");
+  if(sel){
+    sel.value = ministryStringToSelectValue(f.Ministry || "");
+  }
+
+  document.getElementById("onboardSubmitBtn").onclick = () => submitEditMyProfile();
+
+  const cancelBtn = document.getElementById("onboardCancelBtn");
+  if(cancelBtn){
+    cancelBtn.onclick = () => cancelEditMyProfile();
+  }
+
+  const photoEl = document.getElementById("onboardPhoto");
+  if(photoEl){
+    photoEl.addEventListener("change", onOnboardPhotoInputChange);
+  }
+
+  openSheet("onboardingSheet");
+
+}
+
+async function submitEditMyProfile(){
+
+  const memberId = window.__editMyProfileMemberId;
+
+  if(!memberId){
+    alert("Missing profile reference. Try opening your profile again.");
+    return;
+  }
+
+  const firstName = (document.getElementById("onboardFirstName").value || "").trim();
+  const lastName = (document.getElementById("onboardLastName").value || "").trim();
+  const { ministry, role } = splitMinistryAndRole(
+    document.getElementById("onboardMinistry").value
+  );
+  const phone = (document.getElementById("onboardPhone").value || "").trim();
+  const address = (document.getElementById("onboardAddress").value || "").trim();
+  const city = (document.getElementById("onboardCity").value || "").trim();
+  const state = (document.getElementById("onboardState").value || "").trim();
+  const zip = (document.getElementById("onboardZip").value || "").trim();
+  const birthday = (document.getElementById("onboardBirthday").value || "").trim();
+  const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
+
+  const email = (window.currentUser && window.currentUser.email)
+    ? window.currentUser.email.toLowerCase().trim()
+    : "";
+
+  if(!email){
+    alert("You must be signed in.");
+    return;
+  }
+
+  if(!firstName || !lastName){
+    alert("Please enter your first and last name.");
+    return;
+  }
+
+  const btn = document.getElementById("onboardSubmitBtn");
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+  }
+
+  try{
+
+    const photoInput = document.getElementById("onboardPhoto");
+    const file = photoInput && photoInput.files && photoInput.files[0]
+      ? photoInput.files[0]
+      : null;
+
+    if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
+      alert("Please choose an image of 10 MB or smaller.");
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = "Submit changes for approval";
+      }
+      return;
+    }
+
+    let photoURL = "";
+
+    let jpegBlob = window.__onboardingPhotoJpegBlob || null;
+
+    if(file && !jpegBlob){
+      btn.textContent = "Preparing photo…";
+      try{
+        jpegBlob = await compressImageFileToJpegBlob(file);
+        window.__onboardingPhotoJpegBlob = jpegBlob;
+      }catch(compErr){
+        console.error(compErr);
+        alert("Could not process the photo. Try another image.");
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = "Submit changes for approval";
+        }
+        return;
+      }
+    }
+
+    if(jpegBlob){
+
+      btn.textContent = "Uploading photo…";
+
+      const uid = window.currentUser.uid
+        || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
+
+      const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
+      const storageRef = ref(storage, path);
+
+      await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
+      photoURL = await getDownloadURL(storageRef);
+
+    }
+
+    const member = members.find(m => m.id === memberId);
+    const existingPhoto = member && member.fields
+      ? (member.fields.Photo || "").trim()
+      : "";
+
+    if(!photoURL && existingPhoto){
+      photoURL = existingPhoto;
+    }
+
+    const pendingPayload = {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      ministry,
+      role,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      zip,
+      birthday,
+      anniversary,
+      lastUpdated: new Date().toISOString()
+    };
+
+    if(photoURL){
+      pendingPayload.photoURL = photoURL;
+    }
+
+    await submitPendingChange(memberId, pendingPayload, { isOnboarding: false });
+
+    window.__editMyProfileMemberId = null;
+
+    location.reload();
+
+  }catch(err){
+    console.error("Edit profile submit failed:", err);
+    alert("Could not submit your changes. Please try again.");
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = "Submit changes for approval";
+    }
+  }
+
+}
+
 /* ================================= */
 /* ADMIN CONFIG                      */
 /* ================================= */
@@ -884,40 +1982,32 @@ hideEditorUI();
 
 import { 
   GoogleAuthProvider, 
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  const provider = new GoogleAuthProvider();
+const provider = new GoogleAuthProvider();
 
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-  loginBtn.onclick = async () => {
+loginBtn.onclick = async () => {
   try {
-    await signInWithRedirect(auth, provider);
+    await authReady;
+    await signInWithPopup(auth, provider);
   } catch (err) {
     console.error("Login error:", err);
   }
 };
 
-getRedirectResult(auth)
-  .then((result) => {
-    if (result?.user) {
-      console.log("Redirect login success:", result.user.email);
-    }
-  })
-  .catch((error) => {
-    console.error("Redirect login error:", error);
-  });
-   
-  logoutBtn.onclick = async () => {
-    await signOut(auth);
-  };
+logoutBtn.onclick = async () => {
+  await signOut(auth);
+};
 
-  onAuthStateChanged(auth, async (user) => {
+await authReady;
+
+onAuthStateChanged(auth, async (user) => {
   const app = document.getElementById("app");
   const loginScreen = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
@@ -932,35 +2022,42 @@ getRedirectResult(auth)
     if (!allowed) {
       alert("You are not authorized to access this directory.");
       await signOut(auth);
-      return; 
+      return;
     }
 
     window.currentUser = user;
     const profile = await getMemberProfileByEmail(email);
+    const onboardingPending = await hasPendingOnboardingSubmission(user.email);
 
-    // Setup Roles
     window.isSuperAdmin = SUPER_ADMINS.includes(email);
     window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
 
     const editorToggleBtn = document.getElementById("editorToggleBtn");
-    editorToggleBtn.style.display = window.isChurchAdmin ? "block" : "none";
+    editorToggleBtn.style.display = window.isChurchAdmin ? "inline-flex" : "none";
 
-    // Show App
     app.style.display = "block";
     loginScreen.style.display = "none";
-    logoutBtn.style.display = "block";
+    logoutBtn.style.display = "inline-flex";
 
-    if (!profile) {
+    await startPendingChangesCountListener();
+
+    if (!profile && !onboardingPending) {
       openOnboarding();
     }
 
-    loadMembers(); // Ensure this function is defined!
+    loadMembers();
   } else {
-    console.log("User logged in:");
+    console.log("User logged out");
     window.currentUser = null;
+    stopPendingChangesCountListener();
+    const pcw = document.getElementById("pendingChangesCountWrap");
+    if (pcw) {
+      pcw.style.display = "none";
+    }
     app.style.display = "none";
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
+    document.getElementById("editorToggleBtn").style.display = "none";
   }
 });
 
@@ -994,6 +2091,32 @@ function openSheet(id){
     sheet.style.transform = "translateY(0)";
   },10);
 }
+
+function closeOnboardingSheet(){
+
+  const overlay = document.getElementById("onboardingSheet");
+  if(!overlay){
+    return;
+  }
+
+  const sheet = overlay.querySelector(".profile-box");
+
+  sheet.style.transform = "translateY(100%)";
+
+  setTimeout(()=>{
+    overlay.classList.remove("show");
+  },300);
+
+}
+
+function cancelEditMyProfile(){
+
+  clearOnboardingPhotoPreviewState();
+  window.__editMyProfileMemberId = null;
+
+  closeOnboardingSheet();
+
+}
    
 /* ================================= */
 /* SHOW / HIDE EDITOR UI             */
@@ -1010,12 +2133,97 @@ function hideEditorUI(){
 }
 
 /* ================================= */
+/* PENDING CHANGES COUNT (ADMINS)    */
+/* ================================= */
+
+let pendingChangesCountUnsub = null;
+
+function stopPendingChangesCountListener(){
+
+if(typeof pendingChangesCountUnsub === "function"){
+pendingChangesCountUnsub();
+pendingChangesCountUnsub = null;
+}
+
+}
+
+function setPendingChangesCountText(n){
+
+const textEl = document.getElementById("pendingChangesCountText");
+const wrap = document.getElementById("pendingChangesCountWrap");
+
+if(!textEl || !wrap){
+return;
+}
+
+if(!window.isChurchAdmin){
+wrap.style.display = "none";
+return;
+}
+
+if(n === 1){
+textEl.textContent = "There is 1 pending change request.";
+}else{
+textEl.textContent = `There are ${n} pending change requests.`;
+}
+
+wrap.style.display = "block";
+
+}
+
+async function startPendingChangesCountListener(){
+
+stopPendingChangesCountListener();
+
+const wrap = document.getElementById("pendingChangesCountWrap");
+
+if(!wrap){
+return;
+}
+
+if(!window.isChurchAdmin){
+wrap.style.display = "none";
+return;
+}
+
+const { onSnapshot, collection } = await import(
+"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+);
+
+pendingChangesCountUnsub = onSnapshot(
+collection(db, "pendingChanges"),
+(snapshot) => {
+
+let n = 0;
+
+snapshot.forEach((docSnap) => {
+
+if(docSnap.data().status === "pending"){
+n++;
+}
+
+});
+
+setPendingChangesCountText(n);
+
+},
+(err) => {
+console.error("pendingChanges listener:", err);
+}
+);
+
+}
+
+/* ================================= */
 /* OPEN MEMBER SELECTION SHEET       */
 /* ================================= */
 
-function openMemberSelect(){
+function renderMemberSelectContent(){
 
   const box = document.getElementById("memberSelectContent");
+  if(!box){
+    return;
+  }
 
   let html = `<h2>Select Member</h2>`;
 
@@ -1025,12 +2233,18 @@ function openMemberSelect(){
     html += `
       <div onclick="selectMemberForEdit('${m.id}')"
            style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
-        ${name}
+        ${escapeHtml(name)}
       </div>
     `;
   });
 
   box.innerHTML = html;
+
+}
+
+function openMemberSelect(){
+
+  renderMemberSelectContent();
 
   const overlay = document.getElementById("memberSelectSheet");
   const sheet = overlay.querySelector(".profile-box");
@@ -1084,35 +2298,175 @@ function selectMemberForEdit(memberId){
    
 function openEditMember(member){
 
+  clearEditMemberPhotoState();
+
   const f = member.fields;
+
+  const v = (key) => escapeHtml(String(f[key] || ""));
+
+  const currentPhoto = String(f.Photo || "").trim();
+  const showCurrentPhoto = currentPhoto && !currentPhoto.startsWith("images/default");
 
   const box = document.getElementById("editMemberContent");
 
   box.innerHTML = `
     <h2>Edit Member</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:#555;">${window.isChurchAdmin ? "Update any profile fields. Changes save directly to the directory." : "Changes are sent for admin approval before they appear in the directory."}</p>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
 
-      <input id="editFirstName" placeholder="First Name" value="${f["First Name"] || ""}">
-      <input id="editLastName" placeholder="Last Name" value="${f["Last Name"] || ""}">
-      <input id="editPhone" placeholder="Phone" value="${f["Phone Number"] || ""}">
-      <input id="editEmail" placeholder="Email" value="${f["Email"] || ""}">
-      <input id="editAddress" placeholder="Address" value="${f["Address"] || ""}">
-      <input id="editCity" placeholder="City" value="${f["City"] || ""}">
-      <input id="editState" placeholder="State" value="${f["State"] || ""}">
-      <input id="editZip" placeholder="Zip Code" value="${f["Zip Code"] || ""}">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>First name</span>
+        <input id="editFirstName" placeholder="First name" autocomplete="given-name" value="${v("First Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Last name</span>
+        <input id="editLastName" placeholder="Last name" autocomplete="family-name" value="${v("Last Name")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Ministries and Roles</span>
+        <select id="editMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="">— Optional —</option>
+          <optgroup label="Ministries">
+            <option value="Children's Ministry">Children's Ministry</option>
+            <option value="Hospitality Ministry">Hospitality Ministry</option>
+            <option value="Men's Ministry">Men's Ministry</option>
+            <option value="Outreach Ministry">Outreach Ministry</option>
+            <option value="Pastor Ministry">Pastor Ministry</option>
+            <option value="Prayer Ministry">Prayer Ministry</option>
+            <option value="Teaching Ministry">Teaching Ministry</option>
+            <option value="Women's Ministry">Women's Ministry</option>
+            <option value="Worship Ministry">Worship Ministry</option>
+            <option value="Youth Ministry">Youth Ministry</option>
+          </optgroup>
+          <optgroup label="Roles">
+            <option value="Admin">Admin</option>
+            <option value="Sound">Sound</option>
+            <option value="Security">Security</option>
+            <option value="Volunteer">Volunteer</option>
+          </optgroup>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Household</span>
+        <input id="editHousehold" placeholder="Household (optional)" value="${v("Household")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Email</span>
+        <input id="editEmail" type="email" placeholder="Email" autocomplete="email" value="${v("Email")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Phone</span>
+        <input id="editPhone" type="tel" placeholder="Phone" autocomplete="tel" value="${v("Phone Number")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Address</span>
+        <input id="editAddress" placeholder="Street address" autocomplete="street-address" value="${v("Address")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>City</span>
+        <input id="editCity" placeholder="City" autocomplete="address-level2" value="${v("City")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>State</span>
+        <input id="editState" placeholder="State" autocomplete="address-level1" value="${v("State")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>ZIP</span>
+        <input id="editZip" placeholder="ZIP code" autocomplete="postal-code" value="${v("Zip Code")}">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Birthday</span>
+        <input id="editBirthday" type="text" placeholder="e.g. Feb 25" value="${v("Birthday")}">
+        <span style="font-size:12px;color:#666;">Month and day (example: Feb 25).</span>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
+        <span>Anniversary</span>
+        <input id="editAnniversary" type="text" placeholder="e.g. Jun 12" value="${v("Anniversary")}">
+        <span style="font-size:12px;color:#666;">Month and day (example: Jun 12).</span>
+      </label>
 
-      <button onclick="saveMemberChanges('${member.id}')"
-  style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-  Save Changes
-</button>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+        <span><strong>Profile photo</strong></span>
+        ${showCurrentPhoto ? `
+        <div id="editMemberCurrentPhotoWrap" style="text-align:center;">
+          <p style="margin:0 0 6px;font-size:12px;color:#666;">Current photo</p>
+          <img id="editMemberCurrentPhotoImg" src="${escapeHtml(currentPhoto)}" alt="" loading="lazy"
+            style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+        </div>` : `<div id="editMemberCurrentPhotoWrap" style="display:none;"></div>`}
+        <input id="editMemberPhoto" type="file" accept="image/*" style="font-size:14px;">
+        <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload.</span>
+        <button type="button" id="editMemberRemovePhotoBtn" style="align-self:flex-start;padding:8px 12px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;">
+          Remove photo
+        </button>
+        <p id="editMemberPhotoRemovedNote" style="display:none;margin:0;font-size:13px;color:#a32;">Photo will be removed when you save.</p>
+        <div id="editMemberPhotoNewPreview" style="display:none;margin-top:4px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (new photo)</p>
+          <img id="editMemberPhotoNewPreviewImg" alt="" width="400" height="300" loading="lazy"
+            style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
+        </div>
+      </div>
 
-      <button onclick="closeEditMember()">
+      <button type="button" onclick="saveMemberChanges('${member.id}')"
+        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
+        Save Changes
+      </button>
+
+      <button type="button" onclick="closeEditMember()">
         Cancel
       </button>
 
+      ${window.isChurchAdmin ? `
+      <button type="button" id="editDeleteMemberBtn"
+        style="margin-top:6px;padding:10px;border:1px solid #d4a0a0;color:#a32;background:#fff8f8;border-radius:8px;cursor:pointer;width:100%;">
+        Remove from directory
+      </button>
+      ` : ""}
+
     </div>
   `;
+
+  const sel = document.getElementById("editMinistry");
+  if(sel){
+    sel.value = ministryStringToSelectValue(f.Ministry || "");
+  }
+
+  const photoIn = document.getElementById("editMemberPhoto");
+  if(photoIn){
+    photoIn.addEventListener("change", onEditMemberPhotoInputChange);
+  }
+
+  const removeBtn = document.getElementById("editMemberRemovePhotoBtn");
+  if(removeBtn){
+    removeBtn.onclick = () => {
+      window.__editMemberRemovePhoto = true;
+      window.__editMemberPhotoJpegBlob = null;
+      const inp = document.getElementById("editMemberPhoto");
+      if(inp){
+        inp.value = "";
+      }
+      const newPrev = document.getElementById("editMemberPhotoNewPreview");
+      const newImg = document.getElementById("editMemberPhotoNewPreviewImg");
+      if(newImg && newImg.dataset.objectUrl){
+        URL.revokeObjectURL(newImg.dataset.objectUrl);
+        delete newImg.dataset.objectUrl;
+      }
+      if(newPrev){
+        newPrev.style.display = "none";
+      }
+      if(newImg){
+        newImg.removeAttribute("src");
+      }
+      const curWrap = document.getElementById("editMemberCurrentPhotoWrap");
+      if(curWrap){
+        curWrap.style.display = "none";
+      }
+      const note = document.getElementById("editMemberPhotoRemovedNote");
+      if(note){
+        note.style.display = "block";
+      }
+    };
+  }
 
   const overlay = document.getElementById("editMemberSheet");
   const sheet = overlay.querySelector(".profile-box");
@@ -1122,6 +2476,12 @@ function openEditMember(member){
   setTimeout(()=>{
     sheet.style.transform = "translateY(0)";
   },10);
+
+  const delBtn = document.getElementById("editDeleteMemberBtn");
+  if(delBtn){
+    delBtn.onclick = () => deleteMemberFromDirectory(member.id);
+  }
+
 }
 
 /* ================================= */
@@ -1129,6 +2489,13 @@ function openEditMember(member){
 /* ================================= */
    
 function closeEditMember(){
+
+  const newImg = document.getElementById("editMemberPhotoNewPreviewImg");
+  if(newImg && newImg.dataset.objectUrl){
+    URL.revokeObjectURL(newImg.dataset.objectUrl);
+  }
+
+  clearEditMemberPhotoState();
 
   const overlay = document.getElementById("editMemberSheet");
   const sheet = overlay.querySelector(".profile-box");
@@ -1141,19 +2508,107 @@ function closeEditMember(){
 }
 
 /* ================================= */
+/* DELETE MEMBER (ADMIN)             */
+/* ================================= */
+
+async function deleteMemberFromDirectory(memberId){
+
+  if(!window.isChurchAdmin){
+    alert("Only church admins can remove members from the directory.");
+    return;
+  }
+
+  const member = members.find(m => m.id === memberId);
+  const label = member
+    ? (member.fields["Full Name"] || `${member.fields["First Name"] || ""} ${member.fields["Last Name"] || ""}`.trim() || "this member")
+    : "this member";
+
+  if(!confirm(`Remove "${label}" from the directory?\n\nThis cannot be undone.`)){
+    return;
+  }
+
+  try{
+
+    const { deleteDoc, doc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const rawEmail = member && member.fields
+      ? String(member.fields["Email"] || "").trim()
+      : "";
+    const allowUserId = rawEmail.toLowerCase();
+
+    await deleteDoc(doc(db, "members", memberId));
+
+    if(allowUserId){
+      try{
+        await deleteDoc(doc(db, "allowedUsers", allowUserId));
+      }catch(allowErr){
+        console.warn("Could not remove directory access (allowedUsers):", allowErr);
+        alert(
+          "Member was removed from the directory, but their login access could not be cleared automatically. Remove them from allowedUsers in Firestore if needed."
+        );
+        closeEditMember();
+        await loadMembers();
+        const memberSelectSheet = document.getElementById("memberSelectSheet");
+        if(memberSelectSheet && memberSelectSheet.classList.contains("show")){
+          renderMemberSelectContent();
+        }
+        return;
+      }
+    }
+
+    alert("Member removed from the directory.");
+
+    closeEditMember();
+    await loadMembers();
+
+    const memberSelectSheet = document.getElementById("memberSelectSheet");
+    if(memberSelectSheet && memberSelectSheet.classList.contains("show")){
+      renderMemberSelectContent();
+    }
+
+  }catch(err){
+    console.error("Delete member failed:", err);
+    alert("Could not remove this member. Check the console for details.");
+  }
+
+}
+
+/* ================================= */
 /* SAVE MEMBER EDITS TO FIRESTORE    */
 /* ================================= */
    
 async function saveMemberChanges(memberId){
 
-  const firstName = document.getElementById("editFirstName").value;
-  const lastName = document.getElementById("editLastName").value;
-  const phone = document.getElementById("editPhone").value;
-  const email = document.getElementById("editEmail").value;
-  const address = document.getElementById("editAddress").value;
-  const city = document.getElementById("editCity").value;
-  const state = document.getElementById("editState").value;
-  const zipCode = document.getElementById("editZip").value;
+  const firstName = (document.getElementById("editFirstName").value || "").trim();
+  const lastName = (document.getElementById("editLastName").value || "").trim();
+  const { ministry: pendingMinistry, role: pendingRole } = splitMinistryAndRole(
+    document.getElementById("editMinistry").value
+  );
+  const household = (document.getElementById("editHousehold").value || "").trim();
+  const phone = (document.getElementById("editPhone").value || "").trim();
+  const email = (document.getElementById("editEmail").value || "").trim();
+  const address = (document.getElementById("editAddress").value || "").trim();
+  const city = (document.getElementById("editCity").value || "").trim();
+  const state = (document.getElementById("editState").value || "").trim();
+  const zipCode = (document.getElementById("editZip").value || "").trim();
+  const birthday = (document.getElementById("editBirthday").value || "").trim();
+  const anniversary = (document.getElementById("editAnniversary").value || "").trim();
+
+  const ministryParts = [pendingMinistry, pendingRole].filter(Boolean);
+  const ministryField = ministryParts.length ? ministryParts.join(" · ") : "";
+
+  if(!firstName || !lastName){
+    alert("Please enter first and last name.");
+    return;
+  }
+
+  const member = members.find(m => m.id === memberId);
+
+  const existingPhoto = member
+    ? String(member.fields.Photo || "").trim()
+    : "";
 
   try {
 
@@ -1163,61 +2618,107 @@ async function saveMemberChanges(memberId){
 
     const isAdmin = window.isChurchAdmin;
 
+    let photoOut = existingPhoto;
+
 if(isAdmin){
 
-  // ADMIN → direct update
+  if(window.__editMemberRemovePhoto){
+    photoOut = "";
+  }else if(window.__editMemberPhotoJpegBlob){
+
+    const path = `profilePhotos/members/${memberId}/${Date.now()}_profile.jpg`;
+    const storageRef = ref(storage, path);
+
+    await uploadBytes(storageRef, window.__editMemberPhotoJpegBlob, { contentType: "image/jpeg" });
+    photoOut = await getDownloadURL(storageRef);
+
+  }
+
   await updateDoc(doc(db, "members", memberId), {
-  firstName,
-  lastName,
-  fullName: `${firstName} ${lastName}`,
-  phone,
-  email,
-  address,
-  city,
-  state,
-  zipCode,
-  lastUpdated: new Date().toISOString()
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`.trim(),
+    ministry: ministryField,
+    household,
+    phone,
+    email,
+    address,
+    city,
+    state,
+    zipCode,
+    birthday,
+    anniversary,
+    photo: photoOut,
+    lastUpdated: new Date().toISOString()
   });
 
   alert("Profile updated");
 
-} else {
+}else{
 
-  // MEMBER → submit for approval
-  await submitPendingChange(member.id, {
-  firstName,
-  lastName,
-  fullName: `${firstName} ${lastName}`,
-  phone,
-  email,
-  address,
-  city,
-  state,
-  zipCode,
-  lastUpdated: new Date().toISOString()
-  });
+  let photoURL = existingPhoto;
+
+  if(window.__editMemberRemovePhoto){
+    photoURL = "";
+  }else if(window.__editMemberPhotoJpegBlob){
+
+    const uid = window.currentUser.uid
+      || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
+
+    const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
+    const storageRef = ref(storage, path);
+
+    await uploadBytes(storageRef, window.__editMemberPhotoJpegBlob, { contentType: "image/jpeg" });
+    photoURL = await getDownloadURL(storageRef);
+
+  }
+
+  const pendingPayload = {
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`.trim(),
+    ministry: pendingMinistry,
+    role: pendingRole,
+    household,
+    phone,
+    email,
+    address,
+    city,
+    state,
+    zip: zipCode,
+    birthday,
+    anniversary,
+    lastUpdated: new Date().toISOString(),
+    photoURL
+  };
+
+  await submitPendingChange(memberId, pendingPayload, { isOnboarding: false });
 
 }
 
     console.log("Member updated!");
 
-    // Update local state
-    const member = members.find(m => m.id === memberId);
+    clearEditMemberPhotoState();
 
-    if(member){
+    if(member && isAdmin){
       member.fields["First Name"] = firstName;
       member.fields["Last Name"] = lastName;
-      member.fields["Full Name"] = `${firstName} ${lastName}`;
+      member.fields["Full Name"] = `${firstName} ${lastName}`.trim();
+      member.fields["Ministry"] = ministryField;
+      member.fields["Household"] = household;
       member.fields["Phone Number"] = phone;
       member.fields["Email"] = email;
       member.fields["Address"] = address;
       member.fields["City"] = city;
       member.fields["State"] = state;
       member.fields["Zip Code"] = zipCode;
+      member.fields["Birthday"] = birthday;
+      member.fields["Anniversary"] = anniversary;
+      member.fields["Photo"] = photoOut;
+      member.fields["Last Updated"] = new Date().toISOString();
     }
 
-    // Refresh UI
-    buildDirectory();
+    buildDirectory(getCurrentMemberSearchQuery());
 
     closeEditMember();
 
@@ -1228,40 +2729,14 @@ if(isAdmin){
 }
 
 /* ================================= */
-/* MEMBER PENDING CHANGES SUBMISSION */
-/* ================================= */
-   
-async function submitPendingChange(memberId, changes){
-
-  try {
-
-    const { addDoc, collection } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    await addDoc(collection(db, "pendingChanges"), {
-      memberId: memberId,
-      submittedBy: window.currentUser.email,
-      changes: changes,
-      status: "pending",
-      createdAt: new Date()
-    });
-
-    alert("Changes submitted for approval");
-
-  } catch (err) {
-    console.error("Failed to submit change:", err);
-  }
-
-}
-
-/* ================================= */
 /* BUILD PENDING CHANGES YEAR VIEW   */
 /* ================================= */
    
 function buildYearView(changes){
 
   const box = document.getElementById("pendingChangesContent");
+
+  window.pendingChangesData = changes;
 
   const years = {};
 
@@ -1275,7 +2750,20 @@ function buildYearView(changes){
     years[year].push(c);
   });
 
+  const pendingCount = changes.filter(c => c.status === "pending").length;
+
+  const unresolvedRowLabel = pendingCount === 0
+    ? "No pending changes"
+    : "Unresolved pending changes";
+
   let html = `<h2>Pending Changes</h2>`;
+
+  html += `
+    <div onclick="buildUnresolvedList()"
+      style="padding:14px;border-bottom:1px solid #e0e0e0;cursor:pointer;font-weight:600;background:#f5f7fa;">
+      ${unresolvedRowLabel}
+    </div>
+  `;
 
   Object.keys(years)
     .sort((a,b)=>b-a)
@@ -1288,8 +2776,6 @@ function buildYearView(changes){
         </div>
       `;
     });
-
-  window.pendingChangesData = changes;
 
   box.innerHTML = html;
 
@@ -1366,21 +2852,596 @@ function buildDayList(year, month){
     });
 
     html += `
-  <div style="padding:12px;border-bottom:1px solid #eee;">
-    <strong>${label}</strong><br>
-    ${c.submittedBy}
-
-    <div style="margin-top:8px;">
-      <button onclick="approveChange('${c.id}')">Approve</button>
-      <button onclick="rejectChange('${c.id}')">Reject</button>
-    </div>
-  </div>
-`;
+      <div style="padding:12px;border-bottom:1px solid #eee;">
+        <strong>${label}</strong><br>
+        ${c.submittedBy}
+      </div>
+    `;
   });
 
   document.getElementById("pendingChangesContent").innerHTML = html;
 }
-   
+
+/* ================================= */
+/* PENDING CHANGES — UNRESOLVED LIST */
+/* ================================= */
+
+function escapeHtml(s){
+
+  if(s == null || s === "") return "";
+
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+}
+
+function formatPendingDetailValue(v){
+
+  if(v == null || v === "") return "—";
+
+  return escapeHtml(v);
+
+}
+
+function restorePendingChangesYearView(){
+
+  if(!window.pendingChangesData){
+    return;
+  }
+
+  buildYearView(window.pendingChangesData);
+
+}
+
+function buildUnresolvedList(){
+
+  const changes = window.pendingChangesData;
+
+  const box = document.getElementById("pendingChangesContent");
+
+  if(!changes){
+    box.innerHTML = `
+      <div onclick="restorePendingChangesYearView()"
+        style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+        ← Back
+      </div>
+      <h2>Unresolved</h2>
+      <p style="padding:14px;">No pending changes loaded.</p>
+    `;
+    return;
+  }
+
+  const filtered = changes.filter(c => c.status === "pending");
+
+  filtered.sort((a,b)=>{
+
+    const ta = a.createdAt && a.createdAt.toDate
+      ? a.createdAt.toDate().getTime()
+      : 0;
+
+    const tb = b.createdAt && b.createdAt.toDate
+      ? b.createdAt.toDate().getTime()
+      : 0;
+
+    return tb - ta;
+
+  });
+
+  let html = `
+    <div onclick="restorePendingChangesYearView()"
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+      ← Back
+    </div>
+    <h2>Unresolved</h2>
+  `;
+
+  if(filtered.length === 0){
+
+    html += `<p style="padding:14px;">No unresolved items — nothing is pending.</p>`;
+    box.innerHTML = html;
+    return;
+
+  }
+
+  filtered.forEach(c => {
+
+    const d = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate() : null;
+
+    const label = d
+      ? d.toLocaleDateString("en-US", {
+        month:"short",
+        day:"numeric",
+        year:"numeric"
+      })
+      : "—";
+
+    html += `
+      <div onclick="openUnresolvedPendingDetail('${c.id}')"
+        style="padding:12px;border-bottom:1px solid #eee;cursor:pointer;">
+        <strong>${escapeHtml(label)}</strong><br>
+        ${escapeHtml(c.submittedBy || "")}
+      </div>
+    `;
+
+  });
+
+  box.innerHTML = html;
+
+}
+
+/* ================================= */
+/* UNRESOLVED — DETAIL + APPROVE     */
+/* ================================= */
+
+function mapChangesToMember(ch){
+
+  const zipVal = ch.zip != null && ch.zip !== ""
+    ? ch.zip
+    : (ch.zipCode != null ? ch.zipCode : "");
+
+  const ministryParts = [ch.ministry, ch.role].filter(Boolean);
+  const ministry = ministryParts.length ? ministryParts.join(" · ") : "";
+
+  const first = (ch.firstName || "").trim();
+  const last = (ch.lastName || "").trim();
+
+  const hasPhotoURL = Object.prototype.hasOwnProperty.call(ch, "photoURL");
+  const hasPhoto = Object.prototype.hasOwnProperty.call(ch, "photo");
+  const photoVal = hasPhotoURL
+    ? (ch.photoURL ?? "")
+    : (hasPhoto ? (ch.photo ?? "") : "");
+
+  return {
+    firstName: first,
+    lastName: last,
+    fullName: ch.fullName || `${first} ${last}`.trim(),
+    email: ch.email || "",
+    phone: ch.phone || "",
+    ministry,
+    address: ch.address || "",
+    city: ch.city || "",
+    state: ch.state || "",
+    zipCode: zipVal,
+    birthday: ch.birthday || "",
+    anniversary: ch.anniversary || "",
+    household: ch.household || "",
+    photo: photoVal,
+    lastUpdated: new Date().toISOString()
+  };
+
+}
+
+async function refreshPendingChangesCache(){
+
+  const { getDocs, collection } = await import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+
+  const snapshot = await getDocs(collection(db, "pendingChanges"));
+
+  const changes = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  window.pendingChangesData = changes;
+
+  return changes;
+
+}
+
+function openUnresolvedPendingDetail(pendingId){
+
+  const list = window.pendingChangesData || [];
+  const item = list.find(x => x.id === pendingId);
+
+  if(!item){
+    alert("That entry could not be found.");
+    return;
+  }
+
+  const ch = item.changes || {};
+  const created = item.createdAt && item.createdAt.toDate
+    ? item.createdAt.toDate().toLocaleString()
+    : "—";
+
+  const isOnboarding = ch.onboarding === true;
+
+  const photoURL = ch.photoURL || ch.photo;
+  const safePhotoUrl = typeof photoURL === "string" && /^https:\/\//i.test(photoURL.trim())
+    ? photoURL.trim()
+    : "";
+
+  const photoBlock = safePhotoUrl
+    ? `<div style="margin:12px 0;text-align:center;">
+        <p style="margin:0 0 8px;font-size:14px;"><strong>Profile photo</strong></p>
+        <p style="margin:0 0 6px;font-size:12px;color:#666;">Click image to enlarge</p>
+        <img id="pendingChangePhotoImg" src="${escapeHtml(safePhotoUrl)}" alt="Profile photo" referrerpolicy="no-referrer" loading="lazy"
+          title="View full size"
+          style="max-width:100%;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid #eee;cursor:pointer;">
+      </div>`
+    : "";
+
+  const rows = [
+    ["Submitted by", item.submittedBy || "—"],
+    ["Submitted at", created],
+    ["Type", isOnboarding ? "New member (onboarding)" : "Profile update"],
+    ...(item.memberId ? [["Member document ID", item.memberId]] : []),
+    ["First name", ch.firstName],
+    ["Last name", ch.lastName],
+    ["Full name", ch.fullName],
+    ["Email", ch.email],
+    ["Phone", ch.phone],
+    ["Ministry", ch.ministry],
+    ["Role", ch.role],
+    ["Address", ch.address],
+    ["City", ch.city],
+    ["State", ch.state],
+    ["ZIP", ch.zip != null && ch.zip !== "" ? ch.zip : ch.zipCode],
+    ["Birthday", ch.birthday],
+    ["Anniversary", ch.anniversary]
+  ];
+
+  const body = photoBlock + rows.map(([label, val]) => `
+    <p style="margin:0 0 10px;font-size:14px;line-height:1.4;">
+      <strong>${escapeHtml(label)}</strong><br>
+      <span style="color:#333;">${formatPendingDetailValue(val)}</span>
+    </p>
+  `).join("");
+
+  const admin = window.isChurchAdmin;
+
+  const buttons = admin
+    ? `<div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #eee;flex-shrink:0;">
+         <button type="button" id="pendingApproveBtn"
+           style="flex:1;padding:12px;background:#2b5cff;color:white;border:none;border-radius:8px;font-size:15px;">
+           Approve
+         </button>
+         <button type="button" id="pendingDenyBtn"
+           style="flex:1;padding:12px;background:#eee;color:#111;border:none;border-radius:8px;font-size:15px;">
+           Deny
+         </button>
+       </div>`
+    : `<p style="color:#666;font-size:13px;margin-top:12px;">Only church admins can approve or deny.</p>`;
+
+  const box = document.getElementById("pendingChangesContent");
+
+  box.innerHTML = `
+    <div onclick="buildUnresolvedList()"
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+      ← Back to Unresolved
+    </div>
+    <h2 style="margin:12px 0;">Review pending change</h2>
+    <div style="padding:4px 0 8px;max-height:50vh;overflow-y:auto;">
+      ${body}
+    </div>
+    ${buttons}
+  `;
+
+  if(admin){
+
+    document.getElementById("pendingApproveBtn").onclick = () => {
+      approvePendingChange(pendingId);
+    };
+
+    document.getElementById("pendingDenyBtn").onclick = () => {
+      denyPendingChange(pendingId);
+    };
+
+  }
+
+  if(safePhotoUrl){
+
+    const pendingImg = document.getElementById("pendingChangePhotoImg");
+
+    if(pendingImg){
+      pendingImg.onclick = (e) => {
+        e.stopPropagation();
+        openPhoto(safePhotoUrl);
+      };
+    }
+
+  }
+
+}
+
+const ADMIN_EMAIL_SUBJECT_APPROVED = "Impact Church Directory — profile update approved";
+const ADMIN_EMAIL_SUBJECT_DENIED = "Impact Church Directory — profile update not approved";
+
+const INVITE_MEMBER_SUBJECT = "Invitation to Impact Church Directory";
+
+const INVITE_MEMBER_BODY = `Hi! You are invited to register your profile in the Impact Church Directory. Follow this link to get started:
+
+https://impactchurch2013.github.io/
+
+Looking forward to seeing you in the directory!
+
+#####`;
+
+function openInviteMemberDialog(){
+
+if(!window.isChurchAdmin){
+alert("Only church admins can invite members.");
+return;
+}
+
+const input = document.getElementById("inviteMemberEmail");
+if(input){
+input.value = "";
+}
+
+const modal = document.getElementById("inviteMemberModal");
+
+if(modal){
+modal.classList.add("show");
+modal.style.display = "flex";
+}
+
+if(input){
+input.focus();
+}
+
+}
+
+function closeInviteMemberDialog(){
+
+const modal = document.getElementById("inviteMemberModal");
+
+if(modal){
+modal.classList.remove("show");
+modal.style.display = "none";
+}
+
+}
+
+async function submitInviteMember(){
+
+if(!window.isChurchAdmin){
+alert("Only church admins can invite members.");
+return;
+}
+
+const raw = (document.getElementById("inviteMemberEmail").value || "").trim();
+
+if(!raw){
+alert("Please enter an email address.");
+return;
+}
+
+const email = raw.toLowerCase();
+
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+alert("Please enter a valid email address.");
+return;
+}
+
+const { setDoc, doc, serverTimestamp } = await import(
+"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+);
+
+try{
+
+await setDoc(
+doc(db, "allowedUsers", email),
+{
+invitedAt: serverTimestamp(),
+invitedBy: (window.currentUser && window.currentUser.email)
+? window.currentUser.email.toLowerCase().trim()
+: ""
+},
+{ merge: true }
+);
+
+}catch(err){
+
+console.error("Invite allowlist write failed:", err);
+alert("Could not add this email to the allowlist. Check the console and your Firestore rules.");
+return;
+
+}
+
+const mailUrl =
+`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(INVITE_MEMBER_SUBJECT)}&body=${encodeURIComponent(INVITE_MEMBER_BODY)}`;
+
+closeInviteMemberDialog();
+
+window.location.href = mailUrl;
+
+}
+
+function openAdminEmailModal(opts){
+
+  const { to, subject, body, title } = opts;
+
+  const modal = document.getElementById("adminEmailModal");
+  const titleEl = document.getElementById("adminEmailModalTitle");
+
+  document.getElementById("adminEmailTo").value = (to || "").trim();
+  document.getElementById("adminEmailSubject").value = subject || "";
+  document.getElementById("adminEmailBody").value = body || "";
+
+  if(titleEl){
+    titleEl.textContent = title || "Email the member";
+  }
+
+  if(modal){
+    modal.classList.add("show");
+    modal.style.display = "flex";
+  }
+
+}
+
+function closeAdminEmailModal(){
+
+  const modal = document.getElementById("adminEmailModal");
+
+  if(modal){
+    modal.classList.remove("show");
+    modal.style.display = "none";
+  }
+
+}
+
+function sendAdminEmailFromModal(){
+
+  const to = document.getElementById("adminEmailTo").value.trim();
+  const subject = document.getElementById("adminEmailSubject").value;
+  const body = document.getElementById("adminEmailBody").value;
+
+  if(!to){
+    alert("Please enter the recipient email address.");
+    return;
+  }
+
+  const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  window.location.href = url;
+
+}
+
+async function approvePendingChange(pendingId){
+
+  if(!window.isChurchAdmin){
+    alert("Only church admins can approve changes.");
+    return;
+  }
+
+  if(!confirm("Approve this change? The directory will update for everyone.")){
+    return;
+  }
+
+  try {
+
+    const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const changeRef = doc(db, "pendingChanges", pendingId);
+    const snap = await getDoc(changeRef);
+
+    if(!snap.exists()){
+      alert("This pending change is no longer in Firestore.");
+      await refreshPendingChangesCache();
+      buildUnresolvedList();
+      return;
+    }
+
+    const row = snap.data();
+    const ch = row.changes || {};
+
+    const memberPayload = mapChangesToMember(ch);
+
+    if(ch.onboarding){
+
+      await addDoc(collection(db, "members"), {
+        ...memberPayload,
+        createdAt: new Date().toISOString()
+      });
+
+    }else if(row.memberId){
+
+      await updateDoc(doc(db, "members", row.memberId), memberPayload);
+
+    }else{
+
+      alert("This entry is missing a member reference and is not marked as onboarding. It cannot be approved automatically.");
+      return;
+
+    }
+
+    await deleteDoc(changeRef);
+
+    const memberEmail = (ch.email || "").trim();
+    const firstName = (ch.firstName || "").trim() || "there";
+
+    const emailBody =
+      `Hello ${firstName},\n\n` +
+      "The changes you requested for your member profile in the Impact Church Directory have been approved.";
+
+    await refreshPendingChangesCache();
+    buildUnresolvedList();
+    await loadMembers();
+
+    alert("Approved. The directory has been updated.");
+
+    if(memberEmail){
+      openAdminEmailModal({
+        to: memberEmail,
+        subject: ADMIN_EMAIL_SUBJECT_APPROVED,
+        body: emailBody,
+        title: "Profile approved — notify the member"
+      });
+    }
+
+  }catch(err){
+    console.error("Approve failed:", err);
+    alert("Could not approve this change. Check the console for details.");
+  }
+
+}
+
+async function denyPendingChange(pendingId){
+
+  if(!window.isChurchAdmin){
+    alert("Only church admins can deny changes.");
+    return;
+  }
+
+  if(!confirm("Deny this request? It will be removed from the queue.")){
+    return;
+  }
+
+  try{
+
+    const { doc, getDoc, deleteDoc } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    );
+
+    const changeRef = doc(db, "pendingChanges", pendingId);
+    const snap = await getDoc(changeRef);
+
+    if(!snap.exists()){
+      alert("This pending change is no longer in Firestore.");
+      await refreshPendingChangesCache();
+      buildUnresolvedList();
+      return;
+    }
+
+    const row = snap.data();
+    const ch = row.changes || {};
+
+    const memberEmail = (ch.email || "").trim();
+
+    await deleteDoc(changeRef);
+
+    await refreshPendingChangesCache();
+    buildUnresolvedList();
+
+    const emailBody =
+      "The changes you requested for your member profile in the Impact Church Directory have been denied.\n\n" +
+      "<Delete this and enter the reason(s) the request was denied.>";
+
+    alert("Request denied and removed from the queue.");
+
+    if(memberEmail){
+      openAdminEmailModal({
+        to: memberEmail,
+        subject: ADMIN_EMAIL_SUBJECT_DENIED,
+        body: emailBody,
+        title: "Request denied — notify the member"
+      });
+    }
+
+  }catch(err){
+    console.error("Deny failed:", err);
+    alert("Could not deny this change. Check the console for details.");
+  }
+
+}
+
 /* ================================= */
 /* LOAD PENDING CHANGES SHEET DATA   */
 /* ================================= */
@@ -1424,68 +3485,6 @@ function closePendingChanges(){
   setTimeout(()=>{
     overlay.classList.remove("show");
   },300);
-}
-
-/* ================================= */
-/* APPROVE PENDING CHANGES           */
-/* ================================= */
-   
-async function approveChange(changeId){
-
-  const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  const changeRef = doc(db, "pendingChanges", changeId);
-  const changeSnap = await getDoc(changeRef);
-
-  if(!changeSnap.exists()){
-    alert("Change not found");
-    return;
-  }
-
-  const change = changeSnap.data();
-
-  // 🔥 ONBOARDING CASE (new user)
-  if(change.changes.onboarding){
-
-    await addDoc(collection(db, "members"), {
-      ...change.changes,
-      createdAt: new Date().toISOString()
-    });
-
-  } else {
-
-    // 🔥 EDIT CASE (existing member)
-    await updateDoc(doc(db, "members", change.memberId), {
-      ...change.changes
-    });
-
-  }
-
-  // delete pending change
-  await deleteDoc(changeRef);
-
-  alert("Approved!");
-
-  loadPendingChanges(); // refresh
-}
-
-/* ================================= */
-/* REJECT PENDING CHANGES            */
-/* ================================= */
-   
-async function rejectChange(changeId){
-
-  const { doc, deleteDoc } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  await deleteDoc(doc(db, "pendingChanges", changeId));
-
-  alert("Rejected");
-
-  loadPendingChanges();
 }
    
 /* ================================= */
@@ -1537,7 +3536,7 @@ async function loadMembers(){
 
     console.log("Loaded members from Firestore:", members);
 
-    buildDirectory();
+    buildDirectory(getCurrentMemberSearchQuery());
 
   } catch (error) {
     console.error("Error loading members:", error);
@@ -1549,13 +3548,36 @@ async function loadMembers(){
 /* BUILD DIRECTORY                   */
 /* ================================= */
 
-function buildDirectory(){
+function getCurrentMemberSearchQuery(){
 
-const directory = document.getElementById("directory")
+const el = document.getElementById("memberSearch")
 
-directory.innerHTML = ""
+return el ? el.value.trim().toLowerCase() : ""
 
-members.sort((a,b)=>{
+}
+
+function getMemberNameParts(record){
+
+const f = record.fields || {}
+
+return{
+first:String(f["First Name"] || "").trim().toLowerCase(),
+last:String(f["Last Name"] || "").trim().toLowerCase()
+}
+
+}
+
+function memberMatchesNamePrefix(record, q){
+
+if(!q) return true
+
+const { first, last } = getMemberNameParts(record)
+
+return first.startsWith(q) || last.startsWith(q)
+
+}
+
+function compareMembersDefaultSort(a, b){
 
 const aLast = a.fields["Last Name"] || ""
 const bLast = b.fields["Last Name"] || ""
@@ -1568,9 +3590,48 @@ if(aLast > bLast) return 1
 
 return aFirst.localeCompare(bFirst)
 
-})
+}
 
-members.forEach(record=>{
+function compareMembersSearchSort(a, b, q){
+
+const A = getMemberNameParts(a)
+const B = getMemberNameParts(b)
+
+const aFirstHit = A.first.startsWith(q)
+const bFirstHit = B.first.startsWith(q)
+
+if(aFirstHit !== bFirstHit) return aFirstHit ? -1 : 1
+
+const c1 = A.first.localeCompare(B.first)
+
+if(c1 !== 0) return c1
+
+return A.last.localeCompare(B.last)
+
+}
+
+function buildDirectory(searchQuery){
+
+const directory = document.getElementById("directory")
+
+directory.innerHTML = ""
+
+const q = String(searchQuery || "").trim().toLowerCase()
+
+let list = members.slice()
+
+if(q){
+
+list = list.filter(m => memberMatchesNamePrefix(m, q))
+list.sort((a, b) => compareMembersSearchSort(a, b, q))
+
+}else{
+
+list.sort(compareMembersDefaultSort)
+
+}
+
+list.forEach(record=>{
 
 const f = record.fields
 
@@ -1593,7 +3654,7 @@ const card = document.createElement("div")
 card.className="card"
 
 card.innerHTML=`
-<img src="${photo}" loading="lazy" width="260" height="260">
+<img src="${photo}" loading="lazy" width="260" height="260" alt="">
 <div class="card-info">
 <h3>${name}</h3>
 ${ministry ? `<p>${ministry}</p>` : ""}
@@ -1617,32 +3678,10 @@ function filterMembers(){
 const search = document
 .getElementById("memberSearch")
 .value
+.trim()
 .toLowerCase()
 
-const cards = document.querySelectorAll(".card")
-
-cards.forEach(card=>{
-
-const fullName = card
-.querySelector("h3")
-.textContent
-.toLowerCase()
-
-const parts = fullName.split(" ")
-
-const first = parts[0] || ""
-const last = parts[1] || ""
-
-if(
-first.startsWith(search) ||
-last.startsWith(search)
-){
-card.style.display="block"
-}else{
-card.style.display="none"
-}
-
-})
+buildDirectory(search)
 
 }
 
@@ -1650,11 +3689,40 @@ card.style.display="none"
 /* FORMAT DATE                       */
 /* ================================= */
    
+/* Parses full dates (e.g. ISO) or month-day text without a year (e.g. "Feb 25"). */
+function parseMonthDayOrFullDate(dateString){
+
+if(!dateString) return null
+
+const t = String(dateString).trim()
+
+if(!t) return null
+
+if(/^\d{4}-\d{2}-\d{2}/.test(t)){
+
+const d = new Date(t.length === 10 ? t + "T12:00:00" : t)
+
+return isNaN(d.getTime()) ? null : d
+
+}
+
+let d = new Date(t)
+
+if(!isNaN(d.getTime())) return d
+
+d = new Date(t + (/,/.test(t) ? "" : ", 2000"))
+
+return isNaN(d.getTime()) ? null : d
+
+}
+
 function formatShortDate(dateString){
 
 if(!dateString) return ""
 
-const d = new Date(dateString)
+const d = parseMonthDayOrFullDate(dateString)
+
+if(!d) return String(dateString).trim()
 
 const months = [
 "Jan","Feb","Mar","Apr","May","Jun",
@@ -1662,73 +3730,6 @@ const months = [
 ]
 
 return months[d.getMonth()] + " " + d.getDate()
-
-}
-
-/* ================================= */
-/* UPLOAD PHOTOS                     */
-/* ================================= */
-
-async function uploadPhoto(){
-
-  const fileInput = document.getElementById("photoUpload");
-  const file = fileInput.files[0];
-
-  if(!file){
-    alert("Select a file first");
-    return;
-  }
-
-  // MOVE CONFIRM HERE
-  if (!confirm("Upload this photo?")) {
-    return;
-  }
-
-  if(!window.lastViewedProfile || !window.lastViewedProfile.id){
-    alert("Open a member profile first");
-    return;
-  }
-
-  try {
-
-    const fileName = Date.now() + "_" + file.name;
-    const storageRef = ref(storage, "member-photos/" + fileName);
-
-    // Upload
-    await uploadBytes(storageRef, file);
-
-    // Get URL
-    const downloadURL = await getDownloadURL(storageRef);
-
-    console.log("Uploaded image URL:", downloadURL);
-
-    // UPDATE MEMBER PHOTO DIRECTLY USING DOC ID
-
-const { updateDoc, doc } = await import(
-  "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-);
-
-await updateDoc(doc(db, "members", window.lastViewedProfile.id), {
-  photo: downloadURL
-});
-
-console.log("Photo updated!");
-
-    // UPDATE PROFILE IMAGE INSTANTLY
-    const profileImg = document.getElementById("profilePhoto");
-    if (profileImg) {
-      profileImg.src = downloadURL;
-    }
-
-    // KEEP STATE IN SYNC
-    window.lastViewedProfile.photo = downloadURL;
-
-    // OPTIONAL refresh
-    loadMembers();
-
-  } catch (error) {
-    console.error("Upload failed:", error);
-  }
 
 }
 
@@ -1773,10 +3774,24 @@ anniversary = formatShortDate(anniversary);
 window.lastViewedProfile = { id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
 
 window.selectedMemberName = name;
+
+const cu = (window.currentUser && window.currentUser.email)
+  ? window.currentUser.email.toLowerCase().trim()
+  : "";
+
+const emailPlain = String(email || "")
+  .replace(/<[^>]+>/g, "")
+  .replace(/&nbsp;/g, " ")
+  .trim()
+  .toLowerCase();
+
+const isOwnProfile = !!(cu && emailPlain && cu === emailPlain);
    
 const box = document.getElementById("profileContent");
 
 box.innerHTML = `
+
+${isOwnProfile ? `<div class="profile-own-edit-link" style="width:100%;padding:8px 12px 0 12px;margin:0;box-sizing:border-box;font-size:13px;line-height:1.35;text-align:left;"><a href="#" onclick="openEditMyProfileSheet();return false;" style="color:#2b5cff;">Edit my profile</a></div>` : ""}
 
 <div style="position:relative; display:inline-block;">
   
@@ -1784,32 +3799,12 @@ box.innerHTML = `
     id="profilePhoto"
     src="${photo}" 
     loading="lazy"
+    decoding="async"
+    alt=""
     onclick="openPhoto('${photo}')"
     style="cursor:pointer">
 
-  <span 
-    onclick="document.getElementById('photoUpload').click()"
-    style="
-      position:absolute;
-      bottom:8px;
-      right:8px;
-      font-size:18px;
-      background:rgba(0,0,0,0.6);
-      color:white;
-      border-radius:50%;
-      padding:4px;
-      line-height:1;
-      cursor:pointer;
-    "
-  >✏️</span>
-
 </div>
-
-<input 
-  type="file" 
-  id="photoUpload" 
-  style="display:none" 
-  onchange="uploadPhoto()">
 
 <div class="profile-info-group">
 <h2>${name}</h2>
@@ -1971,7 +3966,7 @@ const photo = f.Photo || "images/default.jpg"
 html += `
 <div class="family-member" onclick="showFamilyMemberProfile('${name}','${householdName}')">
 
-<img src="${photo}" loading="lazy">
+<img src="${photo}" loading="lazy" width="200" height="200" alt="">
 
 <div class="family-member-name">${name}</div>
 
@@ -2021,11 +4016,13 @@ lastViewedProfile.updated
 function showProfileFromMember(name){
 
 const member = members.find(m => m.id === name)
+  || members.find(m => (m.fields["Full Name"] || "") === name)
 
 if(!member) return
 
 const f = member.fields
 
+const displayName = f["Full Name"] || ""
 const photo = f.Photo || ""
 const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
@@ -2041,7 +4038,8 @@ const household = f.Household || ""
 const updated = formatDate(f["Last Updated"])
 
 showProfile(
-name,
+member.id,
+displayName,
 photo,
 ministry,
 phone,
@@ -2116,10 +4114,12 @@ function formatMonthDay(dateString){
 
 if(!dateString) return ""
 
-const d = new Date(dateString)
+const d = parseMonthDayOrFullDate(dateString)
+
+if(!d) return String(dateString).trim()
 
 return d.toLocaleDateString("en-US",{
-month:"long",
+month:"short",
 day:"numeric"
 })
 
@@ -2128,24 +4128,39 @@ day:"numeric"
 console.log("From main script:", window.firebase);
 
 // Make functions available to HTML onclick handlers
+window.filterMembers = filterMembers;
 window.closeProfile = closeProfile;
 window.showHousehold = showHousehold;
 window.showFamilyMemberProfile = showFamilyMemberProfile;
 window.showProfileFromMember = showProfileFromMember;
 window.openPhoto = openPhoto;
 window.closePhoto = closePhoto;
-window.uploadPhoto = uploadPhoto;
+window.openEditMyProfileSheet = openEditMyProfileSheet;
 window.openMemberSelect = openMemberSelect;
 window.closeMemberSelect = closeMemberSelect;
 window.selectMemberForEdit = selectMemberForEdit;
 window.openEditMember = openEditMember;
 window.closeEditMember = closeEditMember;
 window.saveMemberChanges = saveMemberChanges;
+window.deleteMemberFromDirectory = deleteMemberFromDirectory;
 window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
+window.openOnboarding = openOnboarding;
 window.submitOnboarding = submitOnboarding;
-window.approveChange = approveChange;
-window.rejectChange = rejectChange;
+window.cancelEditMyProfile = cancelEditMyProfile;
+window.closeOnboardingSheet = closeOnboardingSheet;
+window.buildMonthView = buildMonthView;
+window.buildDayList = buildDayList;
+window.buildUnresolvedList = buildUnresolvedList;
+window.restorePendingChangesYearView = restorePendingChangesYearView;
+window.openUnresolvedPendingDetail = openUnresolvedPendingDetail;
+window.approvePendingChange = approvePendingChange;
+window.denyPendingChange = denyPendingChange;
+window.closeAdminEmailModal = closeAdminEmailModal;
+window.sendAdminEmailFromModal = sendAdminEmailFromModal;
+window.openInviteMemberDialog = openInviteMemberDialog;
+window.closeInviteMemberDialog = closeInviteMemberDialog;
+window.submitInviteMember = submitInviteMember;
    
 </script>
    

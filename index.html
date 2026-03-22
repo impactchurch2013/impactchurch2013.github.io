@@ -606,13 +606,6 @@ color:#fff;
 border-color:#2b5cff;
 }
 
-.admin-email-modal-hint{
-min-height:1.2em;
-font-size:13px;
-color:#2a6;
-margin-top:8px;
-}
-   
 /* ================================= */
 /* FAMILY PAGE                       */
 /* ================================= */
@@ -826,6 +819,7 @@ oninput="filterMembers()">
 </div>
 
 <div id="adminPanel" class="admin-panel">
+  <button type="button" onclick="openInviteMemberDialog()">Invite member</button>
   <button type="button" onclick="openMemberSelect()">Edit Member</button>
   <button type="button" onclick="openPendingChanges()">View Pending Changes</button>
 </div>
@@ -918,7 +912,7 @@ oninput="filterMembers()">
   <div class="admin-email-modal-backdrop" onclick="closeAdminEmailModal()"></div>
   <div class="admin-email-modal-box" onclick="event.stopPropagation();">
     <h3 id="adminEmailModalTitle">Email the member</h3>
-    <p class="admin-email-modal-note">Review or edit the message below, then send with your email app. If nothing opens, use Copy to clipboard.</p>
+    <p class="admin-email-modal-note">Review or edit the message below, then tap Send email to open your mail app with a draft.</p>
     <label for="adminEmailTo">To</label>
     <input type="email" id="adminEmailTo" autocomplete="email">
     <label for="adminEmailSubject">Subject</label>
@@ -927,10 +921,23 @@ oninput="filterMembers()">
     <textarea id="adminEmailBody" spellcheck="true"></textarea>
     <div class="admin-email-modal-actions">
       <button type="button" class="primary" onclick="sendAdminEmailFromModal()">Send email</button>
-      <button type="button" onclick="copyAdminEmailFromModal()">Copy to clipboard</button>
       <button type="button" onclick="closeAdminEmailModal()">Close</button>
     </div>
-    <p id="adminEmailModalHint" class="admin-email-modal-hint"></p>
+  </div>
+</div>
+
+<!-- ADMIN: INVITE MEMBER (allowlist + mailto) -->
+<div id="inviteMemberModal" class="admin-email-modal" aria-modal="true" role="dialog" style="display:none;">
+  <div class="admin-email-modal-backdrop" onclick="closeInviteMemberDialog()"></div>
+  <div class="admin-email-modal-box" onclick="event.stopPropagation();">
+    <h3 id="inviteMemberModalTitle">Invite member</h3>
+    <p class="admin-email-modal-note">Enter the person&apos;s email. They will be added to the directory allowlist, then your email app will open with a draft invitation.</p>
+    <label for="inviteMemberEmail">Email address</label>
+    <input type="email" id="inviteMemberEmail" autocomplete="email" placeholder="name@example.com">
+    <div class="admin-email-modal-actions">
+      <button type="button" class="primary" onclick="submitInviteMember()">Invite member</button>
+      <button type="button" onclick="closeInviteMemberDialog()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -940,7 +947,7 @@ oninput="filterMembers()">
 <!-- FIREBASE SCRIPT                   -->
 <!-- ================================= -->
    
-<script type="module" src="firebase.js"></script>
+<script type="module" src="js/firebase/client.js"></script>
    
 <!-- ================================= -->
 <!-- JAVASCRIPT FUNCTIONS              -->
@@ -3144,17 +3151,113 @@ function openUnresolvedPendingDetail(pendingId){
 const ADMIN_EMAIL_SUBJECT_APPROVED = "Impact Church Directory — profile update approved";
 const ADMIN_EMAIL_SUBJECT_DENIED = "Impact Church Directory — profile update not approved";
 
+const INVITE_MEMBER_SUBJECT = "Invitation to Impact Church Directory";
+
+const INVITE_MEMBER_BODY = `Hi! You are invited to register your profile in the Impact Church Directory. Follow this link to get started:
+
+https://impactchurch2013.github.io/
+
+Looking forward to seeing you in the directory!
+
+#####`;
+
+function openInviteMemberDialog(){
+
+if(!window.isChurchAdmin){
+alert("Only church admins can invite members.");
+return;
+}
+
+const input = document.getElementById("inviteMemberEmail");
+if(input){
+input.value = "";
+}
+
+const modal = document.getElementById("inviteMemberModal");
+
+if(modal){
+modal.classList.add("show");
+modal.style.display = "flex";
+}
+
+if(input){
+input.focus();
+}
+
+}
+
+function closeInviteMemberDialog(){
+
+const modal = document.getElementById("inviteMemberModal");
+
+if(modal){
+modal.classList.remove("show");
+modal.style.display = "none";
+}
+
+}
+
+async function submitInviteMember(){
+
+if(!window.isChurchAdmin){
+alert("Only church admins can invite members.");
+return;
+}
+
+const raw = (document.getElementById("inviteMemberEmail").value || "").trim();
+
+if(!raw){
+alert("Please enter an email address.");
+return;
+}
+
+const email = raw.toLowerCase();
+
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+alert("Please enter a valid email address.");
+return;
+}
+
+const { setDoc, doc, serverTimestamp } = await import(
+"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+);
+
+try{
+
+await setDoc(
+doc(db, "allowedUsers", email),
+{
+invitedAt: serverTimestamp(),
+invitedBy: (window.currentUser && window.currentUser.email)
+? window.currentUser.email.toLowerCase().trim()
+: ""
+},
+{ merge: true }
+);
+
+}catch(err){
+
+console.error("Invite allowlist write failed:", err);
+alert("Could not add this email to the allowlist. Check the console and your Firestore rules.");
+return;
+
+}
+
+const mailUrl =
+`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(INVITE_MEMBER_SUBJECT)}&body=${encodeURIComponent(INVITE_MEMBER_BODY)}`;
+
+closeInviteMemberDialog();
+
+window.location.href = mailUrl;
+
+}
+
 function openAdminEmailModal(opts){
 
   const { to, subject, body, title } = opts;
 
   const modal = document.getElementById("adminEmailModal");
   const titleEl = document.getElementById("adminEmailModalTitle");
-  const hint = document.getElementById("adminEmailModalHint");
-
-  if(hint){
-    hint.textContent = "";
-  }
 
   document.getElementById("adminEmailTo").value = (to || "").trim();
   document.getElementById("adminEmailSubject").value = subject || "";
@@ -3196,38 +3299,6 @@ function sendAdminEmailFromModal(){
   const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   window.location.href = url;
-
-}
-
-async function copyAdminEmailFromModal(){
-
-  const to = document.getElementById("adminEmailTo").value.trim();
-  const subject = document.getElementById("adminEmailSubject").value;
-  const body = document.getElementById("adminEmailBody").value;
-
-  const full = `To: ${to}\nSubject: ${subject}\n\n${body}`;
-
-  const hint = document.getElementById("adminEmailModalHint");
-
-  try{
-
-    await navigator.clipboard.writeText(full);
-
-    if(hint){
-      hint.textContent = "Copied to clipboard.";
-    }
-
-  }catch(err){
-
-    console.error(err);
-
-    if(hint){
-      hint.textContent = "";
-    }
-
-    alert("Could not copy automatically. Select the message in the box above and copy it manually (Ctrl+C / ⌘+C).");
-
-  }
 
 }
 
@@ -4087,7 +4158,9 @@ window.approvePendingChange = approvePendingChange;
 window.denyPendingChange = denyPendingChange;
 window.closeAdminEmailModal = closeAdminEmailModal;
 window.sendAdminEmailFromModal = sendAdminEmailFromModal;
-window.copyAdminEmailFromModal = copyAdminEmailFromModal;
+window.openInviteMemberDialog = openInviteMemberDialog;
+window.closeInviteMemberDialog = closeInviteMemberDialog;
+window.submitInviteMember = submitInviteMember;
    
 </script>
    

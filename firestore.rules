@@ -17,10 +17,10 @@ service cloud.firestore {
         ];
     }
 
-    // Allowlist: document id = email (see isUserAllowed in index.html)
+    // Allowlist: document id = lowercase email (see isUserAllowed in index.html)
     match /allowedUsers/{docId} {
       allow read: if request.auth != null;
-      allow create, update: if false;
+      allow create, update: if isChurchAdminEmail();
       allow delete: if isChurchAdminEmail();
     }
 
