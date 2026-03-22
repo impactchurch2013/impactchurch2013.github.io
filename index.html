@@ -1633,6 +1633,11 @@ function openEditMyProfileForm(member){
         Submit changes for approval
       </button>
 
+      <button type="button" id="onboardCancelBtn"
+        style="padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;">
+        Cancel
+      </button>
+
     </div>
   `;
 
@@ -1642,6 +1647,11 @@ function openEditMyProfileForm(member){
   }
 
   document.getElementById("onboardSubmitBtn").onclick = () => submitEditMyProfile();
+
+  const cancelBtn = document.getElementById("onboardCancelBtn");
+  if(cancelBtn){
+    cancelBtn.onclick = () => cancelEditMyProfile();
+  }
 
   const photoEl = document.getElementById("onboardPhoto");
   if(photoEl){
@@ -1918,6 +1928,32 @@ function openSheet(id){
     sheet.style.transform = "translateY(0)";
   },10);
 }
+
+function closeOnboardingSheet(){
+
+  const overlay = document.getElementById("onboardingSheet");
+  if(!overlay){
+    return;
+  }
+
+  const sheet = overlay.querySelector(".profile-box");
+
+  sheet.style.transform = "translateY(100%)";
+
+  setTimeout(()=>{
+    overlay.classList.remove("show");
+  },300);
+
+}
+
+function cancelEditMyProfile(){
+
+  clearOnboardingPhotoPreviewState();
+  window.__editMyProfileMemberId = null;
+
+  closeOnboardingSheet();
+
+}
    
 /* ================================= */
 /* SHOW / HIDE EDITOR UI             */
@@ -2112,7 +2148,30 @@ async function deleteMemberFromDirectory(memberId){
       "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
     );
 
+    const rawEmail = member && member.fields
+      ? String(member.fields["Email"] || "").trim()
+      : "";
+    const allowUserId = rawEmail.toLowerCase();
+
     await deleteDoc(doc(db, "members", memberId));
+
+    if(allowUserId){
+      try{
+        await deleteDoc(doc(db, "allowedUsers", allowUserId));
+      }catch(allowErr){
+        console.warn("Could not remove directory access (allowedUsers):", allowErr);
+        alert(
+          "Member was removed from the directory, but their login access could not be cleared automatically. Remove them from allowedUsers in Firestore if needed."
+        );
+        closeEditMember();
+        await loadMembers();
+        const memberSelectSheet = document.getElementById("memberSelectSheet");
+        if(memberSelectSheet && memberSelectSheet.classList.contains("show")){
+          renderMemberSelectContent();
+        }
+        return;
+      }
+    }
 
     alert("Member removed from the directory.");
 
@@ -3530,6 +3589,8 @@ window.openPendingChanges = openPendingChanges;
 window.closePendingChanges = closePendingChanges;
 window.openOnboarding = openOnboarding;
 window.submitOnboarding = submitOnboarding;
+window.cancelEditMyProfile = cancelEditMyProfile;
+window.closeOnboardingSheet = closeOnboardingSheet;
 window.buildMonthView = buildMonthView;
 window.buildDayList = buildDayList;
 window.buildUnresolvedList = buildUnresolvedList;
