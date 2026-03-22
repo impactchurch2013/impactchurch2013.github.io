@@ -58,3 +58,4 @@ If rules block reads, you’ll stay “not authorized” even when your email ex
 ## Deploy
 
 Push to `main` as usual; GitHub Pages serves this repo’s site.
+ 
