@@ -89,10 +89,27 @@ display:block;
 margin:auto;
 }
 
-.header-controls{
+/* ================================= */
+/* DIRECTORY TOOLBAR (below logo + search) */
+/* ================================= */
+
+.directory-toolbar{
+max-width:1200px;
+margin:0 auto;
+padding:10px 20px 12px 20px;
 display:flex;
-gap:12px;
 align-items:center;
+justify-content:flex-start;
+flex-wrap:wrap;
+gap:12px;
+background:#fff;
+border-top:1px solid rgba(255,255,255,.12);
+box-shadow:0 2px 8px rgba(0,0,0,.12);
+box-sizing:border-box;
+}
+
+.directory-toolbar button{
+font:inherit;
 }
 
 /* ================================= */
@@ -133,7 +150,7 @@ padding:0 16px;
 max-width:1200px;
 width:100%;
 margin:auto;
-scroll-margin-top:140px;
+scroll-margin-top:200px;
 justify-content:center;
 }
 
@@ -710,14 +727,6 @@ height:90px;
 <img src="images/impact logo.png" alt="Impact Directory">
 </div>
 
-<div class="header-controls">
-  <button id="editorToggleBtn" style="display:none;">
-    Enable Editor Mode
-  </button>
-
-  <button id="logoutBtn" style="display:none;">Logout</button>
-</div>
-
 </div>
 
 <div class="search-bar">
@@ -726,6 +735,13 @@ type="text"
 id="memberSearch"
 placeholder="Search members..."
 oninput="filterMembers()">
+</div>
+
+<div class="directory-toolbar">
+  <button id="logoutBtn" style="display:none;">Logout</button>
+  <button id="editorToggleBtn" style="display:none;">
+    Enable Editor Mode
+  </button>
 </div>
 
 </header>
@@ -1878,11 +1894,11 @@ onAuthStateChanged(auth, async (user) => {
     window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
 
     const editorToggleBtn = document.getElementById("editorToggleBtn");
-    editorToggleBtn.style.display = window.isChurchAdmin ? "block" : "none";
+    editorToggleBtn.style.display = window.isChurchAdmin ? "inline-flex" : "none";
 
     app.style.display = "block";
     loginScreen.style.display = "none";
-    logoutBtn.style.display = "block";
+    logoutBtn.style.display = "inline-flex";
 
     if (!profile && !onboardingPending) {
       openOnboarding();
@@ -1895,6 +1911,7 @@ onAuthStateChanged(auth, async (user) => {
     app.style.display = "none";
     loginScreen.style.display = "block";
     logoutBtn.style.display = "none";
+    document.getElementById("editorToggleBtn").style.display = "none";
   }
 });
 
