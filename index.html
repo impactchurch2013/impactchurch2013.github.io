@@ -282,6 +282,8 @@ oninput="filterMembers()">
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay } from "./js/shared/dom.js";
+import { splitMinistryAndRole, ministryStringToSelectValue, omitUndefined, mapChangesToMember } from "./js/shared/member-utils.js";
+import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort } from "./js/shared/directory-utils.js";
 
 const { auth, db, authReady } = window.firebase;
 
@@ -617,73 +619,6 @@ async function hasPendingOnboardingSubmission(userEmail){
 /* ================================= */
 /* MINISTRY / ROLE (pending payload) */
 /* ================================= */
-
-const ONBOARDING_ROLE_OPTIONS = new Set([
-  "Admin",
-  "Sound",
-  "Security",
-  "Volunteer"
-]);
-
-function splitMinistryAndRole(selectedValue){
-
-  const v = (selectedValue || "").trim();
-
-  if(!v){
-    return { ministry: "", role: "" };
-  }
-
-  if(ONBOARDING_ROLE_OPTIONS.has(v)){
-    return { ministry: "", role: v };
-  }
-
-  return { ministry: v, role: "" };
-
-}
-
-function ministryStringToSelectValue(stored){
-
-  const raw = (stored || "").trim();
-
-  if(!raw){
-    return "";
-  }
-
-  const parts = raw.split(/\s*·\s*/).map(p => p.trim()).filter(Boolean);
-
-  if(parts.length === 2){
-
-    const [a, b] = parts;
-
-    if(ONBOARDING_ROLE_OPTIONS.has(b)){
-      return b;
-    }
-
-    if(ONBOARDING_ROLE_OPTIONS.has(a)){
-      return a;
-    }
-
-    return a;
-
-  }
-
-  if(parts.length === 1){
-
-    return parts[0];
-
-  }
-
-  return raw;
-
-}
-
-function omitUndefined(obj){
-
-  return Object.fromEntries(
-    Object.entries(obj).filter(([, val]) => val !== undefined)
-  );
-
-}
 
 /* ================================= */
 /* MEMBER PENDING CHANGES SUBMISSION */
@@ -2460,44 +2395,6 @@ function buildUnresolvedList(){
 /* UNRESOLVED — DETAIL + APPROVE     */
 /* ================================= */
 
-function mapChangesToMember(ch){
-
-  const zipVal = ch.zip != null && ch.zip !== ""
-    ? ch.zip
-    : (ch.zipCode != null ? ch.zipCode : "");
-
-  const ministryParts = [ch.ministry, ch.role].filter(Boolean);
-  const ministry = ministryParts.length ? ministryParts.join(" · ") : "";
-
-  const first = (ch.firstName || "").trim();
-  const last = (ch.lastName || "").trim();
-
-  const hasPhotoURL = Object.prototype.hasOwnProperty.call(ch, "photoURL");
-  const hasPhoto = Object.prototype.hasOwnProperty.call(ch, "photo");
-  const photoVal = hasPhotoURL
-    ? (ch.photoURL ?? "")
-    : (hasPhoto ? (ch.photo ?? "") : "");
-
-  return {
-    firstName: first,
-    lastName: last,
-    fullName: ch.fullName || `${first} ${last}`.trim(),
-    email: ch.email || "",
-    phone: ch.phone || "",
-    ministry,
-    address: ch.address || "",
-    city: ch.city || "",
-    state: ch.state || "",
-    zipCode: zipVal,
-    birthday: ch.birthday || "",
-    anniversary: ch.anniversary || "",
-    household: ch.household || "",
-    photo: photoVal,
-    lastUpdated: new Date().toISOString()
-  };
-
-}
-
 async function refreshPendingChangesCache(){
 
   const { getDocs, collection } = await import(
@@ -3037,60 +2934,6 @@ function getCurrentMemberSearchQuery(){
 const el = document.getElementById("memberSearch")
 
 return el ? el.value.trim().toLowerCase() : ""
-
-}
-
-function getMemberNameParts(record){
-
-const f = record.fields || {}
-
-return{
-first:String(f["First Name"] || "").trim().toLowerCase(),
-last:String(f["Last Name"] || "").trim().toLowerCase()
-}
-
-}
-
-function memberMatchesNamePrefix(record, q){
-
-if(!q) return true
-
-const { first, last } = getMemberNameParts(record)
-
-return first.startsWith(q) || last.startsWith(q)
-
-}
-
-function compareMembersDefaultSort(a, b){
-
-const aLast = a.fields["Last Name"] || ""
-const bLast = b.fields["Last Name"] || ""
-
-const aFirst = a.fields["First Name"] || ""
-const bFirst = b.fields["First Name"] || ""
-
-if(aLast < bLast) return -1
-if(aLast > bLast) return 1
-
-return aFirst.localeCompare(bFirst)
-
-}
-
-function compareMembersSearchSort(a, b, q){
-
-const A = getMemberNameParts(a)
-const B = getMemberNameParts(b)
-
-const aFirstHit = A.first.startsWith(q)
-const bFirstHit = B.first.startsWith(q)
-
-if(aFirstHit !== bFirstHit) return aFirstHit ? -1 : 1
-
-const c1 = A.first.localeCompare(B.first)
-
-if(c1 !== 0) return c1
-
-return A.last.localeCompare(B.last)
 
 }
 
