@@ -287,6 +287,8 @@ import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort,
 import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil, loadPendingChangesData } from "./js/shared/pending-utils.js";
 import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
+import { openPhotoViewer, closePhotoViewer } from "./js/shared/media-utils.js";
+import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, buildAddressHtmlFromFields } from "./js/shared/profile-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -2794,9 +2796,7 @@ const ministry = f.Ministry || ""
 const phone = formatPhone(f["Phone Number"])
 const email = f.Email || ""
 
-const address =
-`${f.Address || ""}<br>
-${f.City || ""}, ${f.State || ""} ${f["Zip Code"] || ""}`
+const address = buildAddressHtmlFromFields(f)
 
 const birthday = formatMonthDay(f.Birthday)
 const anniversary = formatMonthDay(f.Anniversary)
@@ -3089,22 +3089,7 @@ document.getElementById("profile").classList.add("show")
 /* ================================= */
 
 function goBackToProfile(){
-
-if(!lastViewedProfile) return
-
-showProfile(
-lastViewedProfile.id,
-lastViewedProfile.name,
-lastViewedProfile.photo,
-lastViewedProfile.ministry,
-lastViewedProfile.phone,
-lastViewedProfile.email,
-lastViewedProfile.address,
-lastViewedProfile.birthday,
-lastViewedProfile.anniversary,
-lastViewedProfile.household,
-lastViewedProfile.updated
-)
+goBackToProfileFlow(lastViewedProfile, showProfile)
 
 }
 
@@ -3113,41 +3098,13 @@ lastViewedProfile.updated
 /* ================================= */
 
 function showProfileFromMember(name){
-
-const member = members.find(m => m.id === name)
-  || members.find(m => (m.fields["Full Name"] || "") === name)
-
-if(!member) return
-
-const f = member.fields
-
-const displayName = f["Full Name"] || ""
-const photo = f.Photo || ""
-const ministry = f.Ministry || ""
-const phone = formatPhone(f["Phone Number"])
-const email = f.Email || ""
-
-const address =
-`${f.Address || ""}<br>
-${f.City || ""}, ${f.State || ""} ${f["Zip Code"] || ""}`
-
-const birthday = formatMonthDay(f.Birthday)
-const anniversary = formatMonthDay(f.Anniversary)
-const household = f.Household || ""
-const updated = formatDate(f["Last Updated"])
-
-showProfile(
-member.id,
-displayName,
-photo,
-ministry,
-phone,
-email,
-address,
-birthday,
-anniversary,
-household,
-updated
+showProfileFromMemberFlow(
+  members,
+  name,
+  formatPhone,
+  formatMonthDay,
+  formatDate,
+  showProfile
 )
 
 }
@@ -3157,10 +3114,12 @@ updated
 /* ================================= */
 
 function showFamilyMemberProfile(name, householdName){
-
-returnToFamily = householdName
-
-showProfileFromMember(name)
+showFamilyMemberProfileFlow(
+  (next) => { returnToFamily = next; },
+  showProfileFromMember,
+  name,
+  householdName
+)
 
 }
 
@@ -3169,15 +3128,11 @@ showProfileFromMember(name)
 /* ================================= */
 
 function openPhoto(photo){
-const viewer = document.getElementById("photoViewer")
-const img = document.getElementById("photoViewerImg")
-
-img.src = photo
-viewer.style.display = "flex"
+openPhotoViewer(document, photo);
 }
 
 function closePhoto(){
-document.getElementById("photoViewer").style.display = "none"
+closePhotoViewer(document);
 }
 
 /* ================================= */
