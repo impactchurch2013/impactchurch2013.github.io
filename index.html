@@ -281,14 +281,16 @@ oninput="filterMembers()">
 /* Import Firebase */
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay, formatPendingDetailValue } from "./js/shared/dom.js";
+import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay } from "./js/shared/dom.js";
 import { splitMinistryAndRole, ministryStringToSelectValue, omitUndefined, mapChangesToMember } from "./js/shared/member-utils.js";
 import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort, getCurrentMemberSearchQuery, filterMembers as filterMembersUtil, mapFirestoreMemberDoc } from "./js/shared/directory-utils.js";
 import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil, loadPendingChangesData } from "./js/shared/pending-utils.js";
+import { getPendingCreatedAtDate, groupChangesByYear, groupChangesByMonth, filterChangesByMonth, sortPendingChangesByCreatedAtDesc } from "./js/shared/pending-view-utils.js";
+import { getSafePendingPhotoUrl, buildPendingDetailRows, buildPendingPhotoBlockHtml, buildPendingDetailBodyHtml, buildPendingActionButtonsHtml } from "./js/shared/pending-detail-utils.js";
 import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
 import { openPhotoViewer, closePhotoViewer } from "./js/shared/media-utils.js";
-import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, buildAddressHtmlFromFields } from "./js/shared/profile-utils.js";
+import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, applyProfileDragResistance, shouldCloseProfileFromSwipe } from "./js/shared/profile-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -2064,17 +2066,7 @@ function buildYearView(changes){
 
   window.pendingChangesData = changes;
 
-  const years = {};
-
-  changes.forEach(c => {
-    if(!c.createdAt) return;
-
-    const date = c.createdAt.toDate();
-    const year = date.getFullYear();
-
-    if(!years[year]) years[year] = [];
-    years[year].push(c);
-  });
+  const years = groupChangesByYear(changes);
 
   const pendingCount = changes.filter(c => c.status === "pending").length;
 
@@ -2116,20 +2108,7 @@ function buildMonthView(year){
 
   const changes = window.pendingChangesData;
 
-  const months = {};
-
-  changes.forEach(c => {
-    if(!c.createdAt) return;
-
-    const d = c.createdAt.toDate();
-
-    if(d.getFullYear() !== year) return;
-
-    const month = d.getMonth();
-
-    if(!months[month]) months[month] = [];
-    months[month].push(c);
-  });
+  const months = groupChangesByMonth(changes, year);
 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -2158,19 +2137,16 @@ function buildDayList(year, month){
 
   const changes = window.pendingChangesData;
 
-  const filtered = changes
-    .filter(c => {
-      if(!c.createdAt) return false;
-      const d = c.createdAt.toDate();
-      return d.getFullYear() === year && d.getMonth() === month;
-    })
-    .sort((a,b)=>b.createdAt.seconds - a.createdAt.seconds);
+  const filtered = filterChangesByMonth(changes, year, month);
 
   let html = `<h2>Changes</h2>`;
 
   filtered.forEach(c => {
 
-    const d = c.createdAt.toDate();
+    const d = getPendingCreatedAtDate(c);
+    if(!d){
+      return;
+    }
 
     const label = d.toLocaleDateString("en-US", {
       month:"short",
@@ -2215,21 +2191,9 @@ function buildUnresolvedList(){
     return;
   }
 
-  const filtered = changes.filter(c => c.status === "pending");
-
-  filtered.sort((a,b)=>{
-
-    const ta = a.createdAt && a.createdAt.toDate
-      ? a.createdAt.toDate().getTime()
-      : 0;
-
-    const tb = b.createdAt && b.createdAt.toDate
-      ? b.createdAt.toDate().getTime()
-      : 0;
-
-    return tb - ta;
-
-  });
+  const filtered = sortPendingChangesByCreatedAtDesc(
+    changes.filter(c => c.status === "pending")
+  );
 
   let html = `
     <div onclick="restorePendingChangesYearView()"
@@ -2249,7 +2213,7 @@ function buildUnresolvedList(){
 
   filtered.forEach(c => {
 
-    const d = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate() : null;
+    const d = getPendingCreatedAtDate(c);
 
     const label = d
       ? d.toLocaleDateString("en-US", {
@@ -2302,69 +2266,14 @@ function openUnresolvedPendingDetail(pendingId){
     return;
   }
 
-  const ch = item.changes || {};
-  const created = item.createdAt && item.createdAt.toDate
-    ? item.createdAt.toDate().toLocaleString()
-    : "—";
-
-  const isOnboarding = ch.onboarding === true;
-
-  const photoURL = ch.photoURL || ch.photo;
-  const safePhotoUrl = typeof photoURL === "string" && /^https:\/\//i.test(photoURL.trim())
-    ? photoURL.trim()
-    : "";
-
-  const photoBlock = safePhotoUrl
-    ? `<div style="margin:12px 0;text-align:center;">
-        <p style="margin:0 0 8px;font-size:14px;"><strong>Profile photo</strong></p>
-        <p style="margin:0 0 6px;font-size:12px;color:#666;">Click image to enlarge</p>
-        <img id="pendingChangePhotoImg" src="${escapeHtml(safePhotoUrl)}" alt="Profile photo" referrerpolicy="no-referrer" loading="lazy"
-          title="View full size"
-          style="max-width:100%;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid #eee;cursor:pointer;">
-      </div>`
-    : "";
-
-  const rows = [
-    ["Submitted by", item.submittedBy || "—"],
-    ["Submitted at", created],
-    ["Type", isOnboarding ? "New member (onboarding)" : "Profile update"],
-    ...(item.memberId ? [["Member document ID", item.memberId]] : []),
-    ["First name", ch.firstName],
-    ["Last name", ch.lastName],
-    ["Full name", ch.fullName],
-    ["Email", ch.email],
-    ["Phone", ch.phone],
-    ["Ministry", ch.ministry],
-    ["Role", ch.role],
-    ["Address", ch.address],
-    ["City", ch.city],
-    ["State", ch.state],
-    ["ZIP", ch.zip != null && ch.zip !== "" ? ch.zip : ch.zipCode],
-    ["Birthday", ch.birthday],
-    ["Anniversary", ch.anniversary]
-  ];
-
-  const body = photoBlock + rows.map(([label, val]) => `
-    <p style="margin:0 0 10px;font-size:14px;line-height:1.4;">
-      <strong>${escapeHtml(label)}</strong><br>
-      <span style="color:#333;">${formatPendingDetailValue(val)}</span>
-    </p>
-  `).join("");
+  const safePhotoUrl = getSafePendingPhotoUrl(item.changes || {});
+  const rows = buildPendingDetailRows(item);
+  const photoBlock = buildPendingPhotoBlockHtml(safePhotoUrl);
+  const body = buildPendingDetailBodyHtml(photoBlock, rows);
 
   const admin = window.isChurchAdmin;
 
-  const buttons = admin
-    ? `<div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #eee;flex-shrink:0;">
-         <button type="button" id="pendingApproveBtn"
-           style="flex:1;padding:12px;background:#2b5cff;color:white;border:none;border-radius:8px;font-size:15px;">
-           Approve
-         </button>
-         <button type="button" id="pendingDenyBtn"
-           style="flex:1;padding:12px;background:#eee;color:#111;border:none;border-radius:8px;font-size:15px;">
-           Deny
-         </button>
-       </div>`
-    : `<p style="color:#666;font-size:13px;margin-top:12px;">Only church admins can approve or deny.</p>`;
+  const buttons = buildPendingActionButtonsHtml(admin);
 
   const box = document.getElementById("pendingChangesContent");
 
@@ -2955,27 +2864,17 @@ sheet.style.transform = "translateY(0)"
 
 function closeProfile(){
 
-if(returnToFamily){
-
-const family = returnToFamily
-returnToFamily = null
-
-showHousehold(family)
+if(consumeReturnToFamilyFlow(
+  returnToFamily,
+  (next) => { returnToFamily = next; },
+  showHousehold
+)){
 return
 
 }
 
-const overlay = document.getElementById("profile")
-const sheet = overlay.querySelector(".profile-box")
-
-sheet.style.transform = "translateY(100%)"
-
-setTimeout(()=>{
-overlay.classList.remove("show")
-},300)
-document.body.classList.remove("profile-open")
-document.body.style.overflow = ""
-window.scrollTo(0, savedScrollPosition)
+closeProfileOverlay(document)
+resetProfilePageState(document, window, savedScrollPosition)
 
 }
 
@@ -3012,14 +2911,7 @@ currentY = e.touches[0].clientY
 
 let diff = currentY - startY
 
-/* Only drag downward */
-if(diff > 0){
-
-/* drag resistance */
-let resistance = diff * 0.7
-sheet.style.transform = `translateY(${resistance}px)`
-
-}
+applyProfileDragResistance(sheet, diff)
 
 })
 
@@ -3031,7 +2923,7 @@ const distance = currentY - startY
 const time = Date.now() - startTime
 const velocity = distance / time
 
-if(distance > 120 || velocity > 0.5){
+if(shouldCloseProfileFromSwipe(distance, velocity)){
 closeProfile()
 }else{
 sheet.style.transform = "translateY(0)"
@@ -3044,44 +2936,7 @@ sheet.style.transform = "translateY(0)"
 /* ================================= */
 
 function showHousehold(householdName){
-
-const familyMembers = members.filter(m =>
-(m.fields.Household || "") === householdName
-)
-
-const box = document.getElementById("profileContent")
-
-let html = `
-        <h2 class="family-title">${householdName} Family</h2>
-        <div class="family-grid">
-    `
-
-familyMembers.forEach(member=>{
-
-const f = member.fields
-const name = f["Full Name"] || ""
-const photo = f.Photo || "images/default.jpg"
-
-html += `
-<div class="family-member" onclick="showFamilyMemberProfile('${name}','${householdName}')">
-
-<img src="${photo}" loading="lazy" width="200" height="200" alt="">
-
-<div class="family-member-name">${name}</div>
-
-</div>
-`
-
-})
-
-html += `
-</div>
-`
-
-box.innerHTML = html
-
-document.getElementById("profile").classList.add("show")
-
+showHouseholdFlow(document, members, householdName)
 }
 
 /* ================================= */
