@@ -73,3 +73,8 @@ export function formatMonthDay(dateString){
     day:"numeric"
   });
 }
+
+export function formatPendingDetailValue(v){
+  if(v == null || v === "") return "—";
+  return escapeHtml(v);
+}

@@ -281,9 +281,13 @@ oninput="filterMembers()">
 /* Import Firebase */
 
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay } from "./js/shared/dom.js";
+import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay, formatPendingDetailValue } from "./js/shared/dom.js";
 import { splitMinistryAndRole, ministryStringToSelectValue, omitUndefined, mapChangesToMember } from "./js/shared/member-utils.js";
-import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort } from "./js/shared/directory-utils.js";
+import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort, getCurrentMemberSearchQuery, filterMembers as filterMembersUtil } from "./js/shared/directory-utils.js";
+import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil } from "./js/shared/pending-utils.js";
+import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet } from "./js/shared/sheet-utils.js";
+import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
+import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
 
@@ -1250,8 +1254,7 @@ import {
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: "select_account" });
+const provider = createGoogleProvider(GoogleAuthProvider);
 
 const loginBtn = document.getElementById("loginBtn");
 const passwordLoginBtn = document.getElementById("passwordLoginBtn");
@@ -1262,40 +1265,14 @@ const loginPasswordInput = document.getElementById("loginPassword");
 const loginFeedback = document.getElementById("loginFeedback");
 const logoutBtn = document.getElementById("logoutBtn");
 
-function setLoginFeedback(message, tone = "info"){
-  if(!loginFeedback){
-    return;
-  }
+const setLoginFeedback = (message, tone = "info") =>
+  setLoginFeedbackUtil(loginFeedback, message, tone);
 
-  loginFeedback.textContent = message || "";
-  loginFeedback.className = `login-feedback ${tone}`;
-}
+const normalizeLoginEmail = normalizeLoginEmailUtil;
+const getLoginCredentials = (requirePassword = true) =>
+  getLoginCredentialsUtil(loginEmailInput, loginPasswordInput, requirePassword);
 
-function normalizeLoginEmail(value){
-  return (value || "").trim().toLowerCase();
-}
-
-function getLoginCredentials(requirePassword = true){
-  const email = normalizeLoginEmail(loginEmailInput ? loginEmailInput.value : "");
-  const password = loginPasswordInput ? loginPasswordInput.value : "";
-
-  if(!email){
-    throw new Error("Please enter your email.");
-  }
-
-  if(requirePassword && !password){
-    throw new Error("Please enter your password.");
-  }
-
-  return { email, password };
-}
-
-async function ensureAllowedEmail(email){
-  const allowed = await isUserAllowed(email);
-  if(!allowed){
-    throw new Error("This email is not invited for directory access.");
-  }
-}
+const ensureAllowedEmail = (email) => ensureAllowedEmailUtil(email, isUserAllowed);
 
 loginBtn.onclick = async () => {
   try {
@@ -1513,31 +1490,11 @@ editorToggleBtn.onclick = () => {
 /* ================================= */
    
 function openSheet(id){
-  const overlay = document.getElementById(id);
-  const sheet = overlay.querySelector(".profile-box");
-
-  overlay.classList.add("show");
-
-  setTimeout(()=>{
-    sheet.style.transform = "translateY(0)";
-  },10);
+  openSheetUtil(document, id);
 }
 
 function closeOnboardingSheet(){
-
-  const overlay = document.getElementById("onboardingSheet");
-  if(!overlay){
-    return;
-  }
-
-  const sheet = overlay.querySelector(".profile-box");
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(()=>{
-    overlay.classList.remove("show");
-  },300);
-
+  closeOnboardingSheetUtil(document);
 }
 
 function cancelEditMyProfile(){
@@ -1554,13 +1511,11 @@ function cancelEditMyProfile(){
 /* ================================= */
    
 function showEditorUI(){
-  document.getElementById("editorBanner").style.display = "block";
-  document.getElementById("adminPanel").style.display = "flex";
+  showEditorUIUtil(document);
 }
 
 function hideEditorUI(){
-  document.getElementById("editorBanner").style.display = "none";
-  document.getElementById("adminPanel").style.display = "none";
+  hideEditorUIUtil(document);
 }
 
 /* ================================= */
@@ -1570,36 +1525,14 @@ function hideEditorUI(){
 let pendingChangesCountUnsub = null;
 
 function stopPendingChangesCountListener(){
-
-if(typeof pendingChangesCountUnsub === "function"){
-pendingChangesCountUnsub();
-pendingChangesCountUnsub = null;
-}
-
+stopPendingChangesCountListenerUtil(
+  pendingChangesCountUnsub,
+  (next) => { pendingChangesCountUnsub = next; }
+);
 }
 
 function setPendingChangesCountText(n){
-
-const textEl = document.getElementById("pendingChangesCountText");
-const wrap = document.getElementById("pendingChangesCountWrap");
-
-if(!textEl || !wrap){
-return;
-}
-
-if(!window.isChurchAdmin){
-wrap.style.display = "none";
-return;
-}
-
-if(n === 1){
-textEl.textContent = "There is 1 pending change request.";
-}else{
-textEl.textContent = `There are ${n} pending change requests.`;
-}
-
-wrap.style.display = "block";
-
+setPendingChangesCountTextUtil(document, window.isChurchAdmin, n);
 }
 
 async function startPendingChangesCountListener(){
@@ -1674,17 +1607,7 @@ function renderMemberSelectContent(){
 }
 
 function openMemberSelect(){
-
-  renderMemberSelectContent();
-
-  const overlay = document.getElementById("memberSelectSheet");
-  const sheet = overlay.querySelector(".profile-box");
-
-  overlay.classList.add("show");
-
-  setTimeout(()=>{
-    sheet.style.transform = "translateY(0)";
-  },10);
+  openMemberSelectSheet(document, renderMemberSelectContent);
 }
 
 /* ================================= */
@@ -1692,15 +1615,7 @@ function openMemberSelect(){
 /* ================================= */
 
 function closeMemberSelect(){
-
-  const overlay = document.getElementById("memberSelectSheet");
-  const sheet = overlay.querySelector(".profile-box");
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(()=>{
-    overlay.classList.remove("show");
-  },300);
+  closeMemberSelectSheet(document);
 }
 
 /* ================================= */
@@ -1920,22 +1835,7 @@ function openEditMember(member){
 /* ================================= */
    
 function closeEditMember(){
-
-  const newImg = document.getElementById("editMemberPhotoNewPreviewImg");
-  if(newImg && newImg.dataset.objectUrl){
-    URL.revokeObjectURL(newImg.dataset.objectUrl);
-  }
-
-  clearEditMemberPhotoState();
-
-  const overlay = document.getElementById("editMemberSheet");
-  const sheet = overlay.querySelector(".profile-box");
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(()=>{
-    overlay.classList.remove("show");
-  },300);
+  closeEditMemberSheet(document, clearEditMemberPhotoState);
 }
 
 /* ================================= */
@@ -2297,23 +2197,10 @@ function buildDayList(year, month){
 /* PENDING CHANGES — UNRESOLVED LIST */
 /* ================================= */
 
-function formatPendingDetailValue(v){
-
-  if(v == null || v === "") return "—";
-
-  return escapeHtml(v);
-
-}
-
-function restorePendingChangesYearView(){
-
-  if(!window.pendingChangesData){
-    return;
-  }
-
-  buildYearView(window.pendingChangesData);
-
-}
+const restorePendingChangesYearView = () =>
+  restorePendingChangesYearViewUtil(buildYearView, window.pendingChangesData);
+const refreshAndRebuildUnresolved = () =>
+  refreshAndRebuildUnresolvedUtil(refreshPendingChangesCache, buildUnresolvedList);
 
 function buildUnresolvedList(){
 
@@ -2401,16 +2288,12 @@ async function refreshPendingChangesCache(){
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
   );
 
-  const snapshot = await getDocs(collection(db, "pendingChanges"));
-
-  const changes = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-
-  window.pendingChangesData = changes;
-
-  return changes;
+  return refreshPendingChangesCacheUtil(
+    db,
+    getDocs,
+    collection,
+    (changes) => { window.pendingChangesData = changes; }
+  );
 
 }
 
@@ -2705,8 +2588,7 @@ async function approvePendingChange(pendingId){
 
     if(!snap.exists()){
       alert("This pending change is no longer in Firestore.");
-      await refreshPendingChangesCache();
-      buildUnresolvedList();
+      await refreshAndRebuildUnresolved();
       return;
     }
 
@@ -2742,8 +2624,7 @@ async function approvePendingChange(pendingId){
       `Hello ${firstName},\n\n` +
       "The changes you requested for your member profile in the Impact Church Directory have been approved.";
 
-    await refreshPendingChangesCache();
-    buildUnresolvedList();
+    await refreshAndRebuildUnresolved();
     await loadMembers();
 
     alert("Approved. The directory has been updated.");
@@ -2786,8 +2667,7 @@ async function denyPendingChange(pendingId){
 
     if(!snap.exists()){
       alert("This pending change is no longer in Firestore.");
-      await refreshPendingChangesCache();
-      buildUnresolvedList();
+      await refreshAndRebuildUnresolved();
       return;
     }
 
@@ -2798,8 +2678,7 @@ async function denyPendingChange(pendingId){
 
     await deleteDoc(changeRef);
 
-    await refreshPendingChangesCache();
-    buildUnresolvedList();
+    await refreshAndRebuildUnresolved();
 
     const emailBody =
       "The changes you requested for your member profile in the Impact Church Directory have been denied.\n\n" +
@@ -2850,7 +2729,7 @@ async function loadPendingChanges(){
 /* ================================= */
    
 function openPendingChanges(){
-  loadPendingChanges();
+  openPendingChangesSheet(loadPendingChanges);
 }
 
 /* ================================= */
@@ -2858,14 +2737,7 @@ function openPendingChanges(){
 /* ================================= */
    
 function closePendingChanges(){
-  const overlay = document.getElementById("pendingChangesSheet");
-  const sheet = overlay.querySelector(".profile-box");
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(()=>{
-    overlay.classList.remove("show");
-  },300);
+  closePendingChangesSheet(document);
 }
    
 /* ================================= */
@@ -2928,14 +2800,6 @@ async function loadMembers(){
 /* ================================= */
 /* BUILD DIRECTORY                   */
 /* ================================= */
-
-function getCurrentMemberSearchQuery(){
-
-const el = document.getElementById("memberSearch")
-
-return el ? el.value.trim().toLowerCase() : ""
-
-}
 
 function buildDirectory(searchQuery){
 
@@ -3000,17 +2864,7 @@ directory.appendChild(card)
 /* MEMBER SEARCH                     */
 /* ================================= */
 
-function filterMembers(){
-
-const search = document
-.getElementById("memberSearch")
-.value
-.trim()
-.toLowerCase()
-
-buildDirectory(search)
-
-}
+const filterMembers = () => filterMembersUtil(buildDirectory);
 
 /* ================================= */
 /* FORMAT DATE                       */

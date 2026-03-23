@@ -41,3 +41,17 @@ export function compareMembersSearchSort(a, b, q){
 
   return A.last.localeCompare(B.last);
 }
+
+export function getCurrentMemberSearchQuery(){
+  const el = document.getElementById("memberSearch");
+  return el ? el.value.trim().toLowerCase() : "";
+}
+
+export function runDirectorySearch(buildDirectory){
+  const search = getCurrentMemberSearchQuery();
+  buildDirectory(search);
+}
+
+export function filterMembers(buildDirectory){
+  runDirectorySearch(buildDirectory);
+}
