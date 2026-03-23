@@ -1,26 +1,4 @@
-export function closePendingChangesSheet(documentObj){
-  const overlay = documentObj.getElementById("pendingChangesSheet");
-  if(!overlay){
-    return;
-  }
-
-  const sheet = overlay.querySelector(".profile-box");
-  if(!sheet){
-    return;
-  }
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(() => {
-    overlay.classList.remove("show");
-  }, 300);
-}
-
-export function openPendingChangesSheet(loadPendingChangesFn){
-  loadPendingChangesFn();
-}
-
-export function openSheet(documentObj, id){
+function openSheetById(documentObj, id){
   const overlay = documentObj.getElementById(id);
   if(!overlay){
     return;
@@ -38,8 +16,8 @@ export function openSheet(documentObj, id){
   }, 10);
 }
 
-export function closeOnboardingSheet(documentObj){
-  const overlay = documentObj.getElementById("onboardingSheet");
+function closeSheetById(documentObj, id){
+  const overlay = documentObj.getElementById(id);
   if(!overlay){
     return;
   }
@@ -54,44 +32,32 @@ export function closeOnboardingSheet(documentObj){
   setTimeout(() => {
     overlay.classList.remove("show");
   }, 300);
+}
+
+export function closePendingChangesSheet(documentObj){
+  closeSheetById(documentObj, "pendingChangesSheet");
+}
+
+export function openPendingChangesSheet(loadPendingChangesFn){
+  loadPendingChangesFn();
+}
+
+export function openSheet(documentObj, id){
+  openSheetById(documentObj, id);
+}
+
+export function closeOnboardingSheet(documentObj){
+  closeSheetById(documentObj, "onboardingSheet");
 }
 
 export function openMemberSelectSheet(documentObj, renderMemberSelectContentFn){
   renderMemberSelectContentFn();
 
-  const overlay = documentObj.getElementById("memberSelectSheet");
-  if(!overlay){
-    return;
-  }
-
-  const sheet = overlay.querySelector(".profile-box");
-  if(!sheet){
-    return;
-  }
-
-  overlay.classList.add("show");
-
-  setTimeout(() => {
-    sheet.style.transform = "translateY(0)";
-  }, 10);
+  openSheetById(documentObj, "memberSelectSheet");
 }
 
 export function closeMemberSelectSheet(documentObj){
-  const overlay = documentObj.getElementById("memberSelectSheet");
-  if(!overlay){
-    return;
-  }
-
-  const sheet = overlay.querySelector(".profile-box");
-  if(!sheet){
-    return;
-  }
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(() => {
-    overlay.classList.remove("show");
-  }, 300);
+  closeSheetById(documentObj, "memberSelectSheet");
 }
 
 export function closeEditMemberSheet(documentObj, clearEditMemberPhotoStateFn){
@@ -104,19 +70,9 @@ export function closeEditMemberSheet(documentObj, clearEditMemberPhotoStateFn){
     clearEditMemberPhotoStateFn();
   }
 
-  const overlay = documentObj.getElementById("editMemberSheet");
-  if(!overlay){
-    return;
-  }
+  closeSheetById(documentObj, "editMemberSheet");
+}
 
-  const sheet = overlay.querySelector(".profile-box");
-  if(!sheet){
-    return;
-  }
-
-  sheet.style.transform = "translateY(100%)";
-
-  setTimeout(() => {
-    overlay.classList.remove("show");
-  }, 300);
+export function openEditMemberSheet(documentObj){
+  openSheetById(documentObj, "editMemberSheet");
 }

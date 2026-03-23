@@ -1,9 +1,22 @@
+function getRecordFields(record){
+  return record && record.fields ? record.fields : {};
+}
+
+function getFieldString(record, fieldName){
+  return String(getRecordFields(record)[fieldName] || "");
+}
+
+function normalizeNamePart(value){
+  return String(value || "").trim().toLowerCase();
+}
+
 export function getMemberNameParts(record){
-  const f = record.fields || {};
+  const firstRaw = getFieldString(record, "First Name");
+  const lastRaw = getFieldString(record, "Last Name");
 
   return {
-    first: String(f["First Name"] || "").trim().toLowerCase(),
-    last: String(f["Last Name"] || "").trim().toLowerCase()
+    first: normalizeNamePart(firstRaw),
+    last: normalizeNamePart(lastRaw)
   };
 }
 
@@ -15,11 +28,11 @@ export function memberMatchesNamePrefix(record, q){
 }
 
 export function compareMembersDefaultSort(a, b){
-  const aLast = a.fields["Last Name"] || "";
-  const bLast = b.fields["Last Name"] || "";
+  const aLast = getFieldString(a, "Last Name");
+  const bLast = getFieldString(b, "Last Name");
 
-  const aFirst = a.fields["First Name"] || "";
-  const bFirst = b.fields["First Name"] || "";
+  const aFirst = getFieldString(a, "First Name");
+  const bFirst = getFieldString(b, "First Name");
 
   if(aLast < bLast) return -1;
   if(aLast > bLast) return 1;
@@ -48,10 +61,34 @@ export function getCurrentMemberSearchQuery(){
 }
 
 export function runDirectorySearch(buildDirectory){
-  const search = getCurrentMemberSearchQuery();
-  buildDirectory(search);
+  buildDirectory(getCurrentMemberSearchQuery());
 }
 
 export function filterMembers(buildDirectory){
   runDirectorySearch(buildDirectory);
+}
+
+export function mapFirestoreMemberDoc(doc){
+  const data = doc.data();
+
+  return {
+    id: doc.id,
+    fields: {
+      "Full Name": data.fullName || "",
+      "First Name": data.firstName || "",
+      "Last Name": data.lastName || "",
+      "Email": data.email || "",
+      "Phone Number": data.phone || "",
+      "Ministry": data.ministry || "",
+      "Household": data.household || "",
+      "Address": data.address || "",
+      "City": data.city || "",
+      "State": data.state || "",
+      "Zip Code": data.zipCode || "",
+      "Birthday": data.birthday || "",
+      "Anniversary": data.anniversary || "",
+      "Last Updated": data.lastUpdated || "",
+      "Photo": data.photo || ""
+    }
+  };
 }

@@ -283,9 +283,9 @@ oninput="filterMembers()">
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay, formatPendingDetailValue } from "./js/shared/dom.js";
 import { splitMinistryAndRole, ministryStringToSelectValue, omitUndefined, mapChangesToMember } from "./js/shared/member-utils.js";
-import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort, getCurrentMemberSearchQuery, filterMembers as filterMembersUtil } from "./js/shared/directory-utils.js";
-import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil } from "./js/shared/pending-utils.js";
-import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet } from "./js/shared/sheet-utils.js";
+import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort, getCurrentMemberSearchQuery, filterMembers as filterMembersUtil, mapFirestoreMemberDoc } from "./js/shared/directory-utils.js";
+import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil, loadPendingChangesData } from "./js/shared/pending-utils.js";
+import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
@@ -1814,14 +1814,7 @@ function openEditMember(member){
     };
   }
 
-  const overlay = document.getElementById("editMemberSheet");
-  const sheet = overlay.querySelector(".profile-box");
-
-  overlay.classList.add("show");
-
-  setTimeout(()=>{
-    sheet.style.transform = "translateY(0)";
-  },10);
+  openEditMemberSheet(document);
 
   const delBtn = document.getElementById("editDeleteMemberBtn");
   if(delBtn){
@@ -2712,12 +2705,7 @@ async function loadPendingChanges(){
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
   );
 
-  const snapshot = await getDocs(collection(db, "pendingChanges"));
-
-  const changes = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
+  const changes = await loadPendingChangesData(db, getDocs, collection);
 
   console.log("Pending changes:", changes);
 
@@ -2759,33 +2747,7 @@ async function loadMembers(){
 
     const querySnapshot = await getDocs(collection(db, "members"));
 
-    members = querySnapshot.docs.map(doc => {
-
-  const data = doc.data();
-
-  return {
-    id: doc.id, // ✅ ADD THIS LINE
-
-    fields: {
-      "Full Name": data.fullName || "",
-      "First Name": data.firstName || "",
-      "Last Name": data.lastName || "",
-      "Email": data.email || "",
-      "Phone Number": data.phone || "",
-      "Ministry": data.ministry || "",
-      "Household": data.household || "",
-      "Address": data.address || "",
-      "City": data.city || "",
-      "State": data.state || "",
-      "Zip Code": data.zipCode || "",
-      "Birthday": data.birthday || "",
-      "Anniversary": data.anniversary || "",
-      "Last Updated": data.lastUpdated || "",
-      "Photo": data.photo || ""
-    }
-  };
-
-});
+    members = querySnapshot.docs.map(mapFirestoreMemberDoc);
 
     console.log("Loaded members from Firestore:", members);
 
