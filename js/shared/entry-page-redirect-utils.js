@@ -18,8 +18,3 @@ export function buildIndexEntryUrl(windowObj, entryName){
 
   return targetUrl.toString();
 }
-
-export function redirectEntryPageToIndex(windowObj, entryName){
-  const targetUrl = buildIndexEntryUrl(windowObj, entryName);
-  windowObj.location.replace(targetUrl);
-}

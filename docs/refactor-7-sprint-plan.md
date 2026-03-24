@@ -40,6 +40,6 @@ This tracks the remaining major refactor as larger, deliberate chunks.
 
 ## Sprint 7: Final Cutover + Verification
 - Promote multi-page runtime path to primary path.
-- Keep rollback option briefly, then retire legacy bootstrap path.
+- Retire rollback and legacy bootstrap plumbing.
 - Execute full smoke checklist and update docs.
-- Status: ready for verification.
+- Status: in progress.

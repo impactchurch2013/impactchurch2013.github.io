@@ -1,6 +1,4 @@
 import { buildIndexEntryUrl } from "../shared/entry-page-redirect-utils.js";
-import { resolveEntryMode, shouldUseLegacyRedirect } from "./entry-mode-utils.js";
-import { getEntryDefaultMode, ENTRY_FORCE_LEGACY_PARAM } from "./entry-cutover-config.js";
 
 export function initializeDirectoryPreAuthBoot({
   documentObj,
@@ -50,17 +48,6 @@ export function initializeDirectoryGlobalHandlersBoot({
 }){
   logFn("From main script:", firebaseObj);
   bindGlobalWindowHandlersFlowFn(windowObj, handlers, bindWindowHandlersFn);
-}
-
-export function resolveDirectoryEntryMode(windowObj){
-  return resolveEntryMode(windowObj, "directoryMode", {
-    defaultMode: getEntryDefaultMode(),
-    forceLegacyParam: ENTRY_FORCE_LEGACY_PARAM
-  });
-}
-
-export function shouldFallbackToIndex(entryMode){
-  return shouldUseLegacyRedirect(entryMode);
 }
 
 export function buildStandaloneDirectoryShellHtml(indexHref){
@@ -116,10 +103,10 @@ export function buildStandaloneDirectoryShellHtml(indexHref){
         Preview list not rendered yet.
       </div>
       <p style="margin:0 0 18px;line-height:1.5;color:#333;">
-        Production behavior is unchanged. Use the button below to open the current app runtime.
+        This is the primary directory entry runtime. Use the button below to open the compatibility `index.html` path.
       </p>
       <a href="${indexHref}" style="display:inline-block;background:#2b5cff;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;">
-        Open current app runtime
+        Open compatibility runtime (index.html)
       </a>
     </main>
   `;

@@ -41,23 +41,22 @@ Run this checklist after each small refactor slice.
 - Confirm there are no Firebase initialization/auth errors.
 
 ## Entry Routing (Sprint 6)
-- Open `login.html` and confirm it redirects to the current runtime with `entry=login` and no `loginMode` param when not in standalone mode.
-- Open `directory.html` and confirm it redirects to the current runtime with `entry=directory` and no `directoryMode` param when not in standalone mode.
-- Open `login.html?loginMode=standalone` and confirm standalone diagnostics shell renders without redirect.
-- Open `directory.html?directoryMode=standalone` and confirm standalone diagnostics shell renders without redirect.
+- Open `login.html` and confirm the login standalone runtime shell renders as the default entry path.
+- Open `directory.html` and confirm the directory standalone runtime shell renders as the default entry path.
+- Open `login.html?loginMode=standalone` and confirm standalone diagnostics shell still renders.
+- Open `directory.html?directoryMode=standalone` and confirm standalone diagnostics shell still renders.
 - While signed out, confirm canonical URL sync points to `login.html` without transitional params.
 - While signed in, confirm canonical URL sync points to `directory.html` without transitional params.
 
 ### Sprint 6 Quick Run Order
 - Start signed out in a fresh tab and open `login.html`.
-- Verify legacy redirect and URL cleanup, then sign in and confirm canonical switch to `directory.html`.
+- Verify default standalone entry and URL cleanup, then sign in and confirm canonical switch to `directory.html`.
 - Sign out and confirm canonical switch back to `login.html`.
 - In a new tab, open `login.html?loginMode=standalone` and verify standalone shell is preserved.
 - In a new tab, open `directory.html?directoryMode=standalone` and verify standalone shell is preserved.
 - End with one normal app reload on canonical `directory.html` while signed in.
 
-## Sprint 7 Cutover And Rollback
-- Verify default mode currently stays on legacy redirect behavior for both `login.html` and `directory.html`.
-- Confirm rollback param `?entryLegacy=1` forces legacy redirect behavior even when standalone query params are present.
-- Confirm `entryLegacy` is preserved through the redirect to `index.html` for rollback stability.
+## Sprint 7 Final Cutover
+- Verify `login.html` and `directory.html` now use standalone runtime as the only supported entry path.
+- Confirm `?entryLegacy=1` no longer changes behavior.
 - Confirm canonical URL sync still strips transitional entry mode params (`entry`, `loginMode`, `directoryMode`).
