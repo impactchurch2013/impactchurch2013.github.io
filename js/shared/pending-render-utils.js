@@ -40,24 +40,83 @@ export function buildPendingMonthViewHtml(year, months){
   return html;
 }
 
-export function buildPendingDayListHtml(filtered, getPendingCreatedAtDateFn){
-  let html = `<h2>Changes</h2>`;
+export function buildPendingDayListHtml(filtered, getPendingCreatedAtDateFn, year, month){
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dayCounts = {};
 
   filtered.forEach(change => {
     const d = getPendingCreatedAtDateFn(change);
     if(!d){
       return;
     }
+    const day = d.getDate();
+    dayCounts[day] = (dayCounts[day] || 0) + 1;
+  });
 
-    const label = d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric"
-    });
+  let html = `
+    <div onclick='buildMonthView(${year})'
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
+      ← Back
+    </div>
+    <h2>${monthNames[month]} ${year}</h2>
+  `;
+
+  const days = Object.keys(dayCounts).map(Number).sort((a, b) => b - a);
+  if(days.length === 0){
+    html += `<p style="padding:14px;">No entries for this month.</p>`;
+    return html;
+  }
+
+  days.forEach(day => {
+    const count = dayCounts[day];
+    html += `
+      <div onclick='buildPendingDayResults(${year}, ${month}, ${day})'
+        style="padding:12px;border-bottom:1px solid #eee;cursor:pointer;text-align:left;">
+        <strong>${monthNames[month]} ${day}</strong>
+        <div style="font-size:12px;color:#666;margin-top:2px;">${count} entr${count === 1 ? "y" : "ies"}</div>
+      </div>
+    `;
+  });
+
+  return html;
+}
+
+export function buildPendingDayResultsHtml(
+  filtered,
+  year,
+  month,
+  day,
+  getPendingCreatedAtDateFn,
+  escapeHtmlFn
+){
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  let html = `
+    <div onclick='buildDayList(${year}, ${month})'
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
+      ← Back
+    </div>
+    <h2>${monthNames[month]} ${day}, ${year}</h2>
+  `;
+
+  if(filtered.length === 0){
+    html += `<p style="padding:14px;">No entries for this day.</p>`;
+    return html;
+  }
+
+  filtered.forEach(change => {
+    const d = getPendingCreatedAtDateFn(change);
+    const timeLabel = d
+      ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+      : "—";
+    const status = String(change && change.status || "pending");
+    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
     html += `
-      <div style="padding:12px;border-bottom:1px solid #eee;">
-        <strong>${label}</strong><br>
-        ${change.submittedBy}
+      <div onclick="openPendingHistoryDetail('${escapeHtmlFn(change.id || "")}')"
+        style="padding:12px;border-bottom:1px solid #eee;cursor:pointer;text-align:left;">
+        <strong>${escapeHtmlFn(timeLabel)}</strong>
+        <div style="font-size:12px;color:#666;margin-top:2px;">${escapeHtmlFn(statusLabel)}</div>
       </div>
     `;
   });

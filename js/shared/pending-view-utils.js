@@ -59,6 +59,24 @@ export function filterChangesByMonth(changes, year, month){
     });
 }
 
+export function filterChangesByDay(changes, year, month, day){
+  return changes
+    .filter(change => {
+      const d = getPendingCreatedAtDate(change);
+      return !!d
+        && d.getFullYear() === year
+        && d.getMonth() === month
+        && d.getDate() === day;
+    })
+    .sort((a, b) => {
+      const da = getPendingCreatedAtDate(a);
+      const db = getPendingCreatedAtDate(b);
+      const ta = da ? da.getTime() : 0;
+      const tb = db ? db.getTime() : 0;
+      return tb - ta;
+    });
+}
+
 export function sortPendingChangesByCreatedAtDesc(changes){
   return [...changes].sort((a, b) => {
     const da = getPendingCreatedAtDate(a);

@@ -164,3 +164,118 @@ export function buildPendingActionButtonsHtml(admin){
        </div>`
     : `<p style="color:#666;font-size:13px;margin-top:12px;">Only church admins can approve or deny.</p>`;
 }
+
+function toTimestampLabel(value){
+  if(value && typeof value.toDate === "function"){
+    return value.toDate().toLocaleString();
+  }
+  if(typeof value === "string" && value.trim()){
+    return value;
+  }
+  return "—";
+}
+
+function hasOwn(obj, key){
+  return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function normalizeNullable(value){
+  const text = String(value == null ? "" : value).trim();
+  return text;
+}
+
+const HISTORY_FIELD_DEFS = [
+  { key: "firstName", label: "First name" },
+  { key: "lastName", label: "Last name" },
+  { key: "fullName", label: "Full name" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "ministry", label: "Ministry" },
+  { key: "role", label: "Role" },
+  { key: "address", label: "Address" },
+  { key: "city", label: "City" },
+  { key: "state", label: "State" },
+  { key: "zip", label: "ZIP" },
+  { key: "birthday", label: "Birthday" },
+  { key: "anniversary", label: "Anniversary" },
+  { key: "household", label: "Household" }
+];
+
+export function buildPendingHistoryRows(item){
+  const changes = (item && item.changes) || {};
+  const originalValues = (item && item.originalValues) || {};
+  const hasOriginalValues = Object.keys(originalValues).length > 0;
+
+  const rows = [];
+  HISTORY_FIELD_DEFS.forEach(({ key, label }) => {
+    if(!hasOwn(changes, key)){
+      return;
+    }
+
+    const before = normalizeNullable(originalValues[key]);
+    const after = normalizeNullable(changes[key]);
+    if(hasOriginalValues && before === after){
+      return;
+    }
+    if(!hasOriginalValues && after === ""){
+      return;
+    }
+
+    rows.push({
+      label,
+      before: hasOriginalValues ? (before || "—") : "—",
+      after: after || "—"
+    });
+  });
+
+  const photoAfter = hasOwn(changes, "photoURL")
+    ? normalizeNullable(changes.photoURL)
+    : (hasOwn(changes, "photo") ? normalizeNullable(changes.photo) : "");
+  const photoBefore = hasOwn(originalValues, "photoURL")
+    ? normalizeNullable(originalValues.photoURL)
+    : (hasOwn(originalValues, "photo") ? normalizeNullable(originalValues.photo) : "");
+  const photoChanged = hasOriginalValues
+    ? photoBefore !== photoAfter
+    : photoAfter !== "";
+  if(photoChanged){
+    rows.push({
+      label: "Photo",
+      before: hasOriginalValues ? (photoBefore ? "Has photo" : "No photo") : "—",
+      after: photoAfter ? "Photo changed" : "Photo removed"
+    });
+  }
+
+  return rows;
+}
+
+export function buildPendingHistoryDetailBodyHtml(item, rows){
+  const statusRaw = String((item && item.status) || "pending").trim().toLowerCase();
+  const statusLabel = statusRaw ? statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1) : "Pending";
+  const resolvedAt = toTimestampLabel(item && item.resolvedAt);
+  const resolvedBy = normalizeNullable(item && item.resolvedBy) || "—";
+
+  const rowsHtml = rows.length === 0
+    ? `<p style="margin:0 0 12px;font-size:14px;color:#666;">No field changes captured for this entry.</p>`
+    : rows.map((row) => `
+        <div style="margin:0 0 12px;padding:10px;border:1px solid #eee;border-radius:8px;background:#fafafa;">
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.35;">
+            <strong style="color:#c10000;">${escapeHtml(row.label)}</strong>
+          </p>
+          <p style="margin:0;font-size:13px;color:#333;line-height:1.4;">
+            <strong>Before:</strong> ${formatPendingDetailValue(row.before)}<br>
+            <strong>After:</strong> ${formatPendingDetailValue(row.after)}
+          </p>
+        </div>
+      `).join("");
+
+  return `
+    <div style="padding:2px 0 8px;">
+      ${rowsHtml}
+      <div style="margin-top:8px;padding-top:10px;border-top:1px solid #eee;">
+        <p style="margin:0 0 8px;font-size:14px;line-height:1.35;"><strong>Status</strong><br>${escapeHtml(statusLabel)}</p>
+        <p style="margin:0 0 8px;font-size:14px;line-height:1.35;"><strong>Resolved at</strong><br>${escapeHtml(resolvedAt)}</p>
+        <p style="margin:0;font-size:14px;line-height:1.35;"><strong>Resolved by</strong><br>${escapeHtml(resolvedBy)}</p>
+      </div>
+    </div>
+  `;
+}

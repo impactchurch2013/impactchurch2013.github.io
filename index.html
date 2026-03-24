@@ -325,10 +325,10 @@ import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, ref
 import { refreshPendingChangesCacheFlow, loadPendingChangesFlow, openPendingChangesFlow, closePendingChangesFlow } from "./js/shared/pending-sheet-flow-utils.js";
 import { createPendingChangesFirestoreLoader, refreshPendingChangesCacheEntryFlow, loadPendingChangesEntryFlow, openPendingChangesEntryFlow, closePendingChangesEntryFlow } from "./js/shared/pending-sheet-entry-utils.js";
 import { refreshPendingChangesCacheRuntimeEntry, loadPendingChangesRuntimeEntry, openPendingChangesRuntimeEntry, closePendingChangesRuntimeEntry } from "./js/shared/pending-sheet-runtime-entry-utils.js";
-import { getPendingCreatedAtDate, groupChangesByYear, groupChangesByMonth, filterChangesByMonth, sortPendingChangesByCreatedAtDesc } from "./js/shared/pending-view-utils.js";
-import { renderPendingYearView, renderPendingMonthView, renderPendingDayView, renderUnresolvedPendingListView } from "./js/shared/pending-list-flow-utils.js";
-import { getSafePendingPhotoUrl, buildPendingDetailRows, buildPendingPhotoBlockHtml, buildPendingDetailBodyHtml, buildPendingActionButtonsHtml } from "./js/shared/pending-detail-utils.js";
-import { findPendingChangeById, buildPendingDetailViewModel, renderPendingDetailView, bindPendingDetailAdminActions, bindPendingDetailPhotoClick } from "./js/shared/pending-detail-flow-utils.js";
+import { getPendingCreatedAtDate, groupChangesByYear, groupChangesByMonth, filterChangesByMonth, filterChangesByDay, sortPendingChangesByCreatedAtDesc } from "./js/shared/pending-view-utils.js";
+import { renderPendingYearView, renderPendingMonthView, renderPendingDayView, renderPendingDayResultsView, renderUnresolvedPendingListView } from "./js/shared/pending-list-flow-utils.js";
+import { getSafePendingPhotoUrl, buildPendingDetailRows, buildPendingPhotoBlockHtml, buildPendingDetailBodyHtml, buildPendingActionButtonsHtml, buildPendingHistoryRows, buildPendingHistoryDetailBodyHtml } from "./js/shared/pending-detail-utils.js";
+import { findPendingChangeById, buildPendingDetailViewModel, renderPendingDetailView, renderPendingHistoryDetailView, bindPendingDetailAdminActions, bindPendingDetailPhotoClick } from "./js/shared/pending-detail-flow-utils.js";
 import { ensureInviteAdminAccess, validateInviteEmailForSubmission, upsertInviteAllowlistEntry, handleInviteAllowlistWriteError } from "./js/shared/pending-invite-flow-utils.js";
 import { ADMIN_EMAIL_SUBJECT_APPROVED, ADMIN_EMAIL_SUBJECT_DENIED, APPROVED_NOTIFY_TITLE, DENIED_NOTIFY_TITLE, INVITE_MEMBER_SUBJECT, INVITE_MEMBER_BODY } from "./js/shared/pending-email-templates.js";
 import { INVITE_ADMIN_ONLY_MESSAGE, INVITE_EMAIL_REQUIRED_MESSAGE, INVITE_EMAIL_INVALID_MESSAGE, INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE, ADMIN_EMAIL_TO_REQUIRED_MESSAGE, APPROVE_ADMIN_ONLY_MESSAGE, APPROVE_CONFIRM_MESSAGE, PENDING_CHANGE_MISSING_MESSAGE, APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE, APPROVE_SUCCESS_MESSAGE, APPROVE_FAILED_MESSAGE, DENY_ADMIN_ONLY_MESSAGE, DENY_CONFIRM_MESSAGE, DENY_SUCCESS_MESSAGE, DENY_FAILED_MESSAGE } from "./js/shared/pending-messages.js";
@@ -339,7 +339,7 @@ import { createPendingReviewFirestoreLoader, executeApprovePendingChangeEntry, e
 import { createInviteAllowlistFirestoreLoader, executeOpenUnresolvedPendingDetailEntry, executeSubmitInviteMemberEntry } from "./js/shared/pending-admin-entry-utils.js";
 import { buildPendingChangePayload, submitPendingChangeToFirestore } from "./js/shared/pending-submit-utils.js";
 import { createPendingSubmitFirestoreLoader, submitPendingChangeEntry } from "./js/shared/pending-submit-entry-utils.js";
-import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayListHtml, buildUnresolvedPendingEmptyStateHtml, buildUnresolvedPendingListHtml } from "./js/shared/pending-render-utils.js";
+import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayListHtml, buildPendingDayResultsHtml, buildUnresolvedPendingEmptyStateHtml, buildUnresolvedPendingListHtml } from "./js/shared/pending-render-utils.js";
 import { buildPendingYearViewEntry, buildPendingMonthViewEntry, buildPendingDayListEntry, buildUnresolvedPendingListEntry } from "./js/shared/pending-view-entry-utils.js";
 import { createAdminLogsFirestoreLoader, loadAdminLogsData, getAdminLogCreatedAtDate, groupAdminLogsByYear, groupAdminLogsByMonth, groupAdminLogsByDay, filterAdminLogsByDay } from "./js/shared/admin-logs-utils.js";
 import { buildAdminLogsYearViewHtml, buildAdminLogsMonthViewHtml, buildAdminLogsDayListHtml, buildAdminLogsResultsHtml } from "./js/shared/admin-logs-render-utils.js";
@@ -1063,6 +1063,21 @@ function buildDayList(year, month){
   });
 }
 
+function buildPendingDayResults(year, month, day){
+  window.pendingDaySelection = { year, month, day };
+  renderPendingDayResultsView(
+    document,
+    window.pendingChangesData,
+    year,
+    month,
+    day,
+    filterChangesByDay,
+    buildPendingDayResultsHtml,
+    getPendingCreatedAtDate,
+    escapeHtml
+  );
+}
+
 /* ================================= */
 /* PENDING CHANGES — UNRESOLVED LIST */
 /* ================================= */
@@ -1124,6 +1139,30 @@ function openUnresolvedPendingDetail(pendingId){
     openPhotoFn: openPhoto
   });
 
+}
+
+function openPendingHistoryDetail(pendingId){
+  const item = findPendingChangeById(window.pendingChangesData, pendingId);
+  if(!item){
+    alert(PENDING_ENTRY_NOT_FOUND_MESSAGE);
+    return;
+  }
+
+  const selection = window.pendingDaySelection;
+  if(!selection){
+    alert("No day context selected.");
+    return;
+  }
+
+  const rows = buildPendingHistoryRows(item);
+  const body = buildPendingHistoryDetailBodyHtml(item, rows);
+  renderPendingHistoryDetailView(
+    document,
+    body,
+    selection.year,
+    selection.month,
+    selection.day
+  );
 }
 
 function openInviteMemberDialog(){
@@ -1290,6 +1329,7 @@ async function loadPendingChanges(){
 /* ================================= */
    
 function openPendingChanges(){
+  window.pendingDaySelection = null;
   openPendingChangesRuntimeEntry({
     openPendingChangesEntryFlowFn: openPendingChangesEntryFlow,
     openPendingChangesFlowFn: openPendingChangesFlow,
@@ -1395,6 +1435,7 @@ window.__memberSelectOptions = null
 window.__grantAdminTarget = null
 window.__adminActionMode = "grant"
 window.adminLogsData = []
+window.pendingDaySelection = null
    
 /* ================================= */
 /* LOAD MEMBERS DATA                  */
@@ -1711,6 +1752,8 @@ initializeDirectoryGlobalHandlersEntry({
     closeOnboardingSheet,
     buildMonthView,
     buildDayList,
+    buildPendingDayResults,
+    openPendingHistoryDetail,
     buildUnresolvedList,
     restorePendingChangesYearView,
     openAdminLogs,

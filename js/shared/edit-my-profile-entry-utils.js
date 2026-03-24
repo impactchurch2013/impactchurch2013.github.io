@@ -14,6 +14,65 @@ function setSubmitButtonState(buttonEl, { disabled, text }){
   buttonEl.textContent = text;
 }
 
+const ONBOARDING_ROLE_OPTIONS = new Set([
+  "Admin",
+  "Sound",
+  "Security",
+  "Volunteer"
+]);
+
+function parseStoredMinistryAndRole(raw){
+  const value = String(raw || "").trim();
+  if(!value){
+    return { ministry: "", role: "" };
+  }
+
+  const parts = value.split(/\s*·\s*/).map(p => p.trim()).filter(Boolean);
+  if(parts.length === 0){
+    return { ministry: "", role: "" };
+  }
+  if(parts.length === 1){
+    const only = parts[0];
+    return ONBOARDING_ROLE_OPTIONS.has(only)
+      ? { ministry: "", role: only }
+      : { ministry: only, role: "" };
+  }
+
+  const first = parts[0];
+  const second = parts[1];
+  if(ONBOARDING_ROLE_OPTIONS.has(second)){
+    return { ministry: first, role: second };
+  }
+  if(ONBOARDING_ROLE_OPTIONS.has(first)){
+    return { ministry: second, role: first };
+  }
+
+  return { ministry: first, role: second };
+}
+
+function buildPendingOriginalValuesFromMember(member, existingPhoto){
+  const fields = (member && member.fields) || {};
+  const parsed = parseStoredMinistryAndRole(fields.Ministry || "");
+
+  return {
+    firstName: String(fields["First Name"] || "").trim(),
+    lastName: String(fields["Last Name"] || "").trim(),
+    fullName: String(fields["Full Name"] || "").trim(),
+    ministry: parsed.ministry,
+    role: parsed.role,
+    email: String(fields.Email || "").trim().toLowerCase(),
+    phone: String(fields["Phone Number"] || "").trim(),
+    address: String(fields.Address || "").trim(),
+    city: String(fields.City || "").trim(),
+    state: String(fields.State || "").trim(),
+    zip: String(fields["Zip Code"] || "").trim(),
+    birthday: String(fields.Birthday || "").trim(),
+    anniversary: String(fields.Anniversary || "").trim(),
+    household: String(fields.Household || "").trim(),
+    photoURL: String(existingPhoto || "").trim()
+  };
+}
+
 export function openEditMyProfileSheetEntry({
   currentUser,
   lastViewedProfile,
@@ -336,7 +395,10 @@ export async function submitEditMyProfileEntry({
       pendingPayload.photoURL = photoURL;
     }
 
-    await submitPendingChangeFn(memberId, pendingPayload, { isOnboarding: false });
+    await submitPendingChangeFn(memberId, pendingPayload, {
+      isOnboarding: false,
+      originalValues: buildPendingOriginalValuesFromMember(member, existingPhoto)
+    });
     windowObj.__editMyProfileMemberId = null;
     windowObj.location.reload();
   }catch(err){

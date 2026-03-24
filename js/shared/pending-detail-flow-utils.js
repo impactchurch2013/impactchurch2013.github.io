@@ -45,6 +45,24 @@ export function renderPendingDetailView(documentObj, bodyHtml, buttonsHtml){
   `;
 }
 
+export function renderPendingHistoryDetailView(documentObj, bodyHtml, year, month, day){
+  const box = documentObj.getElementById("pendingChangesContent");
+  if(!box){
+    return;
+  }
+
+  box.innerHTML = `
+    <div onclick='buildPendingDayResults(${year}, ${month}, ${day})'
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
+      ← Back
+    </div>
+    <h2 style="margin:12px 0;">Pending change result</h2>
+    <div style="padding:4px 0 8px;max-height:56vh;overflow-y:auto;text-align:left;">
+      ${bodyHtml}
+    </div>
+  `;
+}
+
 export function bindPendingDetailAdminActions(
   documentObj,
   isChurchAdmin,

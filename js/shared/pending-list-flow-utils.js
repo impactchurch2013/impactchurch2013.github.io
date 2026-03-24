@@ -52,7 +52,35 @@ export function renderPendingDayView(
   }
 
   const filtered = filterChangesByMonthFn(changes, year, month);
-  const html = buildPendingDayListHtmlFn(filtered, getPendingCreatedAtDateFn);
+  const html = buildPendingDayListHtmlFn(filtered, getPendingCreatedAtDateFn, year, month);
+  container.innerHTML = html;
+}
+
+export function renderPendingDayResultsView(
+  documentObj,
+  changes,
+  year,
+  month,
+  day,
+  filterChangesByDayFn,
+  buildPendingDayResultsHtmlFn,
+  getPendingCreatedAtDateFn,
+  escapeHtmlFn
+){
+  const container = documentObj.getElementById("pendingChangesContent");
+  if(!container){
+    return;
+  }
+
+  const filtered = filterChangesByDayFn(changes, year, month, day);
+  const html = buildPendingDayResultsHtmlFn(
+    filtered,
+    year,
+    month,
+    day,
+    getPendingCreatedAtDateFn,
+    escapeHtmlFn
+  );
   container.innerHTML = html;
 }
 

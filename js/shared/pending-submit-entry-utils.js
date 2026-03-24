@@ -27,7 +27,8 @@ export async function submitPendingChangeEntry({
       changes,
       currentUserEmail,
       omitUndefinedFn,
-      serverTimestamp
+      serverTimestamp,
+      opts
     );
     await submitPendingChangeToFirestoreFn(dbObj, addDoc, collection, payload);
 

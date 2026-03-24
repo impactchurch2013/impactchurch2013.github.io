@@ -222,6 +222,7 @@ export async function saveMemberChangesEntry({
       alertFn(profileUpdatedMessage);
     }else{
       await savePendingMemberEditsFn({
+        member,
         existingPhoto,
         currentUser,
         removePhoto,
