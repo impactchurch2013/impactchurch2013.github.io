@@ -715,6 +715,18 @@ gap:8px;
 .directory-toolbar button{
 padding:7px 10px;
 font-size:13px;
+line-height:1.2;
+}
+
+.admin-panel{
+padding:0 12px 12px 12px;
+gap:8px;
+}
+
+.admin-panel button{
+padding:7px 10px;
+font-size:13px;
+line-height:1.2;
 }
 
 .header-inner{
