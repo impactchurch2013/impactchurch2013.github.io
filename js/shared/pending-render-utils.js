@@ -1,9 +1,15 @@
 export function buildPendingYearViewHtml(unresolvedRowLabel, years){
-  let html = `<h2>Pending Changes</h2>`;
+  let html = `
+    <div onclick="closePendingChanges()"
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
+      ← Back
+    </div>
+    <h2 style="text-align:left;">Pending Changes</h2>
+  `;
 
   html += `
     <div onclick="buildUnresolvedList()"
-      style="padding:14px;border-bottom:1px solid #e0e0e0;cursor:pointer;font-weight:600;background:#f5f7fa;">
+      style="padding:14px;border-bottom:1px solid #e0e0e0;cursor:pointer;font-weight:600;background:#f5f7fa;text-align:left;">
       ${unresolvedRowLabel}
     </div>
   `;
@@ -13,7 +19,7 @@ export function buildPendingYearViewHtml(unresolvedRowLabel, years){
     .forEach(year => {
       html += `
         <div onclick='buildMonthView(${year})'
-          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
+          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;text-align:left;">
           ${year}
         </div>
       `;
@@ -24,14 +30,14 @@ export function buildPendingYearViewHtml(unresolvedRowLabel, years){
 
 export function buildPendingMonthViewHtml(year, months){
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  let html = `<h2>${year}</h2>`;
+  let html = `<h2 style="text-align:left;">${year}</h2>`;
 
   Object.keys(months)
     .sort((a, b) => b - a)
     .forEach(month => {
       html += `
         <div onclick='buildDayList(${year}, ${month})'
-          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
+          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;text-align:left;">
           ${monthNames[month]}
         </div>
       `;
@@ -58,7 +64,7 @@ export function buildPendingDayListHtml(filtered, getPendingCreatedAtDateFn, yea
       style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
       ← Back
     </div>
-    <h2>${monthNames[month]} ${year}</h2>
+    <h2 style="text-align:left;">${monthNames[month]} ${year}</h2>
   `;
 
   const days = Object.keys(dayCounts).map(Number).sort((a, b) => b - a);
@@ -96,7 +102,7 @@ export function buildPendingDayResultsHtml(
       style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
       ← Back
     </div>
-    <h2>${monthNames[month]} ${day}, ${year}</h2>
+    <h2 style="text-align:left;">${monthNames[month]} ${day}, ${year}</h2>
   `;
 
   if(filtered.length === 0){
