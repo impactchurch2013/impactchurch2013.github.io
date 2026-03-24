@@ -1,3 +1,6 @@
+import { buildIndexEntryUrl } from "../shared/entry-page-redirect-utils.js";
+import { resolveEntryMode, shouldUseLegacyRedirect } from "./entry-mode-utils.js";
+
 export function initializeDirectoryPreAuthBoot({
   documentObj,
   windowObj,
@@ -49,13 +52,11 @@ export function initializeDirectoryGlobalHandlersBoot({
 }
 
 export function resolveDirectoryEntryMode(windowObj){
-  const url = new URL(windowObj.location.href);
-  const mode = String(url.searchParams.get("directoryMode") || "").trim().toLowerCase();
-  return mode === "standalone" ? "standalone" : "legacy";
+  return resolveEntryMode(windowObj, "directoryMode");
 }
 
 export function shouldFallbackToIndex(entryMode){
-  return entryMode !== "standalone";
+  return shouldUseLegacyRedirect(entryMode);
 }
 
 export function buildStandaloneDirectoryShellHtml(indexHref){
@@ -101,6 +102,15 @@ export function buildStandaloneDirectoryShellHtml(indexHref){
       <p id="standaloneRoleProbeDetail" style="margin:0 0 18px;line-height:1.5;color:#555;">
         Waiting for auth state before resolving role flags.
       </p>
+      <p style="margin:0 0 10px;line-height:1.5;color:#333;">
+        Directory preview probe: <strong id="standalonePreviewProbeState">initializing...</strong>
+      </p>
+      <p id="standalonePreviewProbeDetail" style="margin:0 0 12px;line-height:1.5;color:#555;">
+        Waiting for members preview render.
+      </p>
+      <div id="standalonePreviewList" style="margin:0 0 18px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;color:#444;font-size:14px;">
+        Preview list not rendered yet.
+      </div>
       <p style="margin:0 0 18px;line-height:1.5;color:#333;">
         Production behavior is unchanged. Use the button below to open the current app runtime.
       </p>
@@ -112,7 +122,7 @@ export function buildStandaloneDirectoryShellHtml(indexHref){
 }
 
 export function mountStandaloneDirectoryShell(documentObj, windowObj){
-  const indexHref = new URL("index.html?entry=directory", windowObj.location.href).toString();
+  const indexHref = buildIndexEntryUrl(windowObj, "directory");
   documentObj.body.innerHTML = buildStandaloneDirectoryShellHtml(indexHref);
 }
 
@@ -179,6 +189,18 @@ export function setStandaloneOnboardingProbeStatus(documentObj, stateText, detai
 export function setStandaloneRoleProbeStatus(documentObj, stateText, detailText){
   const stateEl = documentObj.getElementById("standaloneRoleProbeState");
   const detailEl = documentObj.getElementById("standaloneRoleProbeDetail");
+
+  if(stateEl){
+    stateEl.textContent = stateText;
+  }
+  if(detailEl){
+    detailEl.textContent = detailText;
+  }
+}
+
+export function setStandalonePreviewProbeStatus(documentObj, stateText, detailText){
+  const stateEl = documentObj.getElementById("standalonePreviewProbeState");
+  const detailEl = documentObj.getElementById("standalonePreviewProbeDetail");
 
   if(stateEl){
     stateEl.textContent = stateText;

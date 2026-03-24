@@ -16,6 +16,15 @@ export async function runMembersCountProbe({
   }
 }
 
+export function setStandalonePreviewContainerText(documentObj, text){
+  const container = documentObj.getElementById("standalonePreviewList");
+  if(!container){
+    return;
+  }
+
+  container.textContent = text;
+}
+
 export async function runSignedInParityProbes({
   dbObj,
   normalizedEmail,

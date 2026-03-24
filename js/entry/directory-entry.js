@@ -1,8 +1,10 @@
 import { redirectEntryPageToIndex } from "../shared/entry-page-redirect-utils.js";
 import { SUPER_ADMINS, CHURCH_ADMINS, resolveRoleFlagsForEmail } from "../shared/auth-role-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { runMembersCountProbe, runSignedInParityProbes } from "./directory-standalone-probes.js";
+import { runMembersCountProbe, runSignedInParityProbes, setStandalonePreviewContainerText } from "./directory-standalone-probes.js";
+import { runMembersPreviewProbe, renderStandaloneDirectoryPreview } from "./directory-standalone-preview.js";
 import { createStandaloneStatusController } from "./directory-standalone-status.js";
+import { runStandaloneDirectoryDiagnostics } from "./directory-standalone-diagnostics.js";
 import {
   resolveDirectoryEntryMode,
   shouldFallbackToIndex,
@@ -12,10 +14,12 @@ import {
   setStandaloneAllowedProbeStatus,
   setStandaloneProfileProbeStatus,
   setStandaloneOnboardingProbeStatus,
-  setStandaloneRoleProbeStatus
+  setStandaloneRoleProbeStatus,
+  setStandalonePreviewProbeStatus
 } from "./directory-runtime-init.js";
 
 const loadFirestoreFns = () => import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+const importFirebaseClientFns = () => import("../firebase/client.js");
 
 const entryMode = resolveDirectoryEntryMode(window);
 if(shouldFallbackToIndex(entryMode)){
@@ -29,54 +33,28 @@ if(shouldFallbackToIndex(entryMode)){
     setAllowedStatusFn: setStandaloneAllowedProbeStatus,
     setProfileStatusFn: setStandaloneProfileProbeStatus,
     setOnboardingStatusFn: setStandaloneOnboardingProbeStatus,
-    setRoleStatusFn: setStandaloneRoleProbeStatus
+    setRoleStatusFn: setStandaloneRoleProbeStatus,
+    setPreviewStatusFn: setStandalonePreviewProbeStatus,
+    setPreviewTextFn: setStandalonePreviewContainerText
   });
-
-  try{
-    const { auth, authReady } = await import("../firebase/client.js");
-    await authReady;
-    status.setAuthReady();
-
-    onAuthStateChanged(auth, (user) => {
-      if(user){
-        status.setSignedIn(user.email || "");
-        const normalizedEmail = String(user.email || "").toLowerCase().trim();
-        const roleFlags = resolveRoleFlagsForEmail(
-          normalizedEmail,
-          SUPER_ADMINS,
-          CHURCH_ADMINS
-        );
-        status.setRoleFlags(roleFlags);
-
-        runSignedInParityProbes({
-          dbObj: window.firebase.db,
-          normalizedEmail,
-          loadFirestoreFns,
-          setAllowedStatusFn: (state, detail) => setStandaloneAllowedProbeStatus(document, state, detail),
-          setProfileStatusFn: (state, detail) => setStandaloneProfileProbeStatus(document, state, detail),
-          setOnboardingStatusFn: (state, detail) => setStandaloneOnboardingProbeStatus(document, state, detail)
-        }).catch((err) => {
-          console.error("Standalone parity probes failed:", err);
-          status.setParityError();
-        });
-      }else{
-        status.setSignedOut();
-      }
-    });
-
-    status.setMembersLoading();
-    await runMembersCountProbe({
-      dbObj: window.firebase.db,
-      loadFirestoreFns,
-      onLoadingFn: (state, detail) => setStandaloneMembersProbeStatus(document, state, detail),
-      onSuccessFn: (state, detail) => setStandaloneMembersProbeStatus(document, state, detail),
-      onErrorFn: (err) => {
-        console.error("Standalone directory members probe failed:", err);
-        status.setMembersError();
-      }
-    });
-  }catch(err){
-    console.error("Standalone directory auth bootstrap failed:", err);
-    status.setBootstrapFailed();
-  }
+  await runStandaloneDirectoryDiagnostics({
+    documentObj: document,
+    windowObj: window,
+    onAuthStateChangedFn: onAuthStateChanged,
+    importFirebaseClientFn: importFirebaseClientFns,
+    loadFirestoreFns,
+    superAdmins: SUPER_ADMINS,
+    churchAdmins: CHURCH_ADMINS,
+    resolveRoleFlagsForEmailFn: resolveRoleFlagsForEmail,
+    runSignedInParityProbesFn: runSignedInParityProbes,
+    runMembersCountProbeFn: runMembersCountProbe,
+    runMembersPreviewProbeFn: runMembersPreviewProbe,
+    renderPreviewFn: renderStandaloneDirectoryPreview,
+    statusController: status,
+    setMembersStatusFn: setStandaloneMembersProbeStatus,
+    setAllowedStatusFn: setStandaloneAllowedProbeStatus,
+    setProfileStatusFn: setStandaloneProfileProbeStatus,
+    setOnboardingStatusFn: setStandaloneOnboardingProbeStatus,
+    logErrorFn: (...args) => console.error(...args)
+  });
 }

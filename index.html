@@ -308,6 +308,7 @@ import {
   finalizeEditMemberSaveFlow
 } from "./js/shared/edit-member-save-utils.js";
 import { isUserAllowedByEmail, getMemberProfileByEmailQuery, hasPendingOnboardingSubmissionQuery } from "./js/shared/auth-query-utils.js";
+import { createAuthAllowlistFirestoreLoader, createAuthMemberProfileFirestoreLoader, createAuthPendingOnboardingFirestoreLoader, isUserAllowedEntry, getMemberProfileByEmailEntry, hasPendingOnboardingSubmissionEntry } from "./js/shared/auth-query-entry-utils.js";
 import { SUPER_ADMINS, CHURCH_ADMINS } from "./js/shared/auth-role-config.js";
 import { applyAuthenticatedUiState, applyLoggedOutUiState, toggleEditorModeUi } from "./js/shared/auth-ui-utils.js";
 import { handleAuthenticatedSession, handleLoggedOutSession } from "./js/shared/auth-session-utils.js";
@@ -322,13 +323,16 @@ import { getPendingCreatedAtDate, groupChangesByYear, groupChangesByMonth, filte
 import { renderPendingYearView, renderPendingMonthView, renderPendingDayView, renderUnresolvedPendingListView } from "./js/shared/pending-list-flow-utils.js";
 import { getSafePendingPhotoUrl, buildPendingDetailRows, buildPendingPhotoBlockHtml, buildPendingDetailBodyHtml, buildPendingActionButtonsHtml } from "./js/shared/pending-detail-utils.js";
 import { findPendingChangeById, buildPendingDetailViewModel, renderPendingDetailView, bindPendingDetailAdminActions, bindPendingDetailPhotoClick } from "./js/shared/pending-detail-flow-utils.js";
-import { getPendingMemberEmail, getPendingFirstName, buildApprovedPendingEmailBody, buildDeniedPendingEmailBody, buildPendingEmailModalOptions } from "./js/shared/pending-action-utils.js";
 import { ensureInviteAdminAccess, validateInviteEmailForSubmission, upsertInviteAllowlistEntry, handleInviteAllowlistWriteError } from "./js/shared/pending-invite-flow-utils.js";
-import { ensurePendingReviewAdminAccess, ensurePendingReviewConfirmed, handleMissingPendingReviewSnapshot, runApprovePendingPostAction, runDenyPendingPostAction, maybeOpenPendingReviewEmailModal } from "./js/shared/pending-review-flow-utils.js";
 import { ADMIN_EMAIL_SUBJECT_APPROVED, ADMIN_EMAIL_SUBJECT_DENIED, APPROVED_NOTIFY_TITLE, DENIED_NOTIFY_TITLE, INVITE_MEMBER_SUBJECT, INVITE_MEMBER_BODY } from "./js/shared/pending-email-templates.js";
 import { INVITE_ADMIN_ONLY_MESSAGE, INVITE_EMAIL_REQUIRED_MESSAGE, INVITE_EMAIL_INVALID_MESSAGE, INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE, ADMIN_EMAIL_TO_REQUIRED_MESSAGE, APPROVE_ADMIN_ONLY_MESSAGE, APPROVE_CONFIRM_MESSAGE, PENDING_CHANGE_MISSING_MESSAGE, APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE, APPROVE_SUCCESS_MESSAGE, APPROVE_FAILED_MESSAGE, DENY_ADMIN_ONLY_MESSAGE, DENY_CONFIRM_MESSAGE, DENY_SUCCESS_MESSAGE, DENY_FAILED_MESSAGE } from "./js/shared/pending-messages.js";
+import { getPendingMemberEmail, getPendingFirstName, buildApprovedPendingEmailBody, buildDeniedPendingEmailBody, buildPendingEmailModalOptions } from "./js/shared/pending-action-utils.js";
+import { ensurePendingReviewAdminAccess, ensurePendingReviewConfirmed, handleMissingPendingReviewSnapshot, runApprovePendingPostAction, runDenyPendingPostAction, maybeOpenPendingReviewEmailModal } from "./js/shared/pending-review-flow-utils.js";
 import { createPendingChangeRef, getPendingChangeSnapshot, isPendingSnapshotMissing, extractPendingRowAndChanges, applyPendingApprovalToMembers, removePendingChange } from "./js/shared/pending-firestore-utils.js";
+import { createPendingReviewFirestoreLoader, executeApprovePendingChangeEntry, executeDenyPendingChangeEntry } from "./js/shared/pending-review-entry-utils.js";
+import { createInviteAllowlistFirestoreLoader, executeOpenUnresolvedPendingDetailEntry, executeSubmitInviteMemberEntry } from "./js/shared/pending-admin-entry-utils.js";
 import { buildPendingChangePayload, submitPendingChangeToFirestore } from "./js/shared/pending-submit-utils.js";
+import { createPendingSubmitFirestoreLoader, submitPendingChangeEntry } from "./js/shared/pending-submit-entry-utils.js";
 import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayListHtml, buildUnresolvedPendingEmptyStateHtml, buildUnresolvedPendingListHtml } from "./js/shared/pending-render-utils.js";
 import { openInviteMemberDialogUI, closeInviteMemberDialogUI, getInviteEmailInputValue, normalizeInviteEmail, isValidInviteEmail, buildMailtoUrl, openAdminEmailModalUI, closeAdminEmailModalUI, getAdminEmailModalValues } from "./js/shared/admin-modal-utils.js";
 import { openInviteMemberDialogFlow, closeInviteMemberDialogFlow, openAdminEmailModalFlow, closeAdminEmailModalFlow, sendAdminEmailFromModalFlow } from "./js/shared/admin-modal-flow-utils.js";
@@ -340,8 +344,13 @@ import { initializeEditorAdminBootFlow, initializeProfileSwipeCloseFlow, bindGlo
 import { initializeDirectoryPreAuthBoot, initializeDirectoryProfileSwipeBoot, initializeDirectoryGlobalHandlersBoot } from "./js/entry/directory-runtime-init.js";
 import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, showProfileFromViewModel, createProfileViewModel, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, applyProfileDragResistance, shouldCloseProfileFromSwipe, isOwnProfileForCurrentUser, buildProfileHtml, openProfileOverlay, setupProfileSheetSwipeClose, normalizeProfileDates, buildLastViewedProfileState, setProfileWindowState, getWindowScrollY } from "./js/shared/profile-utils.js";
 import { showProfileFlow, closeProfileFlow, showHouseholdEntryFlow, goBackToProfileEntryFlow, showProfileFromMemberEntryFlow } from "./js/shared/profile-flow-utils.js";
+import { openEditMyProfileSheetEntry, openEditMyProfileFormEntry, submitEditMyProfileEntry } from "./js/shared/edit-my-profile-entry-utils.js";
+import { openOnboardingEntry, submitOnboardingEntry } from "./js/shared/onboarding-entry-utils.js";
+import { createProfileSaveFirestoreLoader, saveProfileChangesEntry } from "./js/shared/profile-save-entry-utils.js";
+import { clearOnboardingPhotoPreviewStateEntry, clearEditMemberPhotoStateEntry, handleEditMemberPhotoInputChangeEntry, handleOnboardingPhotoInputChangeEntry } from "./js/shared/photo-input-entry-utils.js";
 import { PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE, PROFILE_SIGNIN_REQUIRED_MESSAGE, PROFILE_NAME_REQUIRED_MESSAGE, PROFILE_IMAGE_TOO_LARGE_MESSAGE, PROFILE_IMAGE_PROCESS_FAILED_MESSAGE, PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE, PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE, PROFILE_CHANGES_SUBMITTED_MESSAGE, ONBOARDING_COMPLETE_SUCCESS_MESSAGE, PROFILE_EDIT_OWN_ONLY_MESSAGE, PROFILE_LOAD_FAILED_MESSAGE, PROFILE_REFERENCE_MISSING_MESSAGE, PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE } from "./js/shared/profile-messages.js";
 import { UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE, MEMBER_NOT_FOUND_MESSAGE, EDIT_MEMBER_NAME_REQUIRED_MESSAGE, PROFILE_UPDATED_MESSAGE, UPDATE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ADMIN_ONLY_MESSAGE, REMOVE_MEMBER_SUCCESS_MESSAGE, REMOVE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE, PENDING_ENTRY_NOT_FOUND_MESSAGE } from "./js/shared/directory-messages.js";
+import { createDirectoryAdminFirestoreLoader, deleteMemberFromDirectoryEntry } from "./js/shared/directory-admin-entry-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -461,143 +470,40 @@ async function compressImageFileToJpegBlob(file, options = {}){
 }
 
 function clearOnboardingPhotoPreviewState(){
-
-  if(window.__onboardingPreviewUrl){
-
-    URL.revokeObjectURL(window.__onboardingPreviewUrl);
-    window.__onboardingPreviewUrl = null;
-
-  }
-
-  window.__onboardingPhotoJpegBlob = null;
-
+  clearOnboardingPhotoPreviewStateEntry(window, URL);
 }
 
 function clearEditMemberPhotoState(){
-
-window.__editMemberPhotoJpegBlob = null;
-window.__editMemberRemovePhoto = false;
-
+  clearEditMemberPhotoStateEntry(window);
 }
 
 async function onEditMemberPhotoInputChange(){
-
-const input = document.getElementById("editMemberPhoto");
-const preview = document.getElementById("editMemberPhotoNewPreview");
-const previewImg = document.getElementById("editMemberPhotoNewPreviewImg");
-
-if(!input || !preview || !previewImg){
-return;
-}
-
-const prevUrl = previewImg.dataset.objectUrl;
-if(prevUrl){
-URL.revokeObjectURL(prevUrl);
-delete previewImg.dataset.objectUrl;
-}
-
-window.__editMemberPhotoJpegBlob = null;
-window.__editMemberRemovePhoto = false;
-
-const removedNote = document.getElementById("editMemberPhotoRemovedNote");
-if(removedNote){
-removedNote.style.display = "none";
-}
-
-const curWrap = document.getElementById("editMemberCurrentPhotoWrap");
-if(curWrap){
-curWrap.style.display = "";
-}
-
-const file = input.files && input.files[0] ? input.files[0] : null;
-
-if(!file){
-
-preview.style.display = "none";
-previewImg.removeAttribute("src");
-return;
-
-}
-
-if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-
-alert("Please choose an image of 10 MB or smaller.");
-input.value = "";
-return;
-
-}
-
-try{
-
-const blob = await compressImageFileToJpegBlob(file);
-window.__editMemberPhotoJpegBlob = blob;
-
-const url = URL.createObjectURL(blob);
-previewImg.dataset.objectUrl = url;
-previewImg.src = url;
-previewImg.alt = "New profile photo preview";
-preview.style.display = "block";
-
-}catch(err){
-
-console.error(err);
-alert(PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE);
-input.value = "";
-
-}
-
+  await handleEditMemberPhotoInputChangeEntry({
+    documentObj: document,
+    windowObj: window,
+    urlObj: URL,
+    profileImageMaxFileBytes: PROFILE_IMAGE_MAX_FILE_BYTES,
+    alertFn: alert,
+    imageTooLargeMessage: "Please choose an image of 10 MB or smaller.",
+    compressImageFileToJpegBlobFn: compressImageFileToJpegBlob,
+    profileImagePreviewProcessFailedMessage: PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE,
+    onErrorFn: (error) => { console.error(error); }
+  });
 }
 
 async function onOnboardPhotoInputChange(){
-
-  const input = document.getElementById("onboardPhoto");
-  const preview = document.getElementById("onboardPhotoPreview");
-  const previewImg = document.getElementById("onboardPhotoPreviewImg");
-
-  clearOnboardingPhotoPreviewState();
-
-  if(!input || !preview || !previewImg){
-    return;
-  }
-
-  const file = input.files && input.files[0] ? input.files[0] : null;
-
-  if(!file){
-
-    preview.style.display = "none";
-    previewImg.removeAttribute("src");
-    return;
-
-  }
-
-  if(file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-
-    alert("Please choose an image of 10 MB or smaller.");
-    input.value = "";
-    return;
-
-  }
-
-  try{
-
-    const blob = await compressImageFileToJpegBlob(file);
-    window.__onboardingPhotoJpegBlob = blob;
-
-    const url = URL.createObjectURL(blob);
-    window.__onboardingPreviewUrl = url;
-
-    previewImg.src = url;
-    previewImg.alt = "Compressed profile photo preview";
-    preview.style.display = "block";
-
-  }catch(err){
-
-    console.error(err);
-    alert(PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE);
-    input.value = "";
-
-  }
-
+  await handleOnboardingPhotoInputChangeEntry({
+    documentObj: document,
+    windowObj: window,
+    urlObj: URL,
+    clearOnboardingPhotoPreviewStateFn: clearOnboardingPhotoPreviewState,
+    profileImageMaxFileBytes: PROFILE_IMAGE_MAX_FILE_BYTES,
+    alertFn: alert,
+    imageTooLargeMessage: "Please choose an image of 10 MB or smaller.",
+    compressImageFileToJpegBlobFn: compressImageFileToJpegBlob,
+    profileImagePreviewProcessFailedMessage: PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE,
+    onErrorFn: (error) => { console.error(error); }
+  });
 }
 
 /* ================================= */
@@ -605,13 +511,12 @@ async function onOnboardPhotoInputChange(){
 /* ================================= */
    
 async function isUserAllowed(email){
-
-  const { getDoc, doc } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  return isUserAllowedByEmail(db, email, getDoc, doc);
-
+  return isUserAllowedEntry({
+    dbObj: db,
+    email,
+    loadFirestoreFns: createAuthAllowlistFirestoreLoader(),
+    isUserAllowedByEmailFn: isUserAllowedByEmail
+  });
 }
 
 /* ================================= */
@@ -619,13 +524,12 @@ async function isUserAllowed(email){
 /* ================================= */
    
 async function getMemberProfileByEmail(email){
-
-  const { getDocs, collection } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  return getMemberProfileByEmailQuery(db, email, getDocs, collection);
-
+  return getMemberProfileByEmailEntry({
+    dbObj: db,
+    email,
+    loadFirestoreFns: createAuthMemberProfileFirestoreLoader(),
+    getMemberProfileByEmailQueryFn: getMemberProfileByEmailQuery
+  });
 }
 
 /* ================================= */
@@ -633,20 +537,12 @@ async function getMemberProfileByEmail(email){
 /* ================================= */
 
 async function hasPendingOnboardingSubmission(userEmail){
-
-  const { getDocs, collection, query, where } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  return hasPendingOnboardingSubmissionQuery(
-    db,
+  return hasPendingOnboardingSubmissionEntry({
+    dbObj: db,
     userEmail,
-    getDocs,
-    collection,
-    query,
-    where
-  );
-
+    loadFirestoreFns: createAuthPendingOnboardingFirestoreLoader(),
+    hasPendingOnboardingSubmissionQueryFn: hasPendingOnboardingSubmissionQuery
+  });
 }
 
 /* ================================= */
@@ -658,33 +554,21 @@ async function hasPendingOnboardingSubmission(userEmail){
 /* ================================= */
    
 async function submitPendingChange(memberId, changes, opts = {}){
-
-  try {
-
-    const { addDoc, collection, serverTimestamp } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    const payload = buildPendingChangePayload(
-      memberId,
-      changes,
-      window.currentUser && window.currentUser.email,
-      omitUndefined,
-      serverTimestamp
-    );
-    await submitPendingChangeToFirestore(db, addDoc, collection, payload);
-
-    if(opts.isOnboarding){
-      alert(ONBOARDING_COMPLETE_SUCCESS_MESSAGE);
-    }else{
-      alert(PROFILE_CHANGES_SUBMITTED_MESSAGE);
-    }
-
-  } catch (err) {
-    console.error("Failed to submit change:", err);
-    throw err;
-  }
-
+  return submitPendingChangeEntry({
+    memberId,
+    changes,
+    opts,
+    loadFirestoreFns: createPendingSubmitFirestoreLoader(),
+    currentUserEmail: window.currentUser && window.currentUser.email,
+    omitUndefinedFn: omitUndefined,
+    buildPendingChangePayloadFn: buildPendingChangePayload,
+    submitPendingChangeToFirestoreFn: submitPendingChangeToFirestore,
+    dbObj: db,
+    onboardingCompleteSuccessMessage: ONBOARDING_COMPLETE_SUCCESS_MESSAGE,
+    profileChangesSubmittedMessage: PROFILE_CHANGES_SUBMITTED_MESSAGE,
+    alertFn: alert,
+    onErrorFn: (err) => { console.error("Failed to submit change:", err); }
+  });
 }
 
 /* ================================= */
@@ -692,115 +576,14 @@ async function submitPendingChange(memberId, changes, opts = {}){
 /* ================================= */
    
 function openOnboarding(){
-
-  window.__editMyProfileMemberId = null;
-
-  clearOnboardingPhotoPreviewState();
-
-  const box = document.getElementById("onboardingContent");
-  const defaultEmail = (window.currentUser && window.currentUser.email)
-    ? window.currentUser.email.replace(/"/g, "&quot;")
-    : "";
-
-  box.innerHTML = `
-    <h2>Complete Your Profile</h2>
-    <p style="margin:0 0 8px;font-size:14px;color:#555;">Fill in what you would like to share. Optional fields can be left blank. Email is taken from your Google account.</p>
-
-    <div style="display:flex;flex-direction:column;gap:10px;">
-
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>First name</span>
-        <input id="onboardFirstName" placeholder="First name" autocomplete="given-name">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Last name</span>
-        <input id="onboardLastName" placeholder="Last name" autocomplete="family-name">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Ministries and Roles</span>
-        <select id="onboardMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
-          <option value="">— Optional —</option>
-          <optgroup label="Ministries">
-            <option value="Children's Ministry">Children's Ministry</option>
-            <option value="Hospitality Ministry">Hospitality Ministry</option>
-            <option value="Men's Ministry">Men's Ministry</option>
-            <option value="Outreach Ministry">Outreach Ministry</option>
-            <option value="Pastor Ministry">Pastor Ministry</option>
-            <option value="Prayer Ministry">Prayer Ministry</option>
-            <option value="Teaching Ministry">Teaching Ministry</option>
-            <option value="Women's Ministry">Women's Ministry</option>
-            <option value="Worship Ministry">Worship Ministry</option>
-            <option value="Youth Ministry">Youth Ministry</option>
-          </optgroup>
-          <optgroup label="Roles">
-            <option value="Admin">Admin</option>
-            <option value="Sound">Sound</option>
-            <option value="Security">Security</option>
-            <option value="Volunteer">Volunteer</option>
-          </optgroup>
-        </select>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Email</span>
-        <input id="onboardEmail" type="email" placeholder="Email" value="${defaultEmail}" autocomplete="email" readonly style="background:#f5f5f5;">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Phone</span>
-        <input id="onboardPhone" type="tel" placeholder="Phone" autocomplete="tel">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Address</span>
-        <input id="onboardAddress" placeholder="Street address" autocomplete="street-address">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>City</span>
-        <input id="onboardCity" placeholder="City" autocomplete="address-level2">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>State</span>
-        <input id="onboardState" placeholder="State" autocomplete="address-level1">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>ZIP</span>
-        <input id="onboardZip" placeholder="ZIP code" autocomplete="postal-code">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Birthday</span>
-        <input id="onboardBirthday" type="text" placeholder="e.g. Feb 25" inputmode="text" autocomplete="off" aria-describedby="onboardBirthdayHint">
-        <span id="onboardBirthdayHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Feb 25).</span>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Anniversary</span>
-        <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint">
-        <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Profile photo (optional)</span>
-        <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
-        <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload. Only a link is stored in Firestore.</span>
-      </label>
-      <div id="onboardPhotoPreview" style="display:none;margin-top:4px;">
-        <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (how it will look)</p>
-        <img id="onboardPhotoPreviewImg" alt="" width="400" height="300" loading="lazy"
-          style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
-      </div>
-
-      <button type="button" id="onboardSubmitBtn"
-        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-        Submit profile
-      </button>
-
-    </div>
-  `;
-
-  document.getElementById("onboardSubmitBtn").onclick = () => submitOnboarding();
-
-  const photoEl = document.getElementById("onboardPhoto");
-  if(photoEl){
-    photoEl.addEventListener("change", onOnboardPhotoInputChange);
-  }
-
-  openSheet("onboardingSheet");
+  openOnboardingEntry({
+    windowObj: window,
+    clearOnboardingPhotoPreviewStateFn: clearOnboardingPhotoPreviewState,
+    documentObj: document,
+    submitOnboardingFn: submitOnboarding,
+    onOnboardPhotoInputChangeFn: onOnboardPhotoInputChange,
+    openSheetFn: openSheet
+  });
 }
 
 /* ================================= */
@@ -808,125 +591,25 @@ function openOnboarding(){
 /* ================================= */
    
 async function submitOnboarding(){
-
-  const firstName = (document.getElementById("onboardFirstName").value || "").trim();
-  const lastName = (document.getElementById("onboardLastName").value || "").trim();
-  const { ministry, role } = splitMinistryAndRole(
-    document.getElementById("onboardMinistry").value
-  );
-  const phone = (document.getElementById("onboardPhone").value || "").trim();
-  const address = (document.getElementById("onboardAddress").value || "").trim();
-  const city = (document.getElementById("onboardCity").value || "").trim();
-  const state = (document.getElementById("onboardState").value || "").trim();
-  const zip = (document.getElementById("onboardZip").value || "").trim();
-  const birthday = (document.getElementById("onboardBirthday").value || "").trim();
-  const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
-
-  const email = (window.currentUser && window.currentUser.email)
-    ? window.currentUser.email.toLowerCase().trim()
-    : "";
-
-  if (!email) {
-    alert(PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE);
-    return;
-  }
-
-  if (!firstName || !lastName) {
-    alert(PROFILE_NAME_REQUIRED_MESSAGE);
-    return;
-  }
-
-  const btn = document.getElementById("onboardSubmitBtn");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "Saving…";
-  }
-
-  try {
-
-    const photoInput = document.getElementById("onboardPhoto");
-    const file = photoInput && photoInput.files && photoInput.files[0]
-      ? photoInput.files[0]
-      : null;
-
-    if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-      alert(PROFILE_IMAGE_TOO_LARGE_MESSAGE);
-      if(btn){
-        btn.disabled = false;
-        btn.textContent = "Submit profile";
-      }
-      return;
-    }
-
-    let photoURL = "";
-
-    let jpegBlob = window.__onboardingPhotoJpegBlob || null;
-
-    if(file && !jpegBlob){
-      btn.textContent = "Preparing photo…";
-      try{
-        jpegBlob = await compressImageFileToJpegBlob(file);
-        window.__onboardingPhotoJpegBlob = jpegBlob;
-      }catch(compErr){
-        console.error(compErr);
-        alert(PROFILE_IMAGE_PROCESS_FAILED_MESSAGE);
-        if(btn){
-          btn.disabled = false;
-          btn.textContent = "Submit profile";
-        }
-        return;
-      }
-    }
-
-    if(jpegBlob){
-
-      btn.textContent = "Uploading photo…";
-
-      const uid = window.currentUser.uid
-        || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
-
-      const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
-      const storageRef = ref(storage, path);
-
-      await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
-      photoURL = await getDownloadURL(storageRef);
-
-    }
-
-    const pendingPayload = {
-      firstName,
-      lastName,
-      fullName: `${firstName} ${lastName}`,
-      ministry,
-      role,
-      email,
-      phone,
-      address,
-      city,
-      state,
-      zip,
-      birthday,
-      anniversary,
-      onboarding: true
-    };
-
-    if(photoURL){
-      pendingPayload.photoURL = photoURL;
-    }
-
-    await submitPendingChange(null, pendingPayload, { isOnboarding: true });
-
-    location.reload();
-
-  } catch (err) {
-    console.error("Onboarding submit failed:", err);
-    alert(PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE);
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "Submit profile";
-    }
-  }
-
+  await submitOnboardingEntry({
+    windowObj: window,
+    documentObj: document,
+    splitMinistryAndRoleFn: splitMinistryAndRole,
+    alertFn: alert,
+    profileSigninRequiredSaveMessage: PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE,
+    profileNameRequiredMessage: PROFILE_NAME_REQUIRED_MESSAGE,
+    profileImageTooLargeMessage: PROFILE_IMAGE_TOO_LARGE_MESSAGE,
+    profileImageProcessFailedMessage: PROFILE_IMAGE_PROCESS_FAILED_MESSAGE,
+    profileSubmitOnboardingFailedMessage: PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE,
+    profileImageMaxFileBytes: PROFILE_IMAGE_MAX_FILE_BYTES,
+    compressImageFileToJpegBlobFn: compressImageFileToJpegBlob,
+    refFn: ref,
+    storageObj: storage,
+    uploadBytesFn: uploadBytes,
+    getDownloadURLFn: getDownloadURL,
+    submitPendingChangeFn: submitPendingChange,
+    onErrorFn: (error) => { console.error("Onboarding submit failed:", error); }
+  });
 }
 
 /* ================================= */
@@ -934,313 +617,57 @@ async function submitOnboarding(){
 /* ================================= */
 
 function openEditMyProfileSheet(){
-
-  if(!window.currentUser || !window.currentUser.email){
-    return;
-  }
-
-  if(!window.lastViewedProfile || !window.lastViewedProfile.id){
-    return;
-  }
-
-  const cu = window.currentUser.email.toLowerCase().trim();
-
-  const profileEmail = String(window.lastViewedProfile.email || "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .trim()
-    .toLowerCase();
-
-  if(!profileEmail || profileEmail !== cu){
-    alert(PROFILE_EDIT_OWN_ONLY_MESSAGE);
-    return;
-  }
-
-  const member = members.find(m => m.id === window.lastViewedProfile.id);
-
-  if(!member){
-    alert(PROFILE_LOAD_FAILED_MESSAGE);
-    return;
-  }
-
-  window.__editMyProfileMemberId = member.id;
-
-  closeProfile();
-
-  setTimeout(() => {
-    openEditMyProfileForm(member);
-  }, 320);
-
+  openEditMyProfileSheetEntry({
+    currentUser: window.currentUser,
+    lastViewedProfile: window.lastViewedProfile,
+    members,
+    alertFn: alert,
+    profileEditOwnOnlyMessage: PROFILE_EDIT_OWN_ONLY_MESSAGE,
+    profileLoadFailedMessage: PROFILE_LOAD_FAILED_MESSAGE,
+    setEditMyProfileMemberIdFn: (next) => { window.__editMyProfileMemberId = next; },
+    closeProfileFn: closeProfile,
+    openEditMyProfileFormFn: openEditMyProfileForm,
+    setTimeoutFn: setTimeout
+  });
 }
 
 function openEditMyProfileForm(member){
-
-  clearOnboardingPhotoPreviewState();
-
-  const f = member.fields;
-  const defaultEmail = (window.currentUser && window.currentUser.email)
-    ? window.currentUser.email.replace(/"/g, "&quot;")
-    : "";
-
-  const v = (key) => escapeHtml(f[key] || "");
-
-  const box = document.getElementById("onboardingContent");
-
-  box.innerHTML = `
-    <h2>Edit my profile</h2>
-    <p style="margin:0 0 8px;font-size:14px;color:#555;">Update what you would like to share. Changes are sent for admin approval before they appear in the directory. Email stays tied to your Google account.</p>
-
-    <div style="display:flex;flex-direction:column;gap:10px;">
-
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>First name</span>
-        <input id="onboardFirstName" placeholder="First name" autocomplete="given-name" value="${v("First Name")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Last name</span>
-        <input id="onboardLastName" placeholder="Last name" autocomplete="family-name" value="${v("Last Name")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Ministries and Roles</span>
-        <select id="onboardMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
-          <option value="">— Optional —</option>
-          <optgroup label="Ministries">
-            <option value="Children's Ministry">Children's Ministry</option>
-            <option value="Hospitality Ministry">Hospitality Ministry</option>
-            <option value="Men's Ministry">Men's Ministry</option>
-            <option value="Outreach Ministry">Outreach Ministry</option>
-            <option value="Pastor Ministry">Pastor Ministry</option>
-            <option value="Prayer Ministry">Prayer Ministry</option>
-            <option value="Teaching Ministry">Teaching Ministry</option>
-            <option value="Women's Ministry">Women's Ministry</option>
-            <option value="Worship Ministry">Worship Ministry</option>
-            <option value="Youth Ministry">Youth Ministry</option>
-          </optgroup>
-          <optgroup label="Roles">
-            <option value="Admin">Admin</option>
-            <option value="Sound">Sound</option>
-            <option value="Security">Security</option>
-            <option value="Volunteer">Volunteer</option>
-          </optgroup>
-        </select>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Email</span>
-        <input id="onboardEmail" type="email" placeholder="Email" value="${defaultEmail}" autocomplete="email" readonly style="background:#f5f5f5;">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Phone</span>
-        <input id="onboardPhone" type="tel" placeholder="Phone" autocomplete="tel" value="${v("Phone Number")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Address</span>
-        <input id="onboardAddress" placeholder="Street address" autocomplete="street-address" value="${v("Address")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>City</span>
-        <input id="onboardCity" placeholder="City" autocomplete="address-level2" value="${v("City")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>State</span>
-        <input id="onboardState" placeholder="State" autocomplete="address-level1" value="${v("State")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>ZIP</span>
-        <input id="onboardZip" placeholder="ZIP code" autocomplete="postal-code" value="${v("Zip Code")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Birthday</span>
-        <input id="onboardBirthday" type="text" placeholder="e.g. Feb 25" inputmode="text" autocomplete="off" aria-describedby="onboardBirthdayHint" value="${v("Birthday")}">
-        <span id="onboardBirthdayHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Feb 25).</span>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Anniversary</span>
-        <input id="onboardAnniversary" type="text" placeholder="e.g. Jun 12" inputmode="text" autocomplete="off" aria-describedby="onboardAnniversaryHint" value="${v("Anniversary")}">
-        <span id="onboardAnniversaryHint" style="font-size:12px;color:#666;">Month and day only, short month and no suffix (example: Jun 12).</span>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Profile photo (optional)</span>
-        <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
-        <span style="font-size:12px;color:#666;">Upload a new photo to replace your current one, or leave unchanged. Up to 10 MB; images are resized and saved as JPEG before upload.</span>
-      </label>
-      <div id="onboardPhotoPreview" style="display:none;margin-top:4px;">
-        <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (new photo)</p>
-        <img id="onboardPhotoPreviewImg" alt="" width="400" height="300" loading="lazy"
-          style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
-      </div>
-
-      <button type="button" id="onboardSubmitBtn"
-        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-        Submit changes for approval
-      </button>
-
-      <button type="button" id="onboardCancelBtn"
-        style="padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;">
-        Cancel
-      </button>
-
-    </div>
-  `;
-
-  const sel = document.getElementById("onboardMinistry");
-  if(sel){
-    sel.value = ministryStringToSelectValue(f.Ministry || "");
-  }
-
-  document.getElementById("onboardSubmitBtn").onclick = () => submitEditMyProfile();
-
-  const cancelBtn = document.getElementById("onboardCancelBtn");
-  if(cancelBtn){
-    cancelBtn.onclick = () => cancelEditMyProfile();
-  }
-
-  const photoEl = document.getElementById("onboardPhoto");
-  if(photoEl){
-    photoEl.addEventListener("change", onOnboardPhotoInputChange);
-  }
-
-  openSheet("onboardingSheet");
-
+  openEditMyProfileFormEntry({
+    member,
+    currentUser: window.currentUser,
+    clearOnboardingPhotoPreviewStateFn: clearOnboardingPhotoPreviewState,
+    escapeHtmlFn: escapeHtml,
+    documentObj: document,
+    ministryStringToSelectValueFn: ministryStringToSelectValue,
+    submitEditMyProfileFn: submitEditMyProfile,
+    cancelEditMyProfileFn: cancelEditMyProfile,
+    onOnboardPhotoInputChangeFn: onOnboardPhotoInputChange,
+    openSheetFn: openSheet
+  });
 }
 
 async function submitEditMyProfile(){
-
-  const memberId = window.__editMyProfileMemberId;
-
-  if(!memberId){
-    alert(PROFILE_REFERENCE_MISSING_MESSAGE);
-    return;
-  }
-
-  const firstName = (document.getElementById("onboardFirstName").value || "").trim();
-  const lastName = (document.getElementById("onboardLastName").value || "").trim();
-  const { ministry, role } = splitMinistryAndRole(
-    document.getElementById("onboardMinistry").value
-  );
-  const phone = (document.getElementById("onboardPhone").value || "").trim();
-  const address = (document.getElementById("onboardAddress").value || "").trim();
-  const city = (document.getElementById("onboardCity").value || "").trim();
-  const state = (document.getElementById("onboardState").value || "").trim();
-  const zip = (document.getElementById("onboardZip").value || "").trim();
-  const birthday = (document.getElementById("onboardBirthday").value || "").trim();
-  const anniversary = (document.getElementById("onboardAnniversary").value || "").trim();
-
-  const email = (window.currentUser && window.currentUser.email)
-    ? window.currentUser.email.toLowerCase().trim()
-    : "";
-
-  if(!email){
-    alert(PROFILE_SIGNIN_REQUIRED_MESSAGE);
-    return;
-  }
-
-  if(!firstName || !lastName){
-    alert(PROFILE_NAME_REQUIRED_MESSAGE);
-    return;
-  }
-
-  const btn = document.getElementById("onboardSubmitBtn");
-  if(btn){
-    btn.disabled = true;
-    btn.textContent = "Saving…";
-  }
-
-  try{
-
-    const photoInput = document.getElementById("onboardPhoto");
-    const file = photoInput && photoInput.files && photoInput.files[0]
-      ? photoInput.files[0]
-      : null;
-
-    if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-      alert(PROFILE_IMAGE_TOO_LARGE_MESSAGE);
-      if(btn){
-        btn.disabled = false;
-        btn.textContent = "Submit changes for approval";
-      }
-      return;
-    }
-
-    let photoURL = "";
-
-    let jpegBlob = window.__onboardingPhotoJpegBlob || null;
-
-    if(file && !jpegBlob){
-      btn.textContent = "Preparing photo…";
-      try{
-        jpegBlob = await compressImageFileToJpegBlob(file);
-        window.__onboardingPhotoJpegBlob = jpegBlob;
-      }catch(compErr){
-        console.error(compErr);
-        alert(PROFILE_IMAGE_PROCESS_FAILED_MESSAGE);
-        if(btn){
-          btn.disabled = false;
-          btn.textContent = "Submit changes for approval";
-        }
-        return;
-      }
-    }
-
-    if(jpegBlob){
-
-      btn.textContent = "Uploading photo…";
-
-      const uid = window.currentUser.uid
-        || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
-
-      const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
-      const storageRef = ref(storage, path);
-
-      await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
-      photoURL = await getDownloadURL(storageRef);
-
-    }
-
-    const member = members.find(m => m.id === memberId);
-    const existingPhoto = member && member.fields
-      ? (member.fields.Photo || "").trim()
-      : "";
-
-    if(!photoURL && existingPhoto){
-      photoURL = existingPhoto;
-    }
-
-    const pendingPayload = {
-      firstName,
-      lastName,
-      fullName: `${firstName} ${lastName}`,
-      ministry,
-      role,
-      email,
-      phone,
-      address,
-      city,
-      state,
-      zip,
-      birthday,
-      anniversary,
-      lastUpdated: new Date().toISOString()
-    };
-
-    if(photoURL){
-      pendingPayload.photoURL = photoURL;
-    }
-
-    await submitPendingChange(memberId, pendingPayload, { isOnboarding: false });
-
-    window.__editMyProfileMemberId = null;
-
-    location.reload();
-
-  }catch(err){
-    console.error("Edit profile submit failed:", err);
-    alert(PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE);
-    if(btn){
-      btn.disabled = false;
-      btn.textContent = "Submit changes for approval";
-    }
-  }
-
+  await submitEditMyProfileEntry({
+    windowObj: window,
+    documentObj: document,
+    members,
+    splitMinistryAndRoleFn: splitMinistryAndRole,
+    alertFn: alert,
+    profileReferenceMissingMessage: PROFILE_REFERENCE_MISSING_MESSAGE,
+    profileSigninRequiredMessage: PROFILE_SIGNIN_REQUIRED_MESSAGE,
+    profileNameRequiredMessage: PROFILE_NAME_REQUIRED_MESSAGE,
+    profileImageTooLargeMessage: PROFILE_IMAGE_TOO_LARGE_MESSAGE,
+    profileImageProcessFailedMessage: PROFILE_IMAGE_PROCESS_FAILED_MESSAGE,
+    profileSubmitChangesFailedMessage: PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE,
+    profileImageMaxFileBytes: PROFILE_IMAGE_MAX_FILE_BYTES,
+    compressImageFileToJpegBlobFn: compressImageFileToJpegBlob,
+    refFn: ref,
+    storageObj: storage,
+    uploadBytesFn: uploadBytes,
+    getDownloadURLFn: getDownloadURL,
+    submitPendingChangeFn: submitPendingChange,
+    onErrorFn: (error) => { console.error("Edit profile submit failed:", error); }
+  });
 }
 
 /* ================================= */
@@ -1597,65 +1024,25 @@ function closeEditMember(){
 /* ================================= */
 
 async function deleteMemberFromDirectory(memberId){
-
-  if(!window.isChurchAdmin){
-    alert(REMOVE_MEMBER_ADMIN_ONLY_MESSAGE);
-    return;
-  }
-
-  const member = members.find(m => m.id === memberId);
-  const label = member
-    ? (member.fields["Full Name"] || `${member.fields["First Name"] || ""} ${member.fields["Last Name"] || ""}`.trim() || "this member")
-    : "this member";
-
-  if(!confirm(`Remove "${label}" from the directory?\n\nThis cannot be undone.`)){
-    return;
-  }
-
-  try{
-
-    const { deleteDoc, doc } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    const rawEmail = member && member.fields
-      ? String(member.fields["Email"] || "").trim()
-      : "";
-    const allowUserId = rawEmail.toLowerCase();
-
-    await deleteDoc(doc(db, "members", memberId));
-
-    if(allowUserId){
-      try{
-        await deleteDoc(doc(db, "allowedUsers", allowUserId));
-      }catch(allowErr){
-        console.warn("Could not remove directory access (allowedUsers):", allowErr);
-        alert(REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE);
-        closeEditMember();
-        await loadMembers();
-        const memberSelectSheet = document.getElementById("memberSelectSheet");
-        if(memberSelectSheet && memberSelectSheet.classList.contains("show")){
-          renderMemberSelectContent();
-        }
-        return;
-      }
-    }
-
-    alert(REMOVE_MEMBER_SUCCESS_MESSAGE);
-
-    closeEditMember();
-    await loadMembers();
-
-    const memberSelectSheet = document.getElementById("memberSelectSheet");
-    if(memberSelectSheet && memberSelectSheet.classList.contains("show")){
-      renderMemberSelectContent();
-    }
-
-  }catch(err){
-    console.error("Delete member failed:", err);
-    alert(REMOVE_MEMBER_FAILED_MESSAGE);
-  }
-
+  await deleteMemberFromDirectoryEntry({
+    memberId,
+    isChurchAdmin: window.isChurchAdmin,
+    removeMemberAdminOnlyMessage: REMOVE_MEMBER_ADMIN_ONLY_MESSAGE,
+    alertFn: alert,
+    members,
+    confirmFn: confirm,
+    loadFirestoreFns: createDirectoryAdminFirestoreLoader(),
+    dbObj: db,
+    closeEditMemberFn: closeEditMember,
+    loadMembersFn: loadMembers,
+    documentObj: document,
+    renderMemberSelectContentFn: renderMemberSelectContent,
+    removeMemberAccessCleanupFailedMessage: REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE,
+    removeMemberSuccessMessage: REMOVE_MEMBER_SUCCESS_MESSAGE,
+    removeMemberFailedMessage: REMOVE_MEMBER_FAILED_MESSAGE,
+    onWarnFn: (...args) => console.warn(...args),
+    onErrorFn: (...args) => console.error(...args)
+  });
 }
 
 /* ================================= */
@@ -1822,28 +1209,27 @@ async function refreshPendingChangesCache(){
 }
 
 function openUnresolvedPendingDetail(pendingId){
-
-  const item = findPendingChangeById(window.pendingChangesData, pendingId);
-
-  if(!item){
-    alert(PENDING_ENTRY_NOT_FOUND_MESSAGE);
-    return;
-  }
-
-  const admin = window.isChurchAdmin;
-  const viewModel = buildPendingDetailViewModel(
-    item,
-    getSafePendingPhotoUrl,
-    buildPendingDetailRows,
-    buildPendingPhotoBlockHtml,
-    buildPendingDetailBodyHtml,
-    buildPendingActionButtonsHtml,
-    admin
-  );
-
-  renderPendingDetailView(document, viewModel.body, viewModel.buttons);
-  bindPendingDetailAdminActions(document, admin, pendingId, approvePendingChange, denyPendingChange);
-  bindPendingDetailPhotoClick(document, viewModel.safePhotoUrl, openPhoto);
+  executeOpenUnresolvedPendingDetailEntry({
+    pendingId,
+    pendingChangesData: window.pendingChangesData,
+    findPendingChangeByIdFn: findPendingChangeById,
+    alertFn: alert,
+    pendingEntryNotFoundMessage: PENDING_ENTRY_NOT_FOUND_MESSAGE,
+    isChurchAdmin: window.isChurchAdmin,
+    buildPendingDetailViewModelFn: buildPendingDetailViewModel,
+    getSafePendingPhotoUrlFn: getSafePendingPhotoUrl,
+    buildPendingDetailRowsFn: buildPendingDetailRows,
+    buildPendingPhotoBlockHtmlFn: buildPendingPhotoBlockHtml,
+    buildPendingDetailBodyHtmlFn: buildPendingDetailBodyHtml,
+    buildPendingActionButtonsHtmlFn: buildPendingActionButtonsHtml,
+    renderPendingDetailViewFn: renderPendingDetailView,
+    documentObj: document,
+    bindPendingDetailAdminActionsFn: bindPendingDetailAdminActions,
+    approvePendingChangeFn: approvePendingChange,
+    denyPendingChangeFn: denyPendingChange,
+    bindPendingDetailPhotoClickFn: bindPendingDetailPhotoClick,
+    openPhotoFn: openPhoto
+  });
 
 }
 
@@ -1865,51 +1251,31 @@ function closeInviteMemberDialog(){
 }
 
 async function submitInviteMember(){
-
-if(!ensureInviteAdminAccess(window.isChurchAdmin, INVITE_ADMIN_ONLY_MESSAGE, alert)){
-  return;
-}
-
-const raw = getInviteEmailInputValue(document);
-const validated = validateInviteEmailForSubmission(raw, normalizeInviteEmail, isValidInviteEmail);
-if(!validated.ok){
-  if(validated.reason === "required"){
-    alert(INVITE_EMAIL_REQUIRED_MESSAGE);
-  }else{
-    alert(INVITE_EMAIL_INVALID_MESSAGE);
-  }
-  return;
-}
-const email = validated.email;
-
-const { setDoc, doc, serverTimestamp } = await import(
-"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-);
-
-try{
-
-await upsertInviteAllowlistEntry(
-  setDoc,
-  doc,
-  serverTimestamp,
-  db,
-  email,
-  window.currentUser
-);
-
-}catch(err){
-
-handleInviteAllowlistWriteError(err, console, alert, INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE);
-return;
-
-}
-
-const mailUrl = buildMailtoUrl(email, INVITE_MEMBER_SUBJECT, INVITE_MEMBER_BODY);
-
-closeInviteMemberDialog();
-
-window.location.href = mailUrl;
-
+  await executeSubmitInviteMemberEntry({
+    isChurchAdmin: window.isChurchAdmin,
+    ensureInviteAdminAccessFn: ensureInviteAdminAccess,
+    inviteAdminOnlyMessage: INVITE_ADMIN_ONLY_MESSAGE,
+    alertFn: alert,
+    getInviteEmailInputValueFn: getInviteEmailInputValue,
+    documentObj: document,
+    validateInviteEmailForSubmissionFn: validateInviteEmailForSubmission,
+    normalizeInviteEmailFn: normalizeInviteEmail,
+    isValidInviteEmailFn: isValidInviteEmail,
+    inviteEmailRequiredMessage: INVITE_EMAIL_REQUIRED_MESSAGE,
+    inviteEmailInvalidMessage: INVITE_EMAIL_INVALID_MESSAGE,
+    loadFirestoreFns: createInviteAllowlistFirestoreLoader(),
+    upsertInviteAllowlistEntryFn: upsertInviteAllowlistEntry,
+    dbObj: db,
+    currentUser: window.currentUser,
+    handleInviteAllowlistWriteErrorFn: handleInviteAllowlistWriteError,
+    consoleObj: console,
+    inviteAllowlistWriteFailedMessage: INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE,
+    buildMailtoUrlFn: buildMailtoUrl,
+    inviteMemberSubject: INVITE_MEMBER_SUBJECT,
+    inviteMemberBody: INVITE_MEMBER_BODY,
+    closeInviteMemberDialogFn: closeInviteMemberDialog,
+    redirectToUrlFn: (url) => { window.location.href = url; }
+  });
 }
 
 function openAdminEmailModal(opts){
@@ -1933,139 +1299,77 @@ function sendAdminEmailFromModal(){
 }
 
 async function approvePendingChange(pendingId){
-
-  if(!ensurePendingReviewAdminAccess(window.isChurchAdmin, APPROVE_ADMIN_ONLY_MESSAGE, alert)){
-    return;
-  }
-
-  if(!ensurePendingReviewConfirmed(APPROVE_CONFIRM_MESSAGE, confirm)){
-    return;
-  }
-
-  try {
-
-    const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    const changeRef = createPendingChangeRef(doc, db, pendingId);
-    const snap = await getPendingChangeSnapshot(getDoc, changeRef);
-
-    if(await handleMissingPendingReviewSnapshot(
-      snap,
-      isPendingSnapshotMissing,
-      PENDING_CHANGE_MISSING_MESSAGE,
-      alert,
-      refreshAndRebuildUnresolved
-    )){
-      return;
-    }
-
-    const { row, changes: ch } = extractPendingRowAndChanges(snap);
-
-    const memberPayload = mapChangesToMember(ch);
-
-    const approvalResult = await applyPendingApprovalToMembers(
-      row,
-      memberPayload,
-      db,
-      doc,
-      updateDoc,
-      addDoc,
-      collection
-    );
-    if(!approvalResult.ok){
-
-      alert(APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE);
-      return;
-
-    }
-
-    await removePendingChange(deleteDoc, changeRef);
-
-    const memberEmail = getPendingMemberEmail(ch);
-    const firstName = getPendingFirstName(ch);
-    const emailBody = buildApprovedPendingEmailBody(firstName);
-
-    await runApprovePendingPostAction(
-      refreshAndRebuildUnresolved,
-      loadMembers,
-      APPROVE_SUCCESS_MESSAGE,
-      alert
-    );
-
-    maybeOpenPendingReviewEmailModal(
-      memberEmail,
-      buildPendingEmailModalOptions,
-      ADMIN_EMAIL_SUBJECT_APPROVED,
-      emailBody,
-      APPROVED_NOTIFY_TITLE,
-      openAdminEmailModal
-    );
-
-  }catch(err){
-    console.error("Approve failed:", err);
-    alert(APPROVE_FAILED_MESSAGE);
-  }
+  await executeApprovePendingChangeEntry({
+    pendingId,
+    isChurchAdmin: window.isChurchAdmin,
+    ensurePendingReviewAdminAccessFn: ensurePendingReviewAdminAccess,
+    ensurePendingReviewConfirmedFn: ensurePendingReviewConfirmed,
+    approveAdminOnlyMessage: APPROVE_ADMIN_ONLY_MESSAGE,
+    approveConfirmMessage: APPROVE_CONFIRM_MESSAGE,
+    alertFn: alert,
+    confirmFn: confirm,
+    loadFirestoreFns: createPendingReviewFirestoreLoader(),
+    dbObj: db,
+    createPendingChangeRefFn: createPendingChangeRef,
+    getPendingChangeSnapshotFn: getPendingChangeSnapshot,
+    handleMissingPendingReviewSnapshotFn: handleMissingPendingReviewSnapshot,
+    isPendingSnapshotMissingFn: isPendingSnapshotMissing,
+    pendingChangeMissingMessage: PENDING_CHANGE_MISSING_MESSAGE,
+    refreshAndRebuildUnresolvedFn: refreshAndRebuildUnresolved,
+    extractPendingRowAndChangesFn: extractPendingRowAndChanges,
+    mapChangesToMemberFn: mapChangesToMember,
+    applyPendingApprovalToMembersFn: applyPendingApprovalToMembers,
+    approveMissingMemberReferenceMessage: APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE,
+    removePendingChangeFn: removePendingChange,
+    getPendingMemberEmailFn: getPendingMemberEmail,
+    getPendingFirstNameFn: getPendingFirstName,
+    buildApprovedPendingEmailBodyFn: buildApprovedPendingEmailBody,
+    runApprovePendingPostActionFn: runApprovePendingPostAction,
+    loadMembersFn: loadMembers,
+    approveSuccessMessage: APPROVE_SUCCESS_MESSAGE,
+    maybeOpenPendingReviewEmailModalFn: maybeOpenPendingReviewEmailModal,
+    buildPendingEmailModalOptionsFn: buildPendingEmailModalOptions,
+    approvedEmailSubject: ADMIN_EMAIL_SUBJECT_APPROVED,
+    approvedNotifyTitle: APPROVED_NOTIFY_TITLE,
+    openAdminEmailModalFn: openAdminEmailModal,
+    approveFailedMessage: APPROVE_FAILED_MESSAGE,
+    onErrorFn: (err) => { console.error("Approve failed:", err); }
+  });
 
 }
 
 async function denyPendingChange(pendingId){
-
-  if(!ensurePendingReviewAdminAccess(window.isChurchAdmin, DENY_ADMIN_ONLY_MESSAGE, alert)){
-    return;
-  }
-
-  if(!ensurePendingReviewConfirmed(DENY_CONFIRM_MESSAGE, confirm)){
-    return;
-  }
-
-  try{
-
-    const { doc, getDoc, deleteDoc } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    const changeRef = createPendingChangeRef(doc, db, pendingId);
-    const snap = await getPendingChangeSnapshot(getDoc, changeRef);
-
-    if(await handleMissingPendingReviewSnapshot(
-      snap,
-      isPendingSnapshotMissing,
-      PENDING_CHANGE_MISSING_MESSAGE,
-      alert,
-      refreshAndRebuildUnresolved
-    )){
-      return;
-    }
-
-    const { changes: ch } = extractPendingRowAndChanges(snap);
-
-    const memberEmail = getPendingMemberEmail(ch);
-
-    await removePendingChange(deleteDoc, changeRef);
-
-    const emailBody = buildDeniedPendingEmailBody();
-
-    await runDenyPendingPostAction(
-      refreshAndRebuildUnresolved,
-      DENY_SUCCESS_MESSAGE,
-      alert
-    );
-
-    maybeOpenPendingReviewEmailModal(
-      memberEmail,
-      buildPendingEmailModalOptions,
-      ADMIN_EMAIL_SUBJECT_DENIED,
-      emailBody,
-      DENIED_NOTIFY_TITLE,
-      openAdminEmailModal
-    );
-
-  }catch(err){
-    console.error("Deny failed:", err);
-    alert(DENY_FAILED_MESSAGE);
-  }
+  await executeDenyPendingChangeEntry({
+    pendingId,
+    isChurchAdmin: window.isChurchAdmin,
+    ensurePendingReviewAdminAccessFn: ensurePendingReviewAdminAccess,
+    ensurePendingReviewConfirmedFn: ensurePendingReviewConfirmed,
+    denyAdminOnlyMessage: DENY_ADMIN_ONLY_MESSAGE,
+    denyConfirmMessage: DENY_CONFIRM_MESSAGE,
+    alertFn: alert,
+    confirmFn: confirm,
+    loadFirestoreFns: createPendingReviewFirestoreLoader(),
+    dbObj: db,
+    createPendingChangeRefFn: createPendingChangeRef,
+    getPendingChangeSnapshotFn: getPendingChangeSnapshot,
+    handleMissingPendingReviewSnapshotFn: handleMissingPendingReviewSnapshot,
+    isPendingSnapshotMissingFn: isPendingSnapshotMissing,
+    pendingChangeMissingMessage: PENDING_CHANGE_MISSING_MESSAGE,
+    refreshAndRebuildUnresolvedFn: refreshAndRebuildUnresolved,
+    extractPendingRowAndChangesFn: extractPendingRowAndChanges,
+    removePendingChangeFn: removePendingChange,
+    getPendingMemberEmailFn: getPendingMemberEmail,
+    buildDeniedPendingEmailBodyFn: buildDeniedPendingEmailBody,
+    runDenyPendingPostActionFn: runDenyPendingPostAction,
+    denySuccessMessage: DENY_SUCCESS_MESSAGE,
+    maybeOpenPendingReviewEmailModalFn: maybeOpenPendingReviewEmailModal,
+    buildPendingEmailModalOptionsFn: buildPendingEmailModalOptions,
+    deniedEmailSubject: ADMIN_EMAIL_SUBJECT_DENIED,
+    deniedNotifyTitle: DENIED_NOTIFY_TITLE,
+    openAdminEmailModalFn: openAdminEmailModal,
+    denyFailedMessage: DENY_FAILED_MESSAGE,
+    onErrorFn: (err) => { console.error("Deny failed:", err); }
+  });
 
 }
 
@@ -2174,26 +1478,16 @@ const filterMembers = () => filterMembersUtil(buildDirectory);
 /* ================================= */
    
 async function saveProfileChanges(){
-
-  const phone = document.getElementById("editPhone").value;
-  const email = document.getElementById("editEmail").value;
-
-  const member = members.find(m => m.id === window.lastViewedProfile.id)
-
-  const { updateDoc, doc } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  await updateDoc(doc(db, "members", member.id), {
-    phone,
-    email
+  await saveProfileChangesEntry({
+    documentObj: document,
+    members,
+    lastViewedProfile: window.lastViewedProfile,
+    loadFirestoreFns: createProfileSaveFirestoreLoader(),
+    dbObj: db,
+    setLastViewedProfilePhoneFn: (phone) => { window.lastViewedProfile.phone = phone; },
+    setLastViewedProfileEmailFn: (email) => { window.lastViewedProfile.email = email; },
+    goBackToProfileFn: goBackToProfile
   });
-
-  // Update UI
-  window.lastViewedProfile.phone = phone;
-  window.lastViewedProfile.email = email;
-
-  goBackToProfile();
 }
    
 /* ================================= */
