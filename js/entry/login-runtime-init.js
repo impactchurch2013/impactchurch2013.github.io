@@ -38,7 +38,7 @@ export function buildStandaloneLoginShellHtml(indexHref){
         Waiting for auth state before resolving role flags.
       </p>
       <p style="margin:0 0 18px;line-height:1.5;color:#333;">
-        This is the primary login entry runtime. Use the button below to open the compatibility `index.html` path.
+        This is the primary login entry runtime. Use the button below to open the compatibility index.html path.
       </p>
       <a href="${indexHref}" style="display:inline-block;background:#2b5cff;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;">
         Open compatibility runtime (index.html)

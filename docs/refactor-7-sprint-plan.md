@@ -42,4 +42,4 @@ This tracks the remaining major refactor as larger, deliberate chunks.
 - Promote multi-page runtime path to primary path.
 - Retire rollback and legacy bootstrap plumbing.
 - Execute full smoke checklist and update docs.
-- Status: in progress.
+- Status: completed.
