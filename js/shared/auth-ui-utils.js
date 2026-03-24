@@ -7,30 +7,32 @@ export function applyAuthenticatedUiState(
   editorToggleBtnEl,
   isChurchAdmin
 ){
-  if(editorToggleBtnEl){
-    editorToggleBtnEl.style.display = isChurchAdmin ? "inline-flex" : "none";
+  const isAdmin = Boolean(isChurchAdmin);
+
+  if(editorToggleBtnEl && editorToggleBtnEl.style){
+    editorToggleBtnEl.style.display = isAdmin ? "inline-flex" : "none";
   }
-  if(appEl){
+  if(appEl && appEl.style){
     appEl.style.display = "block";
   }
-  if(loginScreenEl){
+  if(loginScreenEl && loginScreenEl.style){
     loginScreenEl.style.display = "none";
   }
-  if(logoutBtnEl){
+  if(logoutBtnEl && logoutBtnEl.style){
     logoutBtnEl.style.display = "inline-flex";
   }
-  if(searchToggleBtnEl){
+  if(searchToggleBtnEl && searchToggleBtnEl.style){
     searchToggleBtnEl.style.display = "inline-flex";
-    searchToggleBtnEl.style.order = isChurchAdmin ? "2" : "1";
+    searchToggleBtnEl.style.order = isAdmin ? "2" : "1";
     searchToggleBtnEl.textContent = "Search";
   }
-  if(searchBarEl){
+  if(searchBarEl && searchBarEl.classList){
     searchBarEl.classList.remove("is-open");
   }
-  if(logoutBtnEl){
-    logoutBtnEl.style.order = isChurchAdmin ? "1" : "2";
+  if(logoutBtnEl && logoutBtnEl.style){
+    logoutBtnEl.style.order = isAdmin ? "1" : "2";
   }
-  if(editorToggleBtnEl){
+  if(editorToggleBtnEl && editorToggleBtnEl.style){
     editorToggleBtnEl.style.order = "3";
   }
 }
@@ -47,26 +49,26 @@ export function applyLoggedOutUiState(
   loginPasswordInputEl,
   clearLoginFeedbackFn
 ){
-  if(pendingChangesCountWrapEl){
+  if(pendingChangesCountWrapEl && pendingChangesCountWrapEl.style){
     pendingChangesCountWrapEl.style.display = "none";
   }
-  if(appEl){
+  if(appEl && appEl.style){
     appEl.style.display = "none";
   }
-  if(loginScreenEl){
+  if(loginScreenEl && loginScreenEl.style){
     loginScreenEl.style.display = "block";
   }
-  if(logoutBtnEl){
+  if(logoutBtnEl && logoutBtnEl.style){
     logoutBtnEl.style.display = "none";
   }
-  if(searchToggleBtnEl){
+  if(searchToggleBtnEl && searchToggleBtnEl.style){
     searchToggleBtnEl.style.display = "none";
     searchToggleBtnEl.textContent = "Search";
   }
-  if(searchBarEl){
+  if(searchBarEl && searchBarEl.classList){
     searchBarEl.classList.remove("is-open");
   }
-  if(editorToggleBtnEl){
+  if(editorToggleBtnEl && editorToggleBtnEl.style){
     editorToggleBtnEl.style.display = "none";
   }
   if(memberSearchInputEl){
@@ -75,7 +77,9 @@ export function applyLoggedOutUiState(
   if(loginPasswordInputEl){
     loginPasswordInputEl.value = "";
   }
-  clearLoginFeedbackFn();
+  if(typeof clearLoginFeedbackFn === "function"){
+    clearLoginFeedbackFn();
+  }
 }
 
 export function toggleEditorModeUi(

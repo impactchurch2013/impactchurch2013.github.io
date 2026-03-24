@@ -1292,6 +1292,10 @@ function bindSearchUi(){
   }
 
   if(searchInputEl){
+    searchInputEl.addEventListener("input", () => {
+      filterMembers();
+    });
+
     searchInputEl.addEventListener("keydown", (event) => {
       if(event.key !== "Enter"){
         return;
