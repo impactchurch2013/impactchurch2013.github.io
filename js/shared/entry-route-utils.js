@@ -1,9 +1,11 @@
+const TRANSITIONAL_ENTRY_PARAMS = new Set(["entry", "loginMode", "directoryMode"]);
+
 function buildAliasUrl(windowObj, aliasPage){
   const currentUrl = new URL(windowObj.location.href);
   const targetUrl = new URL(aliasPage, currentUrl);
 
   currentUrl.searchParams.forEach((value, key) => {
-    if(key === "entry"){
+    if(TRANSITIONAL_ENTRY_PARAMS.has(key)){
       return;
     }
     targetUrl.searchParams.set(key, value);

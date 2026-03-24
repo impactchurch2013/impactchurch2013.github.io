@@ -30,13 +30,13 @@ This tracks the remaining major refactor as larger, deliberate chunks.
 - Pull remaining setup/runtime blocks out of `index.html` into entry/runtime modules.
 - Minimize inline boot logic and keep thin delegating wrappers.
 - Preserve existing `window.*` compatibility surface during transition.
-- Status: pending.
+- Status: completed.
 
 ## Sprint 6: Entry Activation + Routing Cleanup
 - Enable standalone runtime behind explicit mode switches and test gates.
 - Align URL routing/canonical behavior for login and directory pages.
 - Remove transitional duplication once parity is verified.
-- Status: pending.
+- Status: ready for verification.
 
 ## Sprint 7: Final Cutover + Verification
 - Promote multi-page runtime path to primary path.

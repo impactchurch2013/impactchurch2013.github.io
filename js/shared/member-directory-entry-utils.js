@@ -1,0 +1,61 @@
+export async function loadMembersRuntimeEntry({
+  loadMembersFlowFn,
+  getDocsFn,
+  collectionFn,
+  dbObj,
+  mapFirestoreMemberDocFn,
+  setMembersFn,
+  logFn,
+  getCurrentMemberSearchQueryFn,
+  buildDirectoryFn,
+  onErrorFn
+}){
+  return loadMembersFlowFn({
+    getDocsFn,
+    collectionFn,
+    dbObj,
+    mapFirestoreMemberDocFn,
+    setMembersFn,
+    logFn,
+    getCurrentMemberSearchQueryFn,
+    buildDirectoryFn,
+    onErrorFn
+  });
+}
+
+export function buildDirectoryRuntimeEntry({
+  renderDirectoryCardsFn,
+  documentObj,
+  members,
+  searchQuery,
+  directoryElementId,
+  getVisibleDirectoryMembersFn,
+  buildDirectoryProfileViewModelFn,
+  buildDirectoryCardHtmlFn,
+  createDirectoryCardElementFn,
+  formatPhoneFn,
+  buildAddressHtmlFromFieldsFn,
+  formatMonthDayFn,
+  formatDateFn,
+  createProfileViewModelFn,
+  showProfileFromViewModelFn,
+  showProfileFn
+}){
+  renderDirectoryCardsFn({
+    documentObj,
+    members,
+    searchQuery,
+    directoryElementId,
+    getVisibleDirectoryMembersFn,
+    buildDirectoryProfileViewModelFn,
+    buildDirectoryCardHtmlFn,
+    createDirectoryCardElementFn,
+    formatPhoneFn,
+    buildAddressHtmlFromFieldsFn,
+    formatMonthDayFn,
+    formatDateFn,
+    createProfileViewModelFn,
+    showProfileFromViewModelFn,
+    showProfileFn
+  });
+}

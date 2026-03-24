@@ -319,6 +319,7 @@ import { getRequestedEntry, syncUrlForAuthState } from "./js/shared/entry-route-
 import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil, startPendingChangesCountListener as startPendingChangesCountListenerUtil, loadPendingChangesData } from "./js/shared/pending-utils.js";
 import { refreshPendingChangesCacheFlow, loadPendingChangesFlow, openPendingChangesFlow, closePendingChangesFlow } from "./js/shared/pending-sheet-flow-utils.js";
 import { createPendingChangesFirestoreLoader, refreshPendingChangesCacheEntryFlow, loadPendingChangesEntryFlow, openPendingChangesEntryFlow, closePendingChangesEntryFlow } from "./js/shared/pending-sheet-entry-utils.js";
+import { refreshPendingChangesCacheRuntimeEntry, loadPendingChangesRuntimeEntry, openPendingChangesRuntimeEntry, closePendingChangesRuntimeEntry } from "./js/shared/pending-sheet-runtime-entry-utils.js";
 import { getPendingCreatedAtDate, groupChangesByYear, groupChangesByMonth, filterChangesByMonth, sortPendingChangesByCreatedAtDesc } from "./js/shared/pending-view-utils.js";
 import { renderPendingYearView, renderPendingMonthView, renderPendingDayView, renderUnresolvedPendingListView } from "./js/shared/pending-list-flow-utils.js";
 import { getSafePendingPhotoUrl, buildPendingDetailRows, buildPendingPhotoBlockHtml, buildPendingDetailBodyHtml, buildPendingActionButtonsHtml } from "./js/shared/pending-detail-utils.js";
@@ -334,6 +335,7 @@ import { createInviteAllowlistFirestoreLoader, executeOpenUnresolvedPendingDetai
 import { buildPendingChangePayload, submitPendingChangeToFirestore } from "./js/shared/pending-submit-utils.js";
 import { createPendingSubmitFirestoreLoader, submitPendingChangeEntry } from "./js/shared/pending-submit-entry-utils.js";
 import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayListHtml, buildUnresolvedPendingEmptyStateHtml, buildUnresolvedPendingListHtml } from "./js/shared/pending-render-utils.js";
+import { buildPendingYearViewEntry, buildPendingMonthViewEntry, buildPendingDayListEntry, buildUnresolvedPendingListEntry } from "./js/shared/pending-view-entry-utils.js";
 import { openInviteMemberDialogUI, closeInviteMemberDialogUI, getInviteEmailInputValue, normalizeInviteEmail, isValidInviteEmail, buildMailtoUrl, openAdminEmailModalUI, closeAdminEmailModalUI, getAdminEmailModalValues } from "./js/shared/admin-modal-utils.js";
 import { openInviteMemberDialogFlow, closeInviteMemberDialogFlow, openAdminEmailModalFlow, closeAdminEmailModalFlow, sendAdminEmailFromModalFlow } from "./js/shared/admin-modal-flow-utils.js";
 import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet } from "./js/shared/sheet-utils.js";
@@ -345,9 +347,13 @@ import { initializeDirectoryPreAuthBoot, initializeDirectoryProfileSwipeBoot, in
 import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, showProfileFromViewModel, createProfileViewModel, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, applyProfileDragResistance, shouldCloseProfileFromSwipe, isOwnProfileForCurrentUser, buildProfileHtml, openProfileOverlay, setupProfileSheetSwipeClose, normalizeProfileDates, buildLastViewedProfileState, setProfileWindowState, getWindowScrollY } from "./js/shared/profile-utils.js";
 import { showProfileFlow, closeProfileFlow, showHouseholdEntryFlow, goBackToProfileEntryFlow, showProfileFromMemberEntryFlow } from "./js/shared/profile-flow-utils.js";
 import { openEditMyProfileSheetEntry, openEditMyProfileFormEntry, submitEditMyProfileEntry } from "./js/shared/edit-my-profile-entry-utils.js";
+import { createEditMemberFirestoreLoader, openEditMemberEntry, saveMemberChangesEntry } from "./js/shared/edit-member-runtime-entry-utils.js";
 import { openOnboardingEntry, submitOnboardingEntry } from "./js/shared/onboarding-entry-utils.js";
 import { createProfileSaveFirestoreLoader, saveProfileChangesEntry } from "./js/shared/profile-save-entry-utils.js";
 import { clearOnboardingPhotoPreviewStateEntry, clearEditMemberPhotoStateEntry, handleEditMemberPhotoInputChangeEntry, handleOnboardingPhotoInputChangeEntry } from "./js/shared/photo-input-entry-utils.js";
+import { compressImageFileToJpegBlob } from "./js/shared/image-processing-utils.js";
+import { loadMembersRuntimeEntry, buildDirectoryRuntimeEntry } from "./js/shared/member-directory-entry-utils.js";
+import { buildDirectoryGlobalHandlers, initializeDirectoryGlobalHandlersEntry } from "./js/shared/global-handlers-entry-utils.js";
 import { PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE, PROFILE_SIGNIN_REQUIRED_MESSAGE, PROFILE_NAME_REQUIRED_MESSAGE, PROFILE_IMAGE_TOO_LARGE_MESSAGE, PROFILE_IMAGE_PROCESS_FAILED_MESSAGE, PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE, PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE, PROFILE_CHANGES_SUBMITTED_MESSAGE, ONBOARDING_COMPLETE_SUCCESS_MESSAGE, PROFILE_EDIT_OWN_ONLY_MESSAGE, PROFILE_LOAD_FAILED_MESSAGE, PROFILE_REFERENCE_MISSING_MESSAGE, PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE } from "./js/shared/profile-messages.js";
 import { UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE, MEMBER_NOT_FOUND_MESSAGE, EDIT_MEMBER_NAME_REQUIRED_MESSAGE, PROFILE_UPDATED_MESSAGE, UPDATE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ADMIN_ONLY_MESSAGE, REMOVE_MEMBER_SUCCESS_MESSAGE, REMOVE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE, PENDING_ENTRY_NOT_FOUND_MESSAGE } from "./js/shared/directory-messages.js";
 import { createDirectoryAdminFirestoreLoader, deleteMemberFromDirectoryEntry } from "./js/shared/directory-admin-entry-utils.js";
@@ -367,107 +373,6 @@ const storage = getStorage(window.firebase.app);
 /* ================================= */
 
 const PROFILE_IMAGE_MAX_FILE_BYTES = 10 * 1024 * 1024;
-const PROFILE_IMAGE_MAX_WIDTH = 800;
-const PROFILE_IMAGE_JPEG_QUALITY = 0.7;
-
-function fileToDataUrl(file){
-
-  return new Promise((resolve, reject) => {
-
-    const r = new FileReader();
-
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-
-  });
-
-}
-
-function loadHtmlImage(src){
-
-  return new Promise((resolve, reject) => {
-
-    const im = new Image();
-
-    im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("Could not load image"));
-    im.src = src;
-
-  });
-
-}
-
-async function compressImageFileToJpegBlob(file, options = {}){
-
-  const maxWidth = options.maxWidth ?? PROFILE_IMAGE_MAX_WIDTH;
-  const quality = options.quality ?? PROFILE_IMAGE_JPEG_QUALITY;
-
-  let source;
-  let bitmap = null;
-
-  if(typeof createImageBitmap === "function"){
-
-    try{
-
-      bitmap = await createImageBitmap(file);
-      source = bitmap;
-
-    }catch{
-
-      const dataUrl = await fileToDataUrl(file);
-      source = await loadHtmlImage(dataUrl);
-
-    }
-
-  }else{
-
-    const dataUrl = await fileToDataUrl(file);
-    source = await loadHtmlImage(dataUrl);
-
-  }
-
-  const sw = source.width || source.naturalWidth;
-  const sh = source.height || source.naturalHeight;
-
-  let tw = sw;
-  let th = sh;
-
-  if(sw > maxWidth){
-
-    tw = maxWidth;
-    th = Math.round((sh * maxWidth) / sw);
-
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = tw;
-  canvas.height = th;
-
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(source, 0, 0, tw, th);
-
-  if(bitmap && bitmap.close){
-    bitmap.close();
-  }
-
-  return new Promise((resolve, reject) => {
-
-    canvas.toBlob(
-      blob => {
-        if(blob){
-          resolve(blob);
-        }else{
-          reject(new Error("Could not compress image"));
-        }
-      },
-      "image/jpeg",
-      quality
-    );
-
-  });
-
-}
 
 function clearOnboardingPhotoPreviewState(){
   clearOnboardingPhotoPreviewStateEntry(window, URL);
@@ -888,127 +793,27 @@ function selectMemberForEdit(memberId){
 /* ================================= */
    
 function openEditMember(member){
-
-  clearEditMemberPhotoState();
-
-  const {
-    fields: f,
-    valueForField: v,
-    currentPhoto,
-    showCurrentPhoto
-  } = buildEditMemberEntryContext(member, escapeHtml);
-
-  const box = document.getElementById("editMemberContent");
-
-  box.innerHTML = `
-    <h2>Edit Member</h2>
-    ${buildEditMemberModeHintHtml(window.isChurchAdmin)}
-
-    <div style="display:flex;flex-direction:column;gap:10px;">
-
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>First name</span>
-        <input id="editFirstName" placeholder="First name" autocomplete="given-name" value="${v("First Name")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Last name</span>
-        <input id="editLastName" placeholder="Last name" autocomplete="family-name" value="${v("Last Name")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Ministries and Roles</span>
-        <select id="editMinistry" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
-          <option value="">— Optional —</option>
-          <optgroup label="Ministries">
-            <option value="Children's Ministry">Children's Ministry</option>
-            <option value="Hospitality Ministry">Hospitality Ministry</option>
-            <option value="Men's Ministry">Men's Ministry</option>
-            <option value="Outreach Ministry">Outreach Ministry</option>
-            <option value="Pastor Ministry">Pastor Ministry</option>
-            <option value="Prayer Ministry">Prayer Ministry</option>
-            <option value="Teaching Ministry">Teaching Ministry</option>
-            <option value="Women's Ministry">Women's Ministry</option>
-            <option value="Worship Ministry">Worship Ministry</option>
-            <option value="Youth Ministry">Youth Ministry</option>
-          </optgroup>
-          <optgroup label="Roles">
-            <option value="Admin">Admin</option>
-            <option value="Sound">Sound</option>
-            <option value="Security">Security</option>
-            <option value="Volunteer">Volunteer</option>
-          </optgroup>
-        </select>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Household</span>
-        <input id="editHousehold" placeholder="Household (optional)" value="${v("Household")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Email</span>
-        <input id="editEmail" type="email" placeholder="Email" autocomplete="email" value="${v("Email")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Phone</span>
-        <input id="editPhone" type="tel" placeholder="Phone" autocomplete="tel" value="${v("Phone Number")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Address</span>
-        <input id="editAddress" placeholder="Street address" autocomplete="street-address" value="${v("Address")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>City</span>
-        <input id="editCity" placeholder="City" autocomplete="address-level2" value="${v("City")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>State</span>
-        <input id="editState" placeholder="State" autocomplete="address-level1" value="${v("State")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>ZIP</span>
-        <input id="editZip" placeholder="ZIP code" autocomplete="postal-code" value="${v("Zip Code")}">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Birthday</span>
-        <input id="editBirthday" type="text" placeholder="e.g. Feb 25" value="${v("Birthday")}">
-        <span style="font-size:12px;color:#666;">Month and day (example: Feb 25).</span>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
-        <span>Anniversary</span>
-        <input id="editAnniversary" type="text" placeholder="e.g. Jun 12" value="${v("Anniversary")}">
-        <span style="font-size:12px;color:#666;">Month and day (example: Jun 12).</span>
-      </label>
-
-      ${buildEditMemberPhotoSectionHtml(showCurrentPhoto, currentPhoto, escapeHtml)}
-
-      <button type="button" onclick="saveMemberChanges('${member.id}')"
-        style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
-        Save Changes
-      </button>
-
-      <button type="button" onclick="closeEditMember()">
-        Cancel
-      </button>
-
-      ${buildEditMemberDeleteButtonHtml(window.isChurchAdmin)}
-
-    </div>
-  `;
-
-  applyEditMemberMinistrySelection(document, ministryStringToSelectValue, f.Ministry || "");
-  attachEditMemberPhotoInputChangeHandler(document, onEditMemberPhotoInputChange);
-
-  attachEditMemberRemovePhotoHandler(
-    document,
-    (next) => { window.__editMemberRemovePhoto = next; },
-    (next) => { window.__editMemberPhotoJpegBlob = next; }
-  );
-
-  openEditMemberSheet(document);
-
-  attachEditMemberDeleteButtonHandler(
-    document,
-    () => deleteMemberFromDirectory(member.id)
-  );
-
+  openEditMemberEntry({
+    member,
+    clearEditMemberPhotoStateFn: clearEditMemberPhotoState,
+    buildEditMemberEntryContextFn: buildEditMemberEntryContext,
+    escapeHtmlFn: escapeHtml,
+    documentObj: document,
+    isChurchAdmin: window.isChurchAdmin,
+    buildEditMemberModeHintHtmlFn: buildEditMemberModeHintHtml,
+    buildEditMemberPhotoSectionHtmlFn: buildEditMemberPhotoSectionHtml,
+    buildEditMemberDeleteButtonHtmlFn: buildEditMemberDeleteButtonHtml,
+    applyEditMemberMinistrySelectionFn: applyEditMemberMinistrySelection,
+    ministryStringToSelectValueFn: ministryStringToSelectValue,
+    attachEditMemberPhotoInputChangeHandlerFn: attachEditMemberPhotoInputChangeHandler,
+    onEditMemberPhotoInputChangeFn: onEditMemberPhotoInputChange,
+    attachEditMemberRemovePhotoHandlerFn: attachEditMemberRemovePhotoHandler,
+    setEditMemberRemovePhotoFn: (next) => { window.__editMemberRemovePhoto = next; },
+    setEditMemberPhotoJpegBlobFn: (next) => { window.__editMemberPhotoJpegBlob = next; },
+    openEditMemberSheetFn: openEditMemberSheet,
+    attachEditMemberDeleteButtonHandlerFn: attachEditMemberDeleteButtonHandler,
+    deleteMemberFromDirectoryFn: deleteMemberFromDirectory
+  });
 }
 
 /* ================================= */
@@ -1050,81 +855,39 @@ async function deleteMemberFromDirectory(memberId){
 /* ================================= */
    
 async function saveMemberChanges(memberId){
-
-  const values = readEditMemberFormValues(document, splitMinistryAndRole);
-
-  if(!hasRequiredEditMemberName(values)){
-    alert(EDIT_MEMBER_NAME_REQUIRED_MESSAGE);
-    return;
-  }
-
-  const { member, existingPhoto } = getMemberAndExistingPhoto(members, memberId);
-
-  try {
-
-    const { updateDoc, doc } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-
-    const isAdmin = window.isChurchAdmin;
-    const removePhoto = window.__editMemberRemovePhoto;
-    const photoBlob = window.__editMemberPhotoJpegBlob;
-    let photoOut = existingPhoto;
-
-if(isAdmin){
-
-  photoOut = await saveAdminMemberEdits({
-    existingPhoto,
+  await saveMemberChangesEntry({
     memberId,
-    removePhoto,
-    photoBlob,
+    documentObj: document,
+    splitMinistryAndRoleFn: splitMinistryAndRole,
+    readEditMemberFormValuesFn: readEditMemberFormValues,
+    hasRequiredEditMemberNameFn: hasRequiredEditMemberName,
+    alertFn: alert,
+    editMemberNameRequiredMessage: EDIT_MEMBER_NAME_REQUIRED_MESSAGE,
+    getMemberAndExistingPhotoFn: getMemberAndExistingPhoto,
+    members,
+    loadFirestoreFns: createEditMemberFirestoreLoader(),
+    isChurchAdmin: window.isChurchAdmin,
+    editMemberRemovePhoto: window.__editMemberRemovePhoto,
+    editMemberPhotoJpegBlob: window.__editMemberPhotoJpegBlob,
+    saveAdminMemberEditsFn: saveAdminMemberEdits,
     storageObj: storage,
     refFn: ref,
     uploadBytesFn: uploadBytes,
     getDownloadURLFn: getDownloadURL,
-    updateDocFn: updateDoc,
-    docFn: doc,
     dbObj: db,
-    formValues: values
-  });
-
-  alert(PROFILE_UPDATED_MESSAGE);
-
-}else{
-
-  await savePendingMemberEdits({
-    existingPhoto,
+    profileUpdatedMessage: PROFILE_UPDATED_MESSAGE,
+    savePendingMemberEditsFn: savePendingMemberEdits,
     currentUser: window.currentUser,
-    removePhoto,
-    photoBlob,
-    storageObj: storage,
-    refFn: ref,
-    uploadBytesFn: uploadBytes,
-    getDownloadURLFn: getDownloadURL,
-    memberId,
     submitPendingChangeFn: submitPendingChange,
-    formValues: values
+    logFn: (...args) => console.log(...args),
+    finalizeEditMemberSaveFlowFn: finalizeEditMemberSaveFlow,
+    clearEditMemberPhotoStateFn: clearEditMemberPhotoState,
+    buildDirectoryFn: buildDirectory,
+    getCurrentMemberSearchQueryFn: getCurrentMemberSearchQuery,
+    closeEditMemberFn: closeEditMember,
+    onErrorFn: (...args) => console.error(...args),
+    updateMemberFailedMessage: UPDATE_MEMBER_FAILED_MESSAGE
   });
-
-}
-
-    console.log("Member updated!");
-
-    finalizeEditMemberSaveFlow({
-      clearEditMemberPhotoStateFn: clearEditMemberPhotoState,
-      member,
-      isAdmin,
-      formValues: values,
-      photoOut,
-      buildDirectoryFn: buildDirectory,
-      getCurrentMemberSearchQueryFn: getCurrentMemberSearchQuery,
-      closeEditMemberFn: closeEditMember
-    });
-
-  } catch (err) {
-    console.error("Update failed:", err);
-    alert(UPDATE_MEMBER_FAILED_MESSAGE);
-  }
 }
 
 /* ================================= */
@@ -1132,15 +895,15 @@ if(isAdmin){
 /* ================================= */
    
 function buildYearView(changes){
-  window.pendingChangesData = changes;
-  renderPendingYearView(
-    document,
+  buildPendingYearViewEntry({
     changes,
-    groupChangesByYear,
-    buildPendingYearViewHtml
-  );
-
-  openSheet("pendingChangesSheet");
+    setPendingChangesDataFn: (next) => { window.pendingChangesData = next; },
+    renderPendingYearViewFn: renderPendingYearView,
+    documentObj: document,
+    groupChangesByYearFn: groupChangesByYear,
+    buildPendingYearViewHtmlFn: buildPendingYearViewHtml,
+    openSheetFn: openSheet
+  });
 }
 
 /* ================================= */
@@ -1148,13 +911,14 @@ function buildYearView(changes){
 /* ================================= */
    
 function buildMonthView(year){
-  renderPendingMonthView(
-    document,
-    window.pendingChangesData,
+  buildPendingMonthViewEntry({
     year,
-    groupChangesByMonth,
-    buildPendingMonthViewHtml
-  );
+    pendingChangesData: window.pendingChangesData,
+    renderPendingMonthViewFn: renderPendingMonthView,
+    documentObj: document,
+    groupChangesByMonthFn: groupChangesByMonth,
+    buildPendingMonthViewHtmlFn: buildPendingMonthViewHtml
+  });
 }
 
 /* ================================= */
@@ -1162,15 +926,16 @@ function buildMonthView(year){
 /* ================================= */
    
 function buildDayList(year, month){
-  renderPendingDayView(
-    document,
-    window.pendingChangesData,
+  buildPendingDayListEntry({
     year,
     month,
-    filterChangesByMonth,
-    buildPendingDayListHtml,
-    getPendingCreatedAtDate
-  );
+    pendingChangesData: window.pendingChangesData,
+    renderPendingDayViewFn: renderPendingDayView,
+    documentObj: document,
+    filterChangesByMonthFn: filterChangesByMonth,
+    buildPendingDayListHtmlFn: buildPendingDayListHtml,
+    getPendingCreatedAtDateFn: getPendingCreatedAtDate
+  });
 }
 
 /* ================================= */
@@ -1183,15 +948,16 @@ const refreshAndRebuildUnresolved = () =>
   refreshAndRebuildUnresolvedUtil(refreshPendingChangesCache, buildUnresolvedList);
 
 function buildUnresolvedList(){
-  renderUnresolvedPendingListView(
-    document,
-    window.pendingChangesData,
-    sortPendingChangesByCreatedAtDesc,
-    buildUnresolvedPendingEmptyStateHtml,
-    buildUnresolvedPendingListHtml,
-    getPendingCreatedAtDate,
-    escapeHtml
-  );
+  buildUnresolvedPendingListEntry({
+    pendingChangesData: window.pendingChangesData,
+    renderUnresolvedPendingListViewFn: renderUnresolvedPendingListView,
+    documentObj: document,
+    sortPendingChangesByCreatedAtDescFn: sortPendingChangesByCreatedAtDesc,
+    buildUnresolvedPendingEmptyStateHtmlFn: buildUnresolvedPendingEmptyStateHtml,
+    buildUnresolvedPendingListHtmlFn: buildUnresolvedPendingListHtml,
+    getPendingCreatedAtDateFn: getPendingCreatedAtDate,
+    escapeHtmlFn: escapeHtml
+  });
 }
 
 /* ================================= */
@@ -1199,9 +965,10 @@ function buildUnresolvedList(){
 /* ================================= */
 
 async function refreshPendingChangesCache(){
-  return refreshPendingChangesCacheEntryFlow({
+  return refreshPendingChangesCacheRuntimeEntry({
+    refreshPendingChangesCacheEntryFlowFn: refreshPendingChangesCacheEntryFlow,
     refreshPendingChangesCacheFlowFn: refreshPendingChangesCacheFlow,
-    loadFirestoreFns: createPendingChangesFirestoreLoader(),
+    createPendingChangesFirestoreLoaderFn: createPendingChangesFirestoreLoader,
     refreshPendingChangesCacheUtilFn: refreshPendingChangesCacheUtil,
     dbObj: db,
     setPendingChangesDataFn: (changes) => { window.pendingChangesData = changes; }
@@ -1378,9 +1145,10 @@ async function denyPendingChange(pendingId){
 /* ================================= */
    
 async function loadPendingChanges(){
-  return loadPendingChangesEntryFlow({
+  return loadPendingChangesRuntimeEntry({
+    loadPendingChangesEntryFlowFn: loadPendingChangesEntryFlow,
     loadPendingChangesFlowFn: loadPendingChangesFlow,
-    loadFirestoreFns: createPendingChangesFirestoreLoader(),
+    createPendingChangesFirestoreLoaderFn: createPendingChangesFirestoreLoader,
     loadPendingChangesDataFn: loadPendingChangesData,
     dbObj: db,
     logFn: (...args) => console.log(...args),
@@ -1393,11 +1161,12 @@ async function loadPendingChanges(){
 /* ================================= */
    
 function openPendingChanges(){
-  openPendingChangesEntryFlow(
-    openPendingChangesFlow,
-    openPendingChangesSheet,
-    loadPendingChanges
-  );
+  openPendingChangesRuntimeEntry({
+    openPendingChangesEntryFlowFn: openPendingChangesEntryFlow,
+    openPendingChangesFlowFn: openPendingChangesFlow,
+    openPendingChangesSheetFn: openPendingChangesSheet,
+    loadPendingChangesFn: loadPendingChanges
+  });
 }
 
 /* ================================= */
@@ -1405,11 +1174,12 @@ function openPendingChanges(){
 /* ================================= */
    
 function closePendingChanges(){
-  closePendingChangesEntryFlow(
-    closePendingChangesFlow,
-    closePendingChangesSheet,
-    document
-  );
+  closePendingChangesRuntimeEntry({
+    closePendingChangesEntryFlowFn: closePendingChangesEntryFlow,
+    closePendingChangesFlowFn: closePendingChangesFlow,
+    closePendingChangesSheetFn: closePendingChangesSheet,
+    documentObj: document
+  });
 }
    
 /* ================================= */
@@ -1426,7 +1196,8 @@ let savedScrollPosition = 0
 /* ================================= */
 
 async function loadMembers(){
-  return loadMembersFlow({
+  return loadMembersRuntimeEntry({
+    loadMembersFlowFn: loadMembersFlow,
     getDocsFn: getDocs,
     collectionFn: collection,
     dbObj: db,
@@ -1444,7 +1215,8 @@ async function loadMembers(){
 /* ================================= */
 
 function buildDirectory(searchQuery){
-  renderDirectoryCards({
+  buildDirectoryRuntimeEntry({
+    renderDirectoryCardsFn: renderDirectoryCards,
     documentObj: document,
     members,
     searchQuery,
@@ -1616,47 +1388,48 @@ function closePhoto(){
 /* ================================= */
 
 // Make functions available to HTML onclick handlers
-initializeDirectoryGlobalHandlersBoot({
+initializeDirectoryGlobalHandlersEntry({
+  initializeDirectoryGlobalHandlersBootFn: initializeDirectoryGlobalHandlersBoot,
   windowObj: window,
   bindGlobalWindowHandlersFlowFn: bindGlobalWindowHandlersFlow,
   logFn: (...args) => console.log(...args),
   firebaseObj: window.firebase,
   bindWindowHandlersFn: bindWindowHandlers,
-  handlers: {
-  filterMembers,
-  closeProfile,
-  showHousehold,
-  showFamilyMemberProfile,
-  showProfileFromMember,
-  openPhoto,
-  closePhoto,
-  openEditMyProfileSheet,
-  openMemberSelect,
-  closeMemberSelect,
-  selectMemberForEdit,
-  openEditMember,
-  closeEditMember,
-  saveMemberChanges,
-  deleteMemberFromDirectory,
-  openPendingChanges,
-  closePendingChanges,
-  openOnboarding,
-  submitOnboarding,
-  cancelEditMyProfile,
-  closeOnboardingSheet,
-  buildMonthView,
-  buildDayList,
-  buildUnresolvedList,
-  restorePendingChangesYearView,
-  openUnresolvedPendingDetail,
-  approvePendingChange,
-  denyPendingChange,
-  closeAdminEmailModal,
-  sendAdminEmailFromModal,
-  openInviteMemberDialog,
-  closeInviteMemberDialog,
-  submitInviteMember
-  }
+  handlers: buildDirectoryGlobalHandlers({
+    filterMembers,
+    closeProfile,
+    showHousehold,
+    showFamilyMemberProfile,
+    showProfileFromMember,
+    openPhoto,
+    closePhoto,
+    openEditMyProfileSheet,
+    openMemberSelect,
+    closeMemberSelect,
+    selectMemberForEdit,
+    openEditMember,
+    closeEditMember,
+    saveMemberChanges,
+    deleteMemberFromDirectory,
+    openPendingChanges,
+    closePendingChanges,
+    openOnboarding,
+    submitOnboarding,
+    cancelEditMyProfile,
+    closeOnboardingSheet,
+    buildMonthView,
+    buildDayList,
+    buildUnresolvedList,
+    restorePendingChangesYearView,
+    openUnresolvedPendingDetail,
+    approvePendingChange,
+    denyPendingChange,
+    closeAdminEmailModal,
+    sendAdminEmailFromModal,
+    openInviteMemberDialog,
+    closeInviteMemberDialog,
+    submitInviteMember
+  })
 });
    
 </script>

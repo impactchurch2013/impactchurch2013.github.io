@@ -4,6 +4,8 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/f
 import { runSignedInParityProbes } from "./directory-standalone-probes.js";
 import { runStandaloneLoginDiagnostics } from "./login-standalone-diagnostics.js";
 import { createStandaloneLoginStatusController } from "./login-standalone-status.js";
+import { runEntryActivation, runStandaloneEntryDiagnostics } from "./entry-activation-utils.js";
+import { createEntryFirestoreLoader, createEntryFirebaseClientImporter } from "./entry-loader-utils.js";
 import {
   resolveLoginEntryMode,
   shouldFallbackLoginToIndex,
@@ -15,35 +17,44 @@ import {
   setStandaloneLoginRoleStatus
 } from "./login-runtime-init.js";
 
-const loadFirestoreFns = () => import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-const importFirebaseClientFn = () => import("../firebase/client.js");
+const loadFirestoreFns = createEntryFirestoreLoader();
+const importFirebaseClientFn = createEntryFirebaseClientImporter();
 
-const entryMode = resolveLoginEntryMode(window);
-if(shouldFallbackLoginToIndex(entryMode)){
-  redirectEntryPageToIndex(window, "login");
-}else{
-  mountStandaloneLoginShell(document, window);
-  const status = createStandaloneLoginStatusController({
-    documentObj: document,
-    setAuthStatusFn: setStandaloneLoginAuthStatus,
-    setAllowedStatusFn: setStandaloneLoginAllowedStatus,
-    setProfileStatusFn: setStandaloneLoginProfileStatus,
-    setOnboardingStatusFn: setStandaloneLoginOnboardingStatus,
-    setRoleStatusFn: setStandaloneLoginRoleStatus
-  });
-
-  await runStandaloneLoginDiagnostics({
-    importFirebaseClientFn,
-    onAuthStateChangedFn: onAuthStateChanged,
-    loadFirestoreFns,
-    resolveRoleFlagsForEmailFn: resolveRoleFlagsForEmail,
-    superAdmins: SUPER_ADMINS,
-    churchAdmins: CHURCH_ADMINS,
-    runSignedInParityProbesFn: runSignedInParityProbes,
-    statusController: status,
-    setAllowedStatusFn: (state, detail) => setStandaloneLoginAllowedStatus(document, state, detail),
-    setProfileStatusFn: (state, detail) => setStandaloneLoginProfileStatus(document, state, detail),
-    setOnboardingStatusFn: (state, detail) => setStandaloneLoginOnboardingStatus(document, state, detail),
-    logErrorFn: (...args) => console.error(...args)
-  });
-}
+await runEntryActivation({
+  windowObj: window,
+  resolveEntryModeFn: resolveLoginEntryMode,
+  shouldFallbackToIndexFn: shouldFallbackLoginToIndex,
+  onFallbackFn: () => {
+    redirectEntryPageToIndex(window, "login");
+  },
+  onStandaloneFn: async () => {
+    await runStandaloneEntryDiagnostics({
+      documentObj: document,
+      windowObj: window,
+      mountStandaloneShellFn: mountStandaloneLoginShell,
+      createStatusControllerFn: createStandaloneLoginStatusController,
+      createStatusControllerArgs: {
+        documentObj: document,
+        setAuthStatusFn: setStandaloneLoginAuthStatus,
+        setAllowedStatusFn: setStandaloneLoginAllowedStatus,
+        setProfileStatusFn: setStandaloneLoginProfileStatus,
+        setOnboardingStatusFn: setStandaloneLoginOnboardingStatus,
+        setRoleStatusFn: setStandaloneLoginRoleStatus
+      },
+      runDiagnosticsFn: runStandaloneLoginDiagnostics,
+      diagnosticsArgs: {
+        importFirebaseClientFn,
+        onAuthStateChangedFn: onAuthStateChanged,
+        loadFirestoreFns,
+        resolveRoleFlagsForEmailFn: resolveRoleFlagsForEmail,
+        superAdmins: SUPER_ADMINS,
+        churchAdmins: CHURCH_ADMINS,
+        runSignedInParityProbesFn: runSignedInParityProbes,
+        setAllowedStatusFn: (state, detail) => setStandaloneLoginAllowedStatus(document, state, detail),
+        setProfileStatusFn: (state, detail) => setStandaloneLoginProfileStatus(document, state, detail),
+        setOnboardingStatusFn: (state, detail) => setStandaloneLoginOnboardingStatus(document, state, detail),
+        logErrorFn: (...args) => console.error(...args)
+      }
+    });
+  }
+});
