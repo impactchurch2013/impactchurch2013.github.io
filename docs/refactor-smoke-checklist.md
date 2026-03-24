@@ -41,22 +41,19 @@ Run this checklist after each small refactor slice.
 - Confirm there are no Firebase initialization/auth errors.
 
 ## Entry Routing (Sprint 6)
-- Open `login.html` and confirm the login standalone runtime shell renders as the default entry path.
-- Open `directory.html` and confirm the directory standalone runtime shell renders as the default entry path.
-- Open `login.html?loginMode=standalone` and confirm standalone diagnostics shell still renders.
-- Open `directory.html?directoryMode=standalone` and confirm standalone diagnostics shell still renders.
+- Open `login.html` and confirm it redirects into app runtime and shows the real login screen.
+- Open `directory.html` while signed out and confirm it redirects into app runtime and lands on login (directory is not exposed).
+- Open `directory.html` while signed in and confirm it lands on the real authenticated directory runtime.
 - While signed out, confirm canonical URL sync points to `login.html` without transitional params.
 - While signed in, confirm canonical URL sync points to `directory.html` without transitional params.
 
 ### Sprint 6 Quick Run Order
 - Start signed out in a fresh tab and open `login.html`.
-- Verify default standalone entry and URL cleanup, then sign in and confirm canonical switch to `directory.html`.
+- Verify redirect to real login runtime and URL cleanup, then sign in and confirm canonical switch to `directory.html`.
 - Sign out and confirm canonical switch back to `login.html`.
-- In a new tab, open `login.html?loginMode=standalone` and verify standalone shell is preserved.
-- In a new tab, open `directory.html?directoryMode=standalone` and verify standalone shell is preserved.
 - End with one normal app reload on canonical `directory.html` while signed in.
 
 ## Sprint 7 Final Cutover
-- Verify `login.html` and `directory.html` now use standalone runtime as the only supported entry path.
-- Confirm `?entryLegacy=1` no longer changes behavior.
+- Verify diagnostics entry shells are no longer public defaults for `login.html` and `directory.html`.
+- Verify `directory.html` never exposes member data to signed-out users.
 - Confirm canonical URL sync still strips transitional entry mode params (`entry`, `loginMode`, `directoryMode`).
