@@ -14,9 +14,34 @@ const HIDDEN_DIRECTORY_EMAILS = new Set([
   "impactchurch2013@gmail.com"
 ]);
 
+const HIDDEN_DIRECTORY_NAME_KEYS = new Set([
+  "impact church",
+  "impact church directory",
+  "impactchurch2013"
+]);
+
+function normalizeDirectoryKey(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 function isHiddenDirectoryMember(record){
   const email = getFieldString(record, "Email").trim().toLowerCase();
-  return HIDDEN_DIRECTORY_EMAILS.has(email);
+  if(HIDDEN_DIRECTORY_EMAILS.has(email)){
+    return true;
+  }
+
+  const first = normalizeDirectoryKey(getFieldString(record, "First Name"));
+  const last = normalizeDirectoryKey(getFieldString(record, "Last Name"));
+  const full = normalizeDirectoryKey(getFieldString(record, "Full Name"));
+  const combined = normalizeDirectoryKey(`${first} ${last}`);
+
+  return HIDDEN_DIRECTORY_NAME_KEYS.has(first)
+    || HIDDEN_DIRECTORY_NAME_KEYS.has(last)
+    || HIDDEN_DIRECTORY_NAME_KEYS.has(full)
+    || HIDDEN_DIRECTORY_NAME_KEYS.has(combined);
 }
 
 export function getMemberNameParts(record){
