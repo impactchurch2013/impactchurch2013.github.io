@@ -157,10 +157,10 @@ export function openEditMyProfileFormEntry({
         <span>Profile photo (optional)</span>
         <div class="profile-photo-examples" aria-hidden="true">
           <div class="profile-photo-examples-row">
-            <div class="profile-photo-examples-cell">
+            <div class="profile-photo-examples-cell profile-photo-examples-cell--portrait">
               <img src="images/portrait.jpg" alt="" loading="lazy" decoding="async">
             </div>
-            <div class="profile-photo-examples-cell">
+            <div class="profile-photo-examples-cell profile-photo-examples-cell--landscape">
               <img src="images/landscape.jpg" alt="" loading="lazy" decoding="async">
             </div>
           </div>

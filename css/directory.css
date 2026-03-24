@@ -303,9 +303,9 @@ align-items:center;
 width:100%;
 }
 
-/* PROFILE PHOTO */
+/* PROFILE PHOTO (member sheet only — do not use .profile-box img; other sheets need rectangular images) */
 
-.profile-box img{
+#profilePhoto{
 width:180px;
 height:180px;
 border-radius:50%;
@@ -315,7 +315,7 @@ margin:0 auto 18px auto;
 box-shadow:0 8px 24px rgba(0,0,0,.25);
 }
 
-/* Onboarding / edit-profile: example thumbnails (override .profile-box img) */
+/* Onboarding / edit-profile: example thumbnails */
 .profile-photo-examples{
 margin:0 0 6px 0;
 }
@@ -323,15 +323,13 @@ margin:0 0 6px 0;
 .profile-photo-examples-row{
 display:flex;
 flex-direction:row;
-gap:10px;
-align-items:stretch;
+gap:12px;
+align-items:flex-end;
 justify-content:center;
+flex-wrap:wrap;
 }
 
 .profile-photo-examples-cell{
-flex:1 1 0;
-min-width:0;
-height:112px;
 display:flex;
 align-items:center;
 justify-content:center;
@@ -342,16 +340,30 @@ background:#f2f3f5;
 box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 
-.profile-box .profile-photo-examples-cell img{
+/* Portrait frame (taller than wide) — full image visible inside */
+.profile-photo-examples-cell--portrait{
+flex:0 0 auto;
+width:100px;
+height:150px;
+}
+
+/* Landscape frame (wider than tall) — full image visible inside */
+.profile-photo-examples-cell--landscape{
+flex:1 1 0;
+min-width:120px;
+max-width:220px;
+height:100px;
+}
+
+.profile-photo-examples-cell img{
 width:auto;
 height:auto;
 max-width:100%;
 max-height:100%;
-flex-shrink:1;
-border-radius:4px;
 object-fit:contain;
 object-position:center;
 margin:0;
+border-radius:6px;
 box-shadow:none;
 }
 
@@ -732,7 +744,7 @@ margin-top:auto;
 box-sizing:border-box;
 }
 
-.profile-box img{
+#profilePhoto{
 width:160px;
 height:160px;
 margin-bottom:15px;
