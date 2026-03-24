@@ -10,6 +10,15 @@ function normalizeNamePart(value){
   return String(value || "").trim().toLowerCase();
 }
 
+const HIDDEN_DIRECTORY_EMAILS = new Set([
+  "impactchurch2013@gmail.com"
+]);
+
+function isHiddenDirectoryMember(record){
+  const email = getFieldString(record, "Email").trim().toLowerCase();
+  return HIDDEN_DIRECTORY_EMAILS.has(email);
+}
+
 export function getMemberNameParts(record){
   const firstRaw = getFieldString(record, "First Name");
   const lastRaw = getFieldString(record, "Last Name");
@@ -56,7 +65,9 @@ export function compareMembersSearchSort(a, b, q){
 }
 
 export function getVisibleDirectoryMembers(members, query){
-  const list = Array.isArray(members) ? members.slice() : [];
+  const list = Array.isArray(members)
+    ? members.filter(member => !isHiddenDirectoryMember(member))
+    : [];
   const q = String(query || "").trim().toLowerCase();
 
   if(q){
