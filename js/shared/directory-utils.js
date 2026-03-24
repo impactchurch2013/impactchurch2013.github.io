@@ -55,6 +55,19 @@ export function compareMembersSearchSort(a, b, q){
   return A.last.localeCompare(B.last);
 }
 
+export function getVisibleDirectoryMembers(members, query){
+  const list = Array.isArray(members) ? members.slice() : [];
+  const q = String(query || "").trim().toLowerCase();
+
+  if(q){
+    return list
+      .filter(member => memberMatchesNamePrefix(member, q))
+      .sort((a, b) => compareMembersSearchSort(a, b, q));
+  }
+
+  return list.sort(compareMembersDefaultSort);
+}
+
 export function getCurrentMemberSearchQuery(){
   const el = document.getElementById("memberSearch");
   return el ? el.value.trim().toLowerCase() : "";

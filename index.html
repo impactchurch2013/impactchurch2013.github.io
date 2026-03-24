@@ -283,14 +283,65 @@ oninput="filterMembers()">
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { escapeHtml, parseMonthDayOrFullDate, formatShortDate, formatPhone, formatDate, formatMonthDay } from "./js/shared/dom.js";
 import { splitMinistryAndRole, ministryStringToSelectValue, omitUndefined, mapChangesToMember } from "./js/shared/member-utils.js";
-import { getMemberNameParts, memberMatchesNamePrefix, compareMembersDefaultSort, compareMembersSearchSort, getCurrentMemberSearchQuery, filterMembers as filterMembersUtil, mapFirestoreMemberDoc } from "./js/shared/directory-utils.js";
-import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil, loadPendingChangesData } from "./js/shared/pending-utils.js";
+import { getVisibleDirectoryMembers, getCurrentMemberSearchQuery, filterMembers as filterMembersUtil, mapFirestoreMemberDoc } from "./js/shared/directory-utils.js";
+import { buildDirectoryProfileViewModel, buildDirectoryCardHtml, createDirectoryCardElement } from "./js/shared/directory-render-utils.js";
+import { renderDirectoryCards, loadMembersFlow } from "./js/shared/member-directory-flow-utils.js";
+import { renderMemberSelectContent as renderMemberSelectContentUtil, openMemberSelectFlow, closeMemberSelectFlow } from "./js/shared/member-select-utils.js";
+import { renderMemberSelectContentEntryFlow, openMemberSelectEntryFlow, closeMemberSelectEntryFlow } from "./js/shared/member-select-entry-utils.js";
+import {
+  selectMemberForEditFlow,
+  buildEditMemberEntryContext,
+  attachEditMemberRemovePhotoHandler,
+  applyEditMemberMinistrySelection,
+  attachEditMemberPhotoInputChangeHandler,
+  attachEditMemberDeleteButtonHandler,
+  buildEditMemberModeHintHtml,
+  buildEditMemberPhotoSectionHtml,
+  buildEditMemberDeleteButtonHtml
+} from "./js/shared/edit-member-entry-utils.js";
+import {
+  readEditMemberFormValues,
+  hasRequiredEditMemberName,
+  getMemberAndExistingPhoto,
+  saveAdminMemberEdits,
+  savePendingMemberEdits,
+  finalizeEditMemberSaveFlow
+} from "./js/shared/edit-member-save-utils.js";
+import { isUserAllowedByEmail, getMemberProfileByEmailQuery, hasPendingOnboardingSubmissionQuery } from "./js/shared/auth-query-utils.js";
+import { SUPER_ADMINS, CHURCH_ADMINS } from "./js/shared/auth-role-config.js";
+import { applyAuthenticatedUiState, applyLoggedOutUiState, toggleEditorModeUi } from "./js/shared/auth-ui-utils.js";
+import { handleAuthenticatedSession, handleLoggedOutSession } from "./js/shared/auth-session-utils.js";
+import { initAuthEntryFlow } from "./js/shared/auth-entry-init-utils.js";
+import { initializeRoleFlags, bindEditorToggleAction, stopPendingChangesCountListenerFlow, setPendingChangesCountTextFlow, startPendingChangesCountListenerFlow } from "./js/shared/editor-admin-flow-utils.js";
+import { openSheetEntryFlow, closeOnboardingSheetEntryFlow, cancelEditMyProfileFlow, showEditorUiEntryFlow, hideEditorUiEntryFlow } from "./js/shared/sheet-editor-entry-utils.js";
+import { getRequestedEntry, syncUrlForAuthState } from "./js/shared/entry-route-utils.js";
+import { restorePendingChangesYearView as restorePendingChangesYearViewUtil, refreshPendingChangesCache as refreshPendingChangesCacheUtil, refreshAndRebuildUnresolved as refreshAndRebuildUnresolvedUtil, stopPendingChangesCountListener as stopPendingChangesCountListenerUtil, startPendingChangesCountListener as startPendingChangesCountListenerUtil, loadPendingChangesData } from "./js/shared/pending-utils.js";
+import { refreshPendingChangesCacheFlow, loadPendingChangesFlow, openPendingChangesFlow, closePendingChangesFlow } from "./js/shared/pending-sheet-flow-utils.js";
+import { createPendingChangesFirestoreLoader, refreshPendingChangesCacheEntryFlow, loadPendingChangesEntryFlow, openPendingChangesEntryFlow, closePendingChangesEntryFlow } from "./js/shared/pending-sheet-entry-utils.js";
 import { getPendingCreatedAtDate, groupChangesByYear, groupChangesByMonth, filterChangesByMonth, sortPendingChangesByCreatedAtDesc } from "./js/shared/pending-view-utils.js";
+import { renderPendingYearView, renderPendingMonthView, renderPendingDayView, renderUnresolvedPendingListView } from "./js/shared/pending-list-flow-utils.js";
 import { getSafePendingPhotoUrl, buildPendingDetailRows, buildPendingPhotoBlockHtml, buildPendingDetailBodyHtml, buildPendingActionButtonsHtml } from "./js/shared/pending-detail-utils.js";
+import { findPendingChangeById, buildPendingDetailViewModel, renderPendingDetailView, bindPendingDetailAdminActions, bindPendingDetailPhotoClick } from "./js/shared/pending-detail-flow-utils.js";
+import { getPendingMemberEmail, getPendingFirstName, buildApprovedPendingEmailBody, buildDeniedPendingEmailBody, buildPendingEmailModalOptions } from "./js/shared/pending-action-utils.js";
+import { ensureInviteAdminAccess, validateInviteEmailForSubmission, upsertInviteAllowlistEntry, handleInviteAllowlistWriteError } from "./js/shared/pending-invite-flow-utils.js";
+import { ensurePendingReviewAdminAccess, ensurePendingReviewConfirmed, handleMissingPendingReviewSnapshot, runApprovePendingPostAction, runDenyPendingPostAction, maybeOpenPendingReviewEmailModal } from "./js/shared/pending-review-flow-utils.js";
+import { ADMIN_EMAIL_SUBJECT_APPROVED, ADMIN_EMAIL_SUBJECT_DENIED, APPROVED_NOTIFY_TITLE, DENIED_NOTIFY_TITLE, INVITE_MEMBER_SUBJECT, INVITE_MEMBER_BODY } from "./js/shared/pending-email-templates.js";
+import { INVITE_ADMIN_ONLY_MESSAGE, INVITE_EMAIL_REQUIRED_MESSAGE, INVITE_EMAIL_INVALID_MESSAGE, INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE, ADMIN_EMAIL_TO_REQUIRED_MESSAGE, APPROVE_ADMIN_ONLY_MESSAGE, APPROVE_CONFIRM_MESSAGE, PENDING_CHANGE_MISSING_MESSAGE, APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE, APPROVE_SUCCESS_MESSAGE, APPROVE_FAILED_MESSAGE, DENY_ADMIN_ONLY_MESSAGE, DENY_CONFIRM_MESSAGE, DENY_SUCCESS_MESSAGE, DENY_FAILED_MESSAGE } from "./js/shared/pending-messages.js";
+import { createPendingChangeRef, getPendingChangeSnapshot, isPendingSnapshotMissing, extractPendingRowAndChanges, applyPendingApprovalToMembers, removePendingChange } from "./js/shared/pending-firestore-utils.js";
+import { buildPendingChangePayload, submitPendingChangeToFirestore } from "./js/shared/pending-submit-utils.js";
+import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayListHtml, buildUnresolvedPendingEmptyStateHtml, buildUnresolvedPendingListHtml } from "./js/shared/pending-render-utils.js";
+import { openInviteMemberDialogUI, closeInviteMemberDialogUI, getInviteEmailInputValue, normalizeInviteEmail, isValidInviteEmail, buildMailtoUrl, openAdminEmailModalUI, closeAdminEmailModalUI, getAdminEmailModalValues } from "./js/shared/admin-modal-utils.js";
+import { openInviteMemberDialogFlow, closeInviteMemberDialogFlow, openAdminEmailModalFlow, closeAdminEmailModalFlow, sendAdminEmailFromModalFlow } from "./js/shared/admin-modal-flow-utils.js";
 import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
+import { showFamilyMemberProfileEntryFlow, openPhotoEntryFlow, closePhotoEntryFlow, bindWindowHandlers } from "./js/shared/ui-entry-utils.js";
 import { openPhotoViewer, closePhotoViewer } from "./js/shared/media-utils.js";
-import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, applyProfileDragResistance, shouldCloseProfileFromSwipe } from "./js/shared/profile-utils.js";
+import { initializeEditorAdminBootFlow, initializeProfileSwipeCloseFlow, bindGlobalWindowHandlersFlow } from "./js/shared/app-boot-flow-utils.js";
+import { initializeDirectoryPreAuthBoot, initializeDirectoryProfileSwipeBoot, initializeDirectoryGlobalHandlersBoot } from "./js/entry/directory-runtime-init.js";
+import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, showProfileFromViewModel, createProfileViewModel, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, applyProfileDragResistance, shouldCloseProfileFromSwipe, isOwnProfileForCurrentUser, buildProfileHtml, openProfileOverlay, setupProfileSheetSwipeClose, normalizeProfileDates, buildLastViewedProfileState, setProfileWindowState, getWindowScrollY } from "./js/shared/profile-utils.js";
+import { showProfileFlow, closeProfileFlow, showHouseholdEntryFlow, goBackToProfileEntryFlow, showProfileFromMemberEntryFlow } from "./js/shared/profile-flow-utils.js";
+import { PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE, PROFILE_SIGNIN_REQUIRED_MESSAGE, PROFILE_NAME_REQUIRED_MESSAGE, PROFILE_IMAGE_TOO_LARGE_MESSAGE, PROFILE_IMAGE_PROCESS_FAILED_MESSAGE, PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE, PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE, PROFILE_CHANGES_SUBMITTED_MESSAGE, ONBOARDING_COMPLETE_SUCCESS_MESSAGE, PROFILE_EDIT_OWN_ONLY_MESSAGE, PROFILE_LOAD_FAILED_MESSAGE, PROFILE_REFERENCE_MISSING_MESSAGE, PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE } from "./js/shared/profile-messages.js";
+import { UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE, MEMBER_NOT_FOUND_MESSAGE, EDIT_MEMBER_NAME_REQUIRED_MESSAGE, PROFILE_UPDATED_MESSAGE, UPDATE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ADMIN_ONLY_MESSAGE, REMOVE_MEMBER_SUCCESS_MESSAGE, REMOVE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE, PENDING_ENTRY_NOT_FOUND_MESSAGE } from "./js/shared/directory-messages.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -490,7 +541,7 @@ preview.style.display = "block";
 }catch(err){
 
 console.error(err);
-alert("Could not process that image. Try a JPEG or PNG.");
+alert(PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE);
 input.value = "";
 
 }
@@ -542,7 +593,7 @@ async function onOnboardPhotoInputChange(){
   }catch(err){
 
     console.error(err);
-    alert("Could not process that image. Try a JPEG or PNG.");
+    alert(PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE);
     input.value = "";
 
   }
@@ -559,11 +610,7 @@ async function isUserAllowed(email){
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
   );
 
-  const cleanEmail = email.toLowerCase().trim();
-
-  const userDoc = await getDoc(doc(db, "allowedUsers", cleanEmail));
-
-  return userDoc.exists();
+  return isUserAllowedByEmail(db, email, getDoc, doc);
 
 }
 
@@ -577,14 +624,7 @@ async function getMemberProfileByEmail(email){
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
   );
 
-  const snapshot = await getDocs(collection(db, "members"));
-
-  const match = snapshot.docs.find(doc => {
-    const data = doc.data();
-    return (data.email || "").toLowerCase().trim() === email;
-  });
-
-  return match ? { id: match.id, ...match.data() } : null;
+  return getMemberProfileByEmailQuery(db, email, getDocs, collection);
 
 }
 
@@ -594,33 +634,18 @@ async function getMemberProfileByEmail(email){
 
 async function hasPendingOnboardingSubmission(userEmail){
 
-  const clean = (userEmail || "").toLowerCase().trim();
-
   const { getDocs, collection, query, where } = await import(
     "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
   );
 
-  const variants = [...new Set([clean, userEmail].filter(Boolean))];
-
-  for(const candidate of variants){
-
-    const snapshot = await getDocs(query(
-      collection(db, "pendingChanges"),
-      where("submittedBy", "==", candidate)
-    ));
-
-    const found = snapshot.docs.some(doc => {
-      const data = doc.data();
-      if(data.status !== "pending") return false;
-      const ch = data.changes;
-      return ch && ch.onboarding === true;
-    });
-
-    if(found) return true;
-
-  }
-
-  return false;
+  return hasPendingOnboardingSubmissionQuery(
+    db,
+    userEmail,
+    getDocs,
+    collection,
+    query,
+    where
+  );
 
 }
 
@@ -640,25 +665,19 @@ async function submitPendingChange(memberId, changes, opts = {}){
       "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
     );
 
-    const changesPayload = omitUndefined(changes);
-
-    await addDoc(collection(db, "pendingChanges"), {
-      memberId: memberId != null ? memberId : null,
-      submittedBy: window.currentUser.email.toLowerCase().trim(),
-      status: "pending",
-      createdAt: serverTimestamp(),
-      resolvedAt: null,
-      resolvedBy: null,
-      changes: changesPayload
-    });
+    const payload = buildPendingChangePayload(
+      memberId,
+      changes,
+      window.currentUser && window.currentUser.email,
+      omitUndefined,
+      serverTimestamp
+    );
+    await submitPendingChangeToFirestore(db, addDoc, collection, payload);
 
     if(opts.isOnboarding){
-      alert(
-        "Your profile details were successfully saved.\n\n" +
-        "Onboarding is complete. An Impact Church admin will review your profile soon..."
-      );
+      alert(ONBOARDING_COMPLETE_SUCCESS_MESSAGE);
     }else{
-      alert("Changes submitted for approval");
+      alert(PROFILE_CHANGES_SUBMITTED_MESSAGE);
     }
 
   } catch (err) {
@@ -808,12 +827,12 @@ async function submitOnboarding(){
     : "";
 
   if (!email) {
-    alert("You must be signed in to save your profile.");
+    alert(PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE);
     return;
   }
 
   if (!firstName || !lastName) {
-    alert("Please enter your first and last name.");
+    alert(PROFILE_NAME_REQUIRED_MESSAGE);
     return;
   }
 
@@ -831,7 +850,7 @@ async function submitOnboarding(){
       : null;
 
     if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-      alert("Please choose an image of 10 MB or smaller.");
+      alert(PROFILE_IMAGE_TOO_LARGE_MESSAGE);
       if(btn){
         btn.disabled = false;
         btn.textContent = "Submit profile";
@@ -850,7 +869,7 @@ async function submitOnboarding(){
         window.__onboardingPhotoJpegBlob = jpegBlob;
       }catch(compErr){
         console.error(compErr);
-        alert("Could not process the photo. Try another image.");
+        alert(PROFILE_IMAGE_PROCESS_FAILED_MESSAGE);
         if(btn){
           btn.disabled = false;
           btn.textContent = "Submit profile";
@@ -901,7 +920,7 @@ async function submitOnboarding(){
 
   } catch (err) {
     console.error("Onboarding submit failed:", err);
-    alert("Could not submit your profile for approval. Please try again.");
+    alert(PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE);
     if (btn) {
       btn.disabled = false;
       btn.textContent = "Submit profile";
@@ -933,14 +952,14 @@ function openEditMyProfileSheet(){
     .toLowerCase();
 
   if(!profileEmail || profileEmail !== cu){
-    alert("You can only edit your own profile.");
+    alert(PROFILE_EDIT_OWN_ONLY_MESSAGE);
     return;
   }
 
   const member = members.find(m => m.id === window.lastViewedProfile.id);
 
   if(!member){
-    alert("Could not load your profile. Try refreshing the page.");
+    alert(PROFILE_LOAD_FAILED_MESSAGE);
     return;
   }
 
@@ -1089,7 +1108,7 @@ async function submitEditMyProfile(){
   const memberId = window.__editMyProfileMemberId;
 
   if(!memberId){
-    alert("Missing profile reference. Try opening your profile again.");
+    alert(PROFILE_REFERENCE_MISSING_MESSAGE);
     return;
   }
 
@@ -1111,12 +1130,12 @@ async function submitEditMyProfile(){
     : "";
 
   if(!email){
-    alert("You must be signed in.");
+    alert(PROFILE_SIGNIN_REQUIRED_MESSAGE);
     return;
   }
 
   if(!firstName || !lastName){
-    alert("Please enter your first and last name.");
+    alert(PROFILE_NAME_REQUIRED_MESSAGE);
     return;
   }
 
@@ -1134,7 +1153,7 @@ async function submitEditMyProfile(){
       : null;
 
     if(file && file.size > PROFILE_IMAGE_MAX_FILE_BYTES){
-      alert("Please choose an image of 10 MB or smaller.");
+      alert(PROFILE_IMAGE_TOO_LARGE_MESSAGE);
       if(btn){
         btn.disabled = false;
         btn.textContent = "Submit changes for approval";
@@ -1153,7 +1172,7 @@ async function submitEditMyProfile(){
         window.__onboardingPhotoJpegBlob = jpegBlob;
       }catch(compErr){
         console.error(compErr);
-        alert("Could not process the photo. Try another image.");
+        alert(PROFILE_IMAGE_PROCESS_FAILED_MESSAGE);
         if(btn){
           btn.disabled = false;
           btn.textContent = "Submit changes for approval";
@@ -1215,7 +1234,7 @@ async function submitEditMyProfile(){
 
   }catch(err){
     console.error("Edit profile submit failed:", err);
-    alert("Could not submit your changes. Please try again.");
+    alert(PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE);
     if(btn){
       btn.disabled = false;
       btn.textContent = "Submit changes for approval";
@@ -1228,20 +1247,17 @@ async function submitEditMyProfile(){
 /* ADMIN CONFIG                      */
 /* ================================= */
 
-const SUPER_ADMINS = [
-  "impactchurch2013@gmail.com"
-];
-
-const CHURCH_ADMINS = [
-  "admin1@church.com",
-  "admin2@church.com"
-];
-
 // derived role flags
-window.isSuperAdmin = false;
-window.isChurchAdmin = false;
-window.isEditor = false;
-hideEditorUI();
+initializeDirectoryPreAuthBoot({
+  documentObj: document,
+  windowObj: window,
+  initializeEditorAdminBootFlowFn: initializeEditorAdminBootFlow,
+  hideEditorUiFn: hideEditorUI,
+  initializeRoleFlagsFn: initializeRoleFlags,
+  bindEditorToggleActionFn: bindEditorToggleAction,
+  toggleEditorModeUiFn: toggleEditorModeUi,
+  showEditorUiFn: showEditorUI
+});
    
 /* ================================= */
 /* BUTTON LOGIN LOGIC                */
@@ -1259,255 +1275,82 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const provider = createGoogleProvider(GoogleAuthProvider);
+const requestedEntry = getRequestedEntry(window);
 
-const loginBtn = document.getElementById("loginBtn");
-const passwordLoginBtn = document.getElementById("passwordLoginBtn");
-const createAccountBtn = document.getElementById("createAccountBtn");
-const resetPasswordBtn = document.getElementById("resetPasswordBtn");
-const loginEmailInput = document.getElementById("loginEmail");
-const loginPasswordInput = document.getElementById("loginPassword");
-const loginFeedback = document.getElementById("loginFeedback");
-const logoutBtn = document.getElementById("logoutBtn");
-
-const setLoginFeedback = (message, tone = "info") =>
-  setLoginFeedbackUtil(loginFeedback, message, tone);
-
-const normalizeLoginEmail = normalizeLoginEmailUtil;
-const getLoginCredentials = (requirePassword = true) =>
-  getLoginCredentialsUtil(loginEmailInput, loginPasswordInput, requirePassword);
-
-const ensureAllowedEmail = (email) => ensureAllowedEmailUtil(email, isUserAllowed);
-
-loginBtn.onclick = async () => {
-  try {
-    setLoginFeedback("");
-    await authReady;
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    console.error("Login error:", err);
-    setLoginFeedback("Google sign-in failed. Please try again.", "error");
-  }
-};
-
-passwordLoginBtn.onclick = async () => {
-  try{
-    setLoginFeedback("");
-    const { email, password } = getLoginCredentials(true);
-    await authReady;
-    await signInWithEmailAndPassword(auth, email, password);
-  }catch(err){
-    console.error("Email/password sign-in error:", err);
-
-    if(err && err.message && !err.code){
-      setLoginFeedback(err.message, "error");
-      return;
-    }
-
-    let detail = "Unable to sign in with email/password.";
-    const email = normalizeLoginEmail(loginEmailInput ? loginEmailInput.value : "");
-
-    if(email){
-      try{
-        const methods = await fetchSignInMethodsForEmail(auth, email);
-        if(methods.includes("google.com") && !methods.includes("password")){
-          detail = "This email is set up for Google sign-in. Use the Google button.";
-        }else if(err.code === "auth/invalid-credential"){
-          detail = "Invalid email or password.";
-        }
-      }catch(fetchErr){
-        console.warn("Could not inspect sign-in methods:", fetchErr);
+await initAuthEntryFlow({
+  documentObj: document,
+  windowObj: window,
+  authReadyPromise: authReady,
+  authObj: auth,
+  provider,
+  authFns: {
+    signInWithPopupFn: signInWithPopup,
+    signInWithEmailAndPasswordFn: signInWithEmailAndPassword,
+    createUserWithEmailAndPasswordFn: createUserWithEmailAndPassword,
+    fetchSignInMethodsForEmailFn: fetchSignInMethodsForEmail,
+    sendPasswordResetEmailFn: sendPasswordResetEmail,
+    signOutFn: signOut,
+    onAuthStateChangedFn: onAuthStateChanged
+  },
+  loginUtils: {
+    normalizeLoginEmailFn: normalizeLoginEmailUtil,
+    getLoginCredentialsUtilFn: getLoginCredentialsUtil,
+    setLoginFeedbackUtilFn: setLoginFeedbackUtil,
+    ensureAllowedEmailUtilFn: ensureAllowedEmailUtil
+  },
+  sessionFns: {
+    isUserAllowedFn: isUserAllowed,
+    getMemberProfileByEmailFn: getMemberProfileByEmail,
+    hasPendingOnboardingSubmissionFn: hasPendingOnboardingSubmission,
+    applyAuthenticatedUiStateFn: applyAuthenticatedUiState,
+    applyLoggedOutUiStateFn: applyLoggedOutUiState,
+    startPendingChangesCountListenerFn: startPendingChangesCountListener,
+    stopPendingChangesCountListenerFn: stopPendingChangesCountListener,
+    openOnboardingFn: openOnboarding,
+    loadMembersFn: loadMembers,
+    handleAuthenticatedSessionFn: handleAuthenticatedSession,
+    handleLoggedOutSessionFn: handleLoggedOutSession
+  },
+  roleConfig: {
+    superAdmins: SUPER_ADMINS,
+    churchAdmins: CHURCH_ADMINS
+  },
+  messages: {
+    unauthorizedMessage: UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE
+  },
+  deps: {
+    alertFn: alert,
+    logFn: (...args) => console.log(...args),
+    warnFn: (...args) => console.warn(...args),
+    logErrorFn: (...args) => console.error(...args),
+    onAuthStateResolvedFn: (isAuthenticated) => {
+      // Keep alias URL in sync with current auth state.
+      syncUrlForAuthState(window, isAuthenticated);
+      if(!isAuthenticated && requestedEntry === "directory"){
+        console.log("Directory entry requested while signed out.");
       }
     }
-
-    if(err.code === "auth/invalid-email"){
-      detail = "Please enter a valid email address.";
-    }else if(err.code === "auth/too-many-requests"){
-      detail = "Too many attempts. Please wait and try again.";
-    }
-
-    setLoginFeedback(detail, "error");
-  }
-};
-
-createAccountBtn.onclick = async () => {
-  try{
-    setLoginFeedback("");
-    const { email, password } = getLoginCredentials(true);
-
-    if(password.length < 8){
-      throw new Error("Use at least 8 characters for the password.");
-    }
-
-    await authReady;
-    await ensureAllowedEmail(email);
-
-    const methods = await fetchSignInMethodsForEmail(auth, email);
-    if(methods.includes("password")){
-      throw new Error("This account already has a password. Sign in instead.");
-    }
-    if(methods.includes("google.com")){
-      throw new Error("This email already uses Google sign-in. Use the Google button.");
-    }
-
-    await createUserWithEmailAndPassword(auth, email, password);
-    setLoginFeedback("Account created. Signing you in now...", "info");
-  }catch(err){
-    console.error("Create account error:", err);
-
-    if(err && err.message && !err.code){
-      setLoginFeedback(err.message, "error");
-      return;
-    }
-
-    let detail = "Could not create account.";
-    if(err.code === "auth/email-already-in-use"){
-      detail = "An account already exists for this email. Try signing in.";
-    }else if(err.code === "auth/invalid-email"){
-      detail = "Please enter a valid email address.";
-    }else if(err.code === "auth/weak-password"){
-      detail = "Password is too weak. Use at least 8 characters.";
-    }else if(err.code === "auth/operation-not-allowed"){
-      detail = "Email/password sign-in is not enabled in Firebase Auth yet.";
-    }
-
-    setLoginFeedback(detail, "error");
-  }
-};
-
-resetPasswordBtn.onclick = async () => {
-  try{
-    setLoginFeedback("");
-    const { email } = getLoginCredentials(false);
-    await authReady;
-    await ensureAllowedEmail(email);
-    await sendPasswordResetEmail(auth, email);
-    setLoginFeedback("Password reset email sent (if this account exists).", "info");
-  }catch(err){
-    console.error("Reset password error:", err);
-
-    if(err && err.message && !err.code){
-      setLoginFeedback(err.message, "error");
-      return;
-    }
-
-    let detail = "Could not send reset email.";
-    if(err.code === "auth/invalid-email"){
-      detail = "Please enter a valid email address.";
-    }else if(err.code === "auth/user-not-found"){
-      detail = "No account found for that email.";
-    }
-
-    setLoginFeedback(detail, "error");
-  }
-};
-
-if(loginPasswordInput){
-  loginPasswordInput.addEventListener("keydown", (event) => {
-    if(event.key === "Enter"){
-      passwordLoginBtn.click();
-    }
-  });
-}
-
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-};
-
-await authReady;
-
-onAuthStateChanged(auth, async (user) => {
-  const app = document.getElementById("app");
-  const loginScreen = document.getElementById("loginScreen");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (user) {
-    console.log("User logged in:", user.email);
-    const email = user.email.toLowerCase().trim();
-    console.log("Checking allowedUsers doc for:", email);
-    const allowed = await isUserAllowed(email);
-    console.log("Allowed check result:", allowed);
-
-    if (!allowed) {
-      alert("You are not authorized to access this directory.");
-      await signOut(auth);
-      return;
-    }
-
-    window.currentUser = user;
-    const profile = await getMemberProfileByEmail(email);
-    const onboardingPending = await hasPendingOnboardingSubmission(user.email);
-
-    window.isSuperAdmin = SUPER_ADMINS.includes(email);
-    window.isChurchAdmin = CHURCH_ADMINS.includes(email) || window.isSuperAdmin;
-
-    const editorToggleBtn = document.getElementById("editorToggleBtn");
-    editorToggleBtn.style.display = window.isChurchAdmin ? "inline-flex" : "none";
-
-    app.style.display = "block";
-    loginScreen.style.display = "none";
-    logoutBtn.style.display = "inline-flex";
-
-    await startPendingChangesCountListener();
-
-    if (!profile && !onboardingPending) {
-      openOnboarding();
-    }
-
-    loadMembers();
-  } else {
-    console.log("User logged out");
-    window.currentUser = null;
-    stopPendingChangesCountListener();
-    const pcw = document.getElementById("pendingChangesCountWrap");
-    if (pcw) {
-      pcw.style.display = "none";
-    }
-    app.style.display = "none";
-    loginScreen.style.display = "block";
-    logoutBtn.style.display = "none";
-    document.getElementById("editorToggleBtn").style.display = "none";
-    if(loginPasswordInput){
-      loginPasswordInput.value = "";
-    }
-    setLoginFeedback("");
   }
 });
-
-const editorToggleBtn = document.getElementById("editorToggleBtn");
-
-editorToggleBtn.onclick = () => {
-
-  window.isEditor = !window.isEditor;
-
-  if (window.isEditor) {
-    editorToggleBtn.textContent = "Disable Editor Mode";
-    showEditorUI();
-  } else {
-    editorToggleBtn.textContent = "Enable Editor Mode";
-    hideEditorUI();
-  }
-
-};
 
 /* ================================= */
 /* REUSEABLE SHEET OPENER            */
 /* ================================= */
    
 function openSheet(id){
-  openSheetUtil(document, id);
+  openSheetEntryFlow(document, id, openSheetUtil);
 }
 
 function closeOnboardingSheet(){
-  closeOnboardingSheetUtil(document);
+  closeOnboardingSheetEntryFlow(document, closeOnboardingSheetUtil);
 }
 
 function cancelEditMyProfile(){
-
-  clearOnboardingPhotoPreviewState();
-  window.__editMyProfileMemberId = null;
-
-  closeOnboardingSheet();
-
+  cancelEditMyProfileFlow(
+    clearOnboardingPhotoPreviewState,
+    (next) => { window.__editMyProfileMemberId = next; },
+    closeOnboardingSheet
+  );
 }
    
 /* ================================= */
@@ -1515,11 +1358,11 @@ function cancelEditMyProfile(){
 /* ================================= */
    
 function showEditorUI(){
-  showEditorUIUtil(document);
+  showEditorUiEntryFlow(document, showEditorUIUtil);
 }
 
 function hideEditorUI(){
-  hideEditorUIUtil(document);
+  hideEditorUiEntryFlow(document, hideEditorUIUtil);
 }
 
 /* ================================= */
@@ -1529,57 +1372,37 @@ function hideEditorUI(){
 let pendingChangesCountUnsub = null;
 
 function stopPendingChangesCountListener(){
-stopPendingChangesCountListenerUtil(
-  pendingChangesCountUnsub,
-  (next) => { pendingChangesCountUnsub = next; }
-);
+  stopPendingChangesCountListenerFlow(
+    pendingChangesCountUnsub,
+    (next) => { pendingChangesCountUnsub = next; },
+    stopPendingChangesCountListenerUtil
+  );
 }
 
 function setPendingChangesCountText(n){
-setPendingChangesCountTextUtil(document, window.isChurchAdmin, n);
+  setPendingChangesCountTextFlow(
+    document,
+    window.isChurchAdmin,
+    n,
+    setPendingChangesCountTextUtil
+  );
 }
 
 async function startPendingChangesCountListener(){
-
-stopPendingChangesCountListener();
-
-const wrap = document.getElementById("pendingChangesCountWrap");
-
-if(!wrap){
-return;
-}
-
-if(!window.isChurchAdmin){
-wrap.style.display = "none";
-return;
-}
-
-const { onSnapshot, collection } = await import(
-"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-);
-
-pendingChangesCountUnsub = onSnapshot(
-collection(db, "pendingChanges"),
-(snapshot) => {
-
-let n = 0;
-
-snapshot.forEach((docSnap) => {
-
-if(docSnap.data().status === "pending"){
-n++;
-}
-
-});
-
-setPendingChangesCountText(n);
-
-},
-(err) => {
-console.error("pendingChanges listener:", err);
-}
-);
-
+  await startPendingChangesCountListenerFlow({
+    documentObj: document,
+    windowObj: window,
+    dbObj: db,
+    pendingChangesCountUnsub,
+    stopPendingChangesCountListenerFn: stopPendingChangesCountListener,
+    setPendingChangesCountTextFn: setPendingChangesCountText,
+    setPendingChangesCountUnsubFn: (next) => { pendingChangesCountUnsub = next; },
+    startPendingChangesCountListenerUtilFn: startPendingChangesCountListenerUtil,
+    importFirestoreFns: async () => import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+    ),
+    onErrorFn: (err) => { console.error("pendingChanges listener:", err); }
+  });
 }
 
 /* ================================= */
@@ -1587,31 +1410,21 @@ console.error("pendingChanges listener:", err);
 /* ================================= */
 
 function renderMemberSelectContent(){
-
-  const box = document.getElementById("memberSelectContent");
-  if(!box){
-    return;
-  }
-
-  let html = `<h2>Select Member</h2>`;
-
-  members.forEach(m => {
-    const name = m.fields["Full Name"] || "";
-
-    html += `
-      <div onclick="selectMemberForEdit('${m.id}')"
-           style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
-        ${escapeHtml(name)}
-      </div>
-    `;
-  });
-
-  box.innerHTML = html;
-
+  renderMemberSelectContentEntryFlow(
+    document,
+    members,
+    escapeHtml,
+    renderMemberSelectContentUtil
+  );
 }
 
 function openMemberSelect(){
-  openMemberSelectSheet(document, renderMemberSelectContent);
+  openMemberSelectEntryFlow(
+    document,
+    openMemberSelectFlow,
+    openMemberSelectSheet,
+    renderMemberSelectContent
+  );
 }
 
 /* ================================= */
@@ -1619,7 +1432,11 @@ function openMemberSelect(){
 /* ================================= */
 
 function closeMemberSelect(){
-  closeMemberSelectSheet(document);
+  closeMemberSelectEntryFlow(
+    document,
+    closeMemberSelectFlow,
+    closeMemberSelectSheet
+  );
 }
 
 /* ================================= */
@@ -1627,15 +1444,12 @@ function closeMemberSelect(){
 /* ================================= */
 
 function selectMemberForEdit(memberId){
-
-  const member = members.find(m => m.id === memberId);
-
-  if(!member){
-    alert("Member not found");
-    return;
-  }
-
-  openEditMember(member);
+  selectMemberForEditFlow(
+    members,
+    memberId,
+    openEditMember,
+    () => { alert(MEMBER_NOT_FOUND_MESSAGE); }
+  );
 
   // TEMP: just verify selection works
   // Next step will open edit sheet
@@ -1650,18 +1464,18 @@ function openEditMember(member){
 
   clearEditMemberPhotoState();
 
-  const f = member.fields;
-
-  const v = (key) => escapeHtml(String(f[key] || ""));
-
-  const currentPhoto = String(f.Photo || "").trim();
-  const showCurrentPhoto = currentPhoto && !currentPhoto.startsWith("images/default");
+  const {
+    fields: f,
+    valueForField: v,
+    currentPhoto,
+    showCurrentPhoto
+  } = buildEditMemberEntryContext(member, escapeHtml);
 
   const box = document.getElementById("editMemberContent");
 
   box.innerHTML = `
     <h2>Edit Member</h2>
-    <p style="margin:0 0 8px;font-size:14px;color:#555;">${window.isChurchAdmin ? "Update any profile fields. Changes save directly to the directory." : "Changes are sent for admin approval before they appear in the directory."}</p>
+    ${buildEditMemberModeHintHtml(window.isChurchAdmin)}
 
     <div style="display:flex;flex-direction:column;gap:10px;">
 
@@ -1736,26 +1550,7 @@ function openEditMember(member){
         <span style="font-size:12px;color:#666;">Month and day (example: Jun 12).</span>
       </label>
 
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
-        <span><strong>Profile photo</strong></span>
-        ${showCurrentPhoto ? `
-        <div id="editMemberCurrentPhotoWrap" style="text-align:center;">
-          <p style="margin:0 0 6px;font-size:12px;color:#666;">Current photo</p>
-          <img id="editMemberCurrentPhotoImg" src="${escapeHtml(currentPhoto)}" alt="" loading="lazy"
-            style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
-        </div>` : `<div id="editMemberCurrentPhotoWrap" style="display:none;"></div>`}
-        <input id="editMemberPhoto" type="file" accept="image/*" style="font-size:14px;">
-        <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload.</span>
-        <button type="button" id="editMemberRemovePhotoBtn" style="align-self:flex-start;padding:8px 12px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;">
-          Remove photo
-        </button>
-        <p id="editMemberPhotoRemovedNote" style="display:none;margin:0;font-size:13px;color:#a32;">Photo will be removed when you save.</p>
-        <div id="editMemberPhotoNewPreview" style="display:none;margin-top:4px;">
-          <p style="margin:0 0 6px;font-size:13px;font-weight:600;">Preview (new photo)</p>
-          <img id="editMemberPhotoNewPreviewImg" alt="" width="400" height="300" loading="lazy"
-            style="max-width:100%;max-height:240px;border-radius:8px;border:1px solid #ddd;object-fit:contain;background:#fafafa;">
-        </div>
-      </div>
+      ${buildEditMemberPhotoSectionHtml(showCurrentPhoto, currentPhoto, escapeHtml)}
 
       <button type="button" onclick="saveMemberChanges('${member.id}')"
         style="background:#2b5cff;color:white;padding:10px;border:none;border-radius:8px;">
@@ -1766,64 +1561,26 @@ function openEditMember(member){
         Cancel
       </button>
 
-      ${window.isChurchAdmin ? `
-      <button type="button" id="editDeleteMemberBtn"
-        style="margin-top:6px;padding:10px;border:1px solid #d4a0a0;color:#a32;background:#fff8f8;border-radius:8px;cursor:pointer;width:100%;">
-        Remove from directory
-      </button>
-      ` : ""}
+      ${buildEditMemberDeleteButtonHtml(window.isChurchAdmin)}
 
     </div>
   `;
 
-  const sel = document.getElementById("editMinistry");
-  if(sel){
-    sel.value = ministryStringToSelectValue(f.Ministry || "");
-  }
+  applyEditMemberMinistrySelection(document, ministryStringToSelectValue, f.Ministry || "");
+  attachEditMemberPhotoInputChangeHandler(document, onEditMemberPhotoInputChange);
 
-  const photoIn = document.getElementById("editMemberPhoto");
-  if(photoIn){
-    photoIn.addEventListener("change", onEditMemberPhotoInputChange);
-  }
-
-  const removeBtn = document.getElementById("editMemberRemovePhotoBtn");
-  if(removeBtn){
-    removeBtn.onclick = () => {
-      window.__editMemberRemovePhoto = true;
-      window.__editMemberPhotoJpegBlob = null;
-      const inp = document.getElementById("editMemberPhoto");
-      if(inp){
-        inp.value = "";
-      }
-      const newPrev = document.getElementById("editMemberPhotoNewPreview");
-      const newImg = document.getElementById("editMemberPhotoNewPreviewImg");
-      if(newImg && newImg.dataset.objectUrl){
-        URL.revokeObjectURL(newImg.dataset.objectUrl);
-        delete newImg.dataset.objectUrl;
-      }
-      if(newPrev){
-        newPrev.style.display = "none";
-      }
-      if(newImg){
-        newImg.removeAttribute("src");
-      }
-      const curWrap = document.getElementById("editMemberCurrentPhotoWrap");
-      if(curWrap){
-        curWrap.style.display = "none";
-      }
-      const note = document.getElementById("editMemberPhotoRemovedNote");
-      if(note){
-        note.style.display = "block";
-      }
-    };
-  }
+  attachEditMemberRemovePhotoHandler(
+    document,
+    (next) => { window.__editMemberRemovePhoto = next; },
+    (next) => { window.__editMemberPhotoJpegBlob = next; }
+  );
 
   openEditMemberSheet(document);
 
-  const delBtn = document.getElementById("editDeleteMemberBtn");
-  if(delBtn){
-    delBtn.onclick = () => deleteMemberFromDirectory(member.id);
-  }
+  attachEditMemberDeleteButtonHandler(
+    document,
+    () => deleteMemberFromDirectory(member.id)
+  );
 
 }
 
@@ -1842,7 +1599,7 @@ function closeEditMember(){
 async function deleteMemberFromDirectory(memberId){
 
   if(!window.isChurchAdmin){
-    alert("Only church admins can remove members from the directory.");
+    alert(REMOVE_MEMBER_ADMIN_ONLY_MESSAGE);
     return;
   }
 
@@ -1873,9 +1630,7 @@ async function deleteMemberFromDirectory(memberId){
         await deleteDoc(doc(db, "allowedUsers", allowUserId));
       }catch(allowErr){
         console.warn("Could not remove directory access (allowedUsers):", allowErr);
-        alert(
-          "Member was removed from the directory, but their login access could not be cleared automatically. Remove them from allowedUsers in Firestore if needed."
-        );
+        alert(REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE);
         closeEditMember();
         await loadMembers();
         const memberSelectSheet = document.getElementById("memberSelectSheet");
@@ -1886,7 +1641,7 @@ async function deleteMemberFromDirectory(memberId){
       }
     }
 
-    alert("Member removed from the directory.");
+    alert(REMOVE_MEMBER_SUCCESS_MESSAGE);
 
     closeEditMember();
     await loadMembers();
@@ -1898,7 +1653,7 @@ async function deleteMemberFromDirectory(memberId){
 
   }catch(err){
     console.error("Delete member failed:", err);
-    alert("Could not remove this member. Check the console for details.");
+    alert(REMOVE_MEMBER_FAILED_MESSAGE);
   }
 
 }
@@ -1909,34 +1664,14 @@ async function deleteMemberFromDirectory(memberId){
    
 async function saveMemberChanges(memberId){
 
-  const firstName = (document.getElementById("editFirstName").value || "").trim();
-  const lastName = (document.getElementById("editLastName").value || "").trim();
-  const { ministry: pendingMinistry, role: pendingRole } = splitMinistryAndRole(
-    document.getElementById("editMinistry").value
-  );
-  const household = (document.getElementById("editHousehold").value || "").trim();
-  const phone = (document.getElementById("editPhone").value || "").trim();
-  const email = (document.getElementById("editEmail").value || "").trim();
-  const address = (document.getElementById("editAddress").value || "").trim();
-  const city = (document.getElementById("editCity").value || "").trim();
-  const state = (document.getElementById("editState").value || "").trim();
-  const zipCode = (document.getElementById("editZip").value || "").trim();
-  const birthday = (document.getElementById("editBirthday").value || "").trim();
-  const anniversary = (document.getElementById("editAnniversary").value || "").trim();
+  const values = readEditMemberFormValues(document, splitMinistryAndRole);
 
-  const ministryParts = [pendingMinistry, pendingRole].filter(Boolean);
-  const ministryField = ministryParts.length ? ministryParts.join(" · ") : "";
-
-  if(!firstName || !lastName){
-    alert("Please enter first and last name.");
+  if(!hasRequiredEditMemberName(values)){
+    alert(EDIT_MEMBER_NAME_REQUIRED_MESSAGE);
     return;
   }
 
-  const member = members.find(m => m.id === memberId);
-
-  const existingPhoto = member
-    ? String(member.fields.Photo || "").trim()
-    : "";
+  const { member, existingPhoto } = getMemberAndExistingPhoto(members, memberId);
 
   try {
 
@@ -1945,114 +1680,63 @@ async function saveMemberChanges(memberId){
     );
 
     const isAdmin = window.isChurchAdmin;
-
+    const removePhoto = window.__editMemberRemovePhoto;
+    const photoBlob = window.__editMemberPhotoJpegBlob;
     let photoOut = existingPhoto;
 
 if(isAdmin){
 
-  if(window.__editMemberRemovePhoto){
-    photoOut = "";
-  }else if(window.__editMemberPhotoJpegBlob){
-
-    const path = `profilePhotos/members/${memberId}/${Date.now()}_profile.jpg`;
-    const storageRef = ref(storage, path);
-
-    await uploadBytes(storageRef, window.__editMemberPhotoJpegBlob, { contentType: "image/jpeg" });
-    photoOut = await getDownloadURL(storageRef);
-
-  }
-
-  await updateDoc(doc(db, "members", memberId), {
-    firstName,
-    lastName,
-    fullName: `${firstName} ${lastName}`.trim(),
-    ministry: ministryField,
-    household,
-    phone,
-    email,
-    address,
-    city,
-    state,
-    zipCode,
-    birthday,
-    anniversary,
-    photo: photoOut,
-    lastUpdated: new Date().toISOString()
+  photoOut = await saveAdminMemberEdits({
+    existingPhoto,
+    memberId,
+    removePhoto,
+    photoBlob,
+    storageObj: storage,
+    refFn: ref,
+    uploadBytesFn: uploadBytes,
+    getDownloadURLFn: getDownloadURL,
+    updateDocFn: updateDoc,
+    docFn: doc,
+    dbObj: db,
+    formValues: values
   });
 
-  alert("Profile updated");
+  alert(PROFILE_UPDATED_MESSAGE);
 
 }else{
 
-  let photoURL = existingPhoto;
-
-  if(window.__editMemberRemovePhoto){
-    photoURL = "";
-  }else if(window.__editMemberPhotoJpegBlob){
-
-    const uid = window.currentUser.uid
-      || window.currentUser.email.replace(/[^a-zA-Z0-9]+/g, "_");
-
-    const path = `profilePhotos/pending/${uid}/${Date.now()}_profile.jpg`;
-    const storageRef = ref(storage, path);
-
-    await uploadBytes(storageRef, window.__editMemberPhotoJpegBlob, { contentType: "image/jpeg" });
-    photoURL = await getDownloadURL(storageRef);
-
-  }
-
-  const pendingPayload = {
-    firstName,
-    lastName,
-    fullName: `${firstName} ${lastName}`.trim(),
-    ministry: pendingMinistry,
-    role: pendingRole,
-    household,
-    phone,
-    email,
-    address,
-    city,
-    state,
-    zip: zipCode,
-    birthday,
-    anniversary,
-    lastUpdated: new Date().toISOString(),
-    photoURL
-  };
-
-  await submitPendingChange(memberId, pendingPayload, { isOnboarding: false });
+  await savePendingMemberEdits({
+    existingPhoto,
+    currentUser: window.currentUser,
+    removePhoto,
+    photoBlob,
+    storageObj: storage,
+    refFn: ref,
+    uploadBytesFn: uploadBytes,
+    getDownloadURLFn: getDownloadURL,
+    memberId,
+    submitPendingChangeFn: submitPendingChange,
+    formValues: values
+  });
 
 }
 
     console.log("Member updated!");
 
-    clearEditMemberPhotoState();
-
-    if(member && isAdmin){
-      member.fields["First Name"] = firstName;
-      member.fields["Last Name"] = lastName;
-      member.fields["Full Name"] = `${firstName} ${lastName}`.trim();
-      member.fields["Ministry"] = ministryField;
-      member.fields["Household"] = household;
-      member.fields["Phone Number"] = phone;
-      member.fields["Email"] = email;
-      member.fields["Address"] = address;
-      member.fields["City"] = city;
-      member.fields["State"] = state;
-      member.fields["Zip Code"] = zipCode;
-      member.fields["Birthday"] = birthday;
-      member.fields["Anniversary"] = anniversary;
-      member.fields["Photo"] = photoOut;
-      member.fields["Last Updated"] = new Date().toISOString();
-    }
-
-    buildDirectory(getCurrentMemberSearchQuery());
-
-    closeEditMember();
+    finalizeEditMemberSaveFlow({
+      clearEditMemberPhotoStateFn: clearEditMemberPhotoState,
+      member,
+      isAdmin,
+      formValues: values,
+      photoOut,
+      buildDirectoryFn: buildDirectory,
+      getCurrentMemberSearchQueryFn: getCurrentMemberSearchQuery,
+      closeEditMemberFn: closeEditMember
+    });
 
   } catch (err) {
     console.error("Update failed:", err);
-    alert("Failed to update member");
+    alert(UPDATE_MEMBER_FAILED_MESSAGE);
   }
 }
 
@@ -2061,41 +1745,13 @@ if(isAdmin){
 /* ================================= */
    
 function buildYearView(changes){
-
-  const box = document.getElementById("pendingChangesContent");
-
   window.pendingChangesData = changes;
-
-  const years = groupChangesByYear(changes);
-
-  const pendingCount = changes.filter(c => c.status === "pending").length;
-
-  const unresolvedRowLabel = pendingCount === 0
-    ? "No pending changes"
-    : "Unresolved pending changes";
-
-  let html = `<h2>Pending Changes</h2>`;
-
-  html += `
-    <div onclick="buildUnresolvedList()"
-      style="padding:14px;border-bottom:1px solid #e0e0e0;cursor:pointer;font-weight:600;background:#f5f7fa;">
-      ${unresolvedRowLabel}
-    </div>
-  `;
-
-  Object.keys(years)
-    .sort((a,b)=>b-a)
-    .forEach(year => {
-
-      html += `
-        <div onclick='buildMonthView(${year})'
-          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
-          ${year}
-        </div>
-      `;
-    });
-
-  box.innerHTML = html;
+  renderPendingYearView(
+    document,
+    changes,
+    groupChangesByYear,
+    buildPendingYearViewHtml
+  );
 
   openSheet("pendingChangesSheet");
 }
@@ -2105,28 +1761,13 @@ function buildYearView(changes){
 /* ================================= */
    
 function buildMonthView(year){
-
-  const changes = window.pendingChangesData;
-
-  const months = groupChangesByMonth(changes, year);
-
-  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-  let html = `<h2>${year}</h2>`;
-
-  Object.keys(months)
-    .sort((a,b)=>b-a)
-    .forEach(m => {
-
-      html += `
-        <div onclick='buildDayList(${year}, ${m})'
-          style="padding:14px;border-bottom:1px solid #eee;cursor:pointer;">
-          ${monthNames[m]}
-        </div>
-      `;
-    });
-
-  document.getElementById("pendingChangesContent").innerHTML = html;
+  renderPendingMonthView(
+    document,
+    window.pendingChangesData,
+    year,
+    groupChangesByMonth,
+    buildPendingMonthViewHtml
+  );
 }
 
 /* ================================= */
@@ -2134,34 +1775,15 @@ function buildMonthView(year){
 /* ================================= */
    
 function buildDayList(year, month){
-
-  const changes = window.pendingChangesData;
-
-  const filtered = filterChangesByMonth(changes, year, month);
-
-  let html = `<h2>Changes</h2>`;
-
-  filtered.forEach(c => {
-
-    const d = getPendingCreatedAtDate(c);
-    if(!d){
-      return;
-    }
-
-    const label = d.toLocaleDateString("en-US", {
-      month:"short",
-      day:"numeric"
-    });
-
-    html += `
-      <div style="padding:12px;border-bottom:1px solid #eee;">
-        <strong>${label}</strong><br>
-        ${c.submittedBy}
-      </div>
-    `;
-  });
-
-  document.getElementById("pendingChangesContent").innerHTML = html;
+  renderPendingDayView(
+    document,
+    window.pendingChangesData,
+    year,
+    month,
+    filterChangesByMonth,
+    buildPendingDayListHtml,
+    getPendingCreatedAtDate
+  );
 }
 
 /* ================================= */
@@ -2174,67 +1796,15 @@ const refreshAndRebuildUnresolved = () =>
   refreshAndRebuildUnresolvedUtil(refreshPendingChangesCache, buildUnresolvedList);
 
 function buildUnresolvedList(){
-
-  const changes = window.pendingChangesData;
-
-  const box = document.getElementById("pendingChangesContent");
-
-  if(!changes){
-    box.innerHTML = `
-      <div onclick="restorePendingChangesYearView()"
-        style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
-        ← Back
-      </div>
-      <h2>Unresolved</h2>
-      <p style="padding:14px;">No pending changes loaded.</p>
-    `;
-    return;
-  }
-
-  const filtered = sortPendingChangesByCreatedAtDesc(
-    changes.filter(c => c.status === "pending")
+  renderUnresolvedPendingListView(
+    document,
+    window.pendingChangesData,
+    sortPendingChangesByCreatedAtDesc,
+    buildUnresolvedPendingEmptyStateHtml,
+    buildUnresolvedPendingListHtml,
+    getPendingCreatedAtDate,
+    escapeHtml
   );
-
-  let html = `
-    <div onclick="restorePendingChangesYearView()"
-      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
-      ← Back
-    </div>
-    <h2>Unresolved</h2>
-  `;
-
-  if(filtered.length === 0){
-
-    html += `<p style="padding:14px;">No unresolved items — nothing is pending.</p>`;
-    box.innerHTML = html;
-    return;
-
-  }
-
-  filtered.forEach(c => {
-
-    const d = getPendingCreatedAtDate(c);
-
-    const label = d
-      ? d.toLocaleDateString("en-US", {
-        month:"short",
-        day:"numeric",
-        year:"numeric"
-      })
-      : "—";
-
-    html += `
-      <div onclick="openUnresolvedPendingDetail('${c.id}')"
-        style="padding:12px;border-bottom:1px solid #eee;cursor:pointer;">
-        <strong>${escapeHtml(label)}</strong><br>
-        ${escapeHtml(c.submittedBy || "")}
-      </div>
-    `;
-
-  });
-
-  box.innerHTML = html;
-
 }
 
 /* ================================= */
@@ -2242,149 +1812,75 @@ function buildUnresolvedList(){
 /* ================================= */
 
 async function refreshPendingChangesCache(){
-
-  const { getDocs, collection } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  return refreshPendingChangesCacheUtil(
-    db,
-    getDocs,
-    collection,
-    (changes) => { window.pendingChangesData = changes; }
-  );
-
+  return refreshPendingChangesCacheEntryFlow({
+    refreshPendingChangesCacheFlowFn: refreshPendingChangesCacheFlow,
+    loadFirestoreFns: createPendingChangesFirestoreLoader(),
+    refreshPendingChangesCacheUtilFn: refreshPendingChangesCacheUtil,
+    dbObj: db,
+    setPendingChangesDataFn: (changes) => { window.pendingChangesData = changes; }
+  });
 }
 
 function openUnresolvedPendingDetail(pendingId){
 
-  const list = window.pendingChangesData || [];
-  const item = list.find(x => x.id === pendingId);
+  const item = findPendingChangeById(window.pendingChangesData, pendingId);
 
   if(!item){
-    alert("That entry could not be found.");
+    alert(PENDING_ENTRY_NOT_FOUND_MESSAGE);
     return;
   }
 
-  const safePhotoUrl = getSafePendingPhotoUrl(item.changes || {});
-  const rows = buildPendingDetailRows(item);
-  const photoBlock = buildPendingPhotoBlockHtml(safePhotoUrl);
-  const body = buildPendingDetailBodyHtml(photoBlock, rows);
-
   const admin = window.isChurchAdmin;
+  const viewModel = buildPendingDetailViewModel(
+    item,
+    getSafePendingPhotoUrl,
+    buildPendingDetailRows,
+    buildPendingPhotoBlockHtml,
+    buildPendingDetailBodyHtml,
+    buildPendingActionButtonsHtml,
+    admin
+  );
 
-  const buttons = buildPendingActionButtonsHtml(admin);
-
-  const box = document.getElementById("pendingChangesContent");
-
-  box.innerHTML = `
-    <div onclick="buildUnresolvedList()"
-      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
-      ← Back to Unresolved
-    </div>
-    <h2 style="margin:12px 0;">Review pending change</h2>
-    <div style="padding:4px 0 8px;max-height:50vh;overflow-y:auto;">
-      ${body}
-    </div>
-    ${buttons}
-  `;
-
-  if(admin){
-
-    document.getElementById("pendingApproveBtn").onclick = () => {
-      approvePendingChange(pendingId);
-    };
-
-    document.getElementById("pendingDenyBtn").onclick = () => {
-      denyPendingChange(pendingId);
-    };
-
-  }
-
-  if(safePhotoUrl){
-
-    const pendingImg = document.getElementById("pendingChangePhotoImg");
-
-    if(pendingImg){
-      pendingImg.onclick = (e) => {
-        e.stopPropagation();
-        openPhoto(safePhotoUrl);
-      };
-    }
-
-  }
+  renderPendingDetailView(document, viewModel.body, viewModel.buttons);
+  bindPendingDetailAdminActions(document, admin, pendingId, approvePendingChange, denyPendingChange);
+  bindPendingDetailPhotoClick(document, viewModel.safePhotoUrl, openPhoto);
 
 }
-
-const ADMIN_EMAIL_SUBJECT_APPROVED = "Impact Church Directory — profile update approved";
-const ADMIN_EMAIL_SUBJECT_DENIED = "Impact Church Directory — profile update not approved";
-
-const INVITE_MEMBER_SUBJECT = "Invitation to Impact Church Directory";
-
-const INVITE_MEMBER_BODY = `Hi! You are invited to register your profile in the Impact Church Directory. Follow this link to get started:
-
-https://impactchurch2013.github.io/
-
-Looking forward to seeing you in the directory!
-
-#####`;
 
 function openInviteMemberDialog(){
-
-if(!window.isChurchAdmin){
-alert("Only church admins can invite members.");
-return;
-}
-
-const input = document.getElementById("inviteMemberEmail");
-if(input){
-input.value = "";
-}
-
-const modal = document.getElementById("inviteMemberModal");
-
-if(modal){
-modal.classList.add("show");
-modal.style.display = "flex";
-}
-
-if(input){
-input.focus();
-}
+  openInviteMemberDialogFlow(
+    window.isChurchAdmin,
+    ensureInviteAdminAccess,
+    INVITE_ADMIN_ONLY_MESSAGE,
+    alert,
+    openInviteMemberDialogUI,
+    document
+  );
 
 }
 
 function closeInviteMemberDialog(){
-
-const modal = document.getElementById("inviteMemberModal");
-
-if(modal){
-modal.classList.remove("show");
-modal.style.display = "none";
-}
+  closeInviteMemberDialogFlow(closeInviteMemberDialogUI, document);
 
 }
 
 async function submitInviteMember(){
 
-if(!window.isChurchAdmin){
-alert("Only church admins can invite members.");
-return;
+if(!ensureInviteAdminAccess(window.isChurchAdmin, INVITE_ADMIN_ONLY_MESSAGE, alert)){
+  return;
 }
 
-const raw = (document.getElementById("inviteMemberEmail").value || "").trim();
-
-if(!raw){
-alert("Please enter an email address.");
-return;
+const raw = getInviteEmailInputValue(document);
+const validated = validateInviteEmailForSubmission(raw, normalizeInviteEmail, isValidInviteEmail);
+if(!validated.ok){
+  if(validated.reason === "required"){
+    alert(INVITE_EMAIL_REQUIRED_MESSAGE);
+  }else{
+    alert(INVITE_EMAIL_INVALID_MESSAGE);
+  }
+  return;
 }
-
-const email = raw.toLowerCase();
-
-if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-alert("Please enter a valid email address.");
-return;
-}
+const email = validated.email;
 
 const { setDoc, doc, serverTimestamp } = await import(
 "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
@@ -2392,27 +1888,23 @@ const { setDoc, doc, serverTimestamp } = await import(
 
 try{
 
-await setDoc(
-doc(db, "allowedUsers", email),
-{
-invitedAt: serverTimestamp(),
-invitedBy: (window.currentUser && window.currentUser.email)
-? window.currentUser.email.toLowerCase().trim()
-: ""
-},
-{ merge: true }
+await upsertInviteAllowlistEntry(
+  setDoc,
+  doc,
+  serverTimestamp,
+  db,
+  email,
+  window.currentUser
 );
 
 }catch(err){
 
-console.error("Invite allowlist write failed:", err);
-alert("Could not add this email to the allowlist. Check the console and your Firestore rules.");
+handleInviteAllowlistWriteError(err, console, alert, INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE);
 return;
 
 }
 
-const mailUrl =
-`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(INVITE_MEMBER_SUBJECT)}&body=${encodeURIComponent(INVITE_MEMBER_BODY)}`;
+const mailUrl = buildMailtoUrl(email, INVITE_MEMBER_SUBJECT, INVITE_MEMBER_BODY);
 
 closeInviteMemberDialog();
 
@@ -2421,63 +1913,32 @@ window.location.href = mailUrl;
 }
 
 function openAdminEmailModal(opts){
-
-  const { to, subject, body, title } = opts;
-
-  const modal = document.getElementById("adminEmailModal");
-  const titleEl = document.getElementById("adminEmailModalTitle");
-
-  document.getElementById("adminEmailTo").value = (to || "").trim();
-  document.getElementById("adminEmailSubject").value = subject || "";
-  document.getElementById("adminEmailBody").value = body || "";
-
-  if(titleEl){
-    titleEl.textContent = title || "Email the member";
-  }
-
-  if(modal){
-    modal.classList.add("show");
-    modal.style.display = "flex";
-  }
-
+  openAdminEmailModalFlow(openAdminEmailModalUI, document, opts);
 }
 
 function closeAdminEmailModal(){
-
-  const modal = document.getElementById("adminEmailModal");
-
-  if(modal){
-    modal.classList.remove("show");
-    modal.style.display = "none";
-  }
-
+  closeAdminEmailModalFlow(closeAdminEmailModalUI, document);
 }
 
 function sendAdminEmailFromModal(){
-
-  const to = document.getElementById("adminEmailTo").value.trim();
-  const subject = document.getElementById("adminEmailSubject").value;
-  const body = document.getElementById("adminEmailBody").value;
-
-  if(!to){
-    alert("Please enter the recipient email address.");
-    return;
-  }
-
-  const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-  window.location.href = url;
+  sendAdminEmailFromModalFlow(
+    getAdminEmailModalValues,
+    document,
+    ADMIN_EMAIL_TO_REQUIRED_MESSAGE,
+    alert,
+    buildMailtoUrl,
+    (url) => { window.location.href = url; }
+  );
 
 }
 
 async function approvePendingChange(pendingId){
 
-  if(!window.isChurchAdmin){
-    alert("Only church admins can approve changes.");
+  if(!ensurePendingReviewAdminAccess(window.isChurchAdmin, APPROVE_ADMIN_ONLY_MESSAGE, alert)){
     return;
   }
 
-  if(!confirm("Approve this change? The directory will update for everyone.")){
+  if(!ensurePendingReviewConfirmed(APPROVE_CONFIRM_MESSAGE, confirm)){
     return;
   }
 
@@ -2487,76 +1948,75 @@ async function approvePendingChange(pendingId){
       "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
     );
 
-    const changeRef = doc(db, "pendingChanges", pendingId);
-    const snap = await getDoc(changeRef);
+    const changeRef = createPendingChangeRef(doc, db, pendingId);
+    const snap = await getPendingChangeSnapshot(getDoc, changeRef);
 
-    if(!snap.exists()){
-      alert("This pending change is no longer in Firestore.");
-      await refreshAndRebuildUnresolved();
+    if(await handleMissingPendingReviewSnapshot(
+      snap,
+      isPendingSnapshotMissing,
+      PENDING_CHANGE_MISSING_MESSAGE,
+      alert,
+      refreshAndRebuildUnresolved
+    )){
       return;
     }
 
-    const row = snap.data();
-    const ch = row.changes || {};
+    const { row, changes: ch } = extractPendingRowAndChanges(snap);
 
     const memberPayload = mapChangesToMember(ch);
 
-    if(ch.onboarding){
+    const approvalResult = await applyPendingApprovalToMembers(
+      row,
+      memberPayload,
+      db,
+      doc,
+      updateDoc,
+      addDoc,
+      collection
+    );
+    if(!approvalResult.ok){
 
-      await addDoc(collection(db, "members"), {
-        ...memberPayload,
-        createdAt: new Date().toISOString()
-      });
-
-    }else if(row.memberId){
-
-      await updateDoc(doc(db, "members", row.memberId), memberPayload);
-
-    }else{
-
-      alert("This entry is missing a member reference and is not marked as onboarding. It cannot be approved automatically.");
+      alert(APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE);
       return;
 
     }
 
-    await deleteDoc(changeRef);
+    await removePendingChange(deleteDoc, changeRef);
 
-    const memberEmail = (ch.email || "").trim();
-    const firstName = (ch.firstName || "").trim() || "there";
+    const memberEmail = getPendingMemberEmail(ch);
+    const firstName = getPendingFirstName(ch);
+    const emailBody = buildApprovedPendingEmailBody(firstName);
 
-    const emailBody =
-      `Hello ${firstName},\n\n` +
-      "The changes you requested for your member profile in the Impact Church Directory have been approved.";
+    await runApprovePendingPostAction(
+      refreshAndRebuildUnresolved,
+      loadMembers,
+      APPROVE_SUCCESS_MESSAGE,
+      alert
+    );
 
-    await refreshAndRebuildUnresolved();
-    await loadMembers();
-
-    alert("Approved. The directory has been updated.");
-
-    if(memberEmail){
-      openAdminEmailModal({
-        to: memberEmail,
-        subject: ADMIN_EMAIL_SUBJECT_APPROVED,
-        body: emailBody,
-        title: "Profile approved — notify the member"
-      });
-    }
+    maybeOpenPendingReviewEmailModal(
+      memberEmail,
+      buildPendingEmailModalOptions,
+      ADMIN_EMAIL_SUBJECT_APPROVED,
+      emailBody,
+      APPROVED_NOTIFY_TITLE,
+      openAdminEmailModal
+    );
 
   }catch(err){
     console.error("Approve failed:", err);
-    alert("Could not approve this change. Check the console for details.");
+    alert(APPROVE_FAILED_MESSAGE);
   }
 
 }
 
 async function denyPendingChange(pendingId){
 
-  if(!window.isChurchAdmin){
-    alert("Only church admins can deny changes.");
+  if(!ensurePendingReviewAdminAccess(window.isChurchAdmin, DENY_ADMIN_ONLY_MESSAGE, alert)){
     return;
   }
 
-  if(!confirm("Deny this request? It will be removed from the queue.")){
+  if(!ensurePendingReviewConfirmed(DENY_CONFIRM_MESSAGE, confirm)){
     return;
   }
 
@@ -2566,42 +2026,45 @@ async function denyPendingChange(pendingId){
       "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
     );
 
-    const changeRef = doc(db, "pendingChanges", pendingId);
-    const snap = await getDoc(changeRef);
+    const changeRef = createPendingChangeRef(doc, db, pendingId);
+    const snap = await getPendingChangeSnapshot(getDoc, changeRef);
 
-    if(!snap.exists()){
-      alert("This pending change is no longer in Firestore.");
-      await refreshAndRebuildUnresolved();
+    if(await handleMissingPendingReviewSnapshot(
+      snap,
+      isPendingSnapshotMissing,
+      PENDING_CHANGE_MISSING_MESSAGE,
+      alert,
+      refreshAndRebuildUnresolved
+    )){
       return;
     }
 
-    const row = snap.data();
-    const ch = row.changes || {};
+    const { changes: ch } = extractPendingRowAndChanges(snap);
 
-    const memberEmail = (ch.email || "").trim();
+    const memberEmail = getPendingMemberEmail(ch);
 
-    await deleteDoc(changeRef);
+    await removePendingChange(deleteDoc, changeRef);
 
-    await refreshAndRebuildUnresolved();
+    const emailBody = buildDeniedPendingEmailBody();
 
-    const emailBody =
-      "The changes you requested for your member profile in the Impact Church Directory have been denied.\n\n" +
-      "<Delete this and enter the reason(s) the request was denied.>";
+    await runDenyPendingPostAction(
+      refreshAndRebuildUnresolved,
+      DENY_SUCCESS_MESSAGE,
+      alert
+    );
 
-    alert("Request denied and removed from the queue.");
-
-    if(memberEmail){
-      openAdminEmailModal({
-        to: memberEmail,
-        subject: ADMIN_EMAIL_SUBJECT_DENIED,
-        body: emailBody,
-        title: "Request denied — notify the member"
-      });
-    }
+    maybeOpenPendingReviewEmailModal(
+      memberEmail,
+      buildPendingEmailModalOptions,
+      ADMIN_EMAIL_SUBJECT_DENIED,
+      emailBody,
+      DENIED_NOTIFY_TITLE,
+      openAdminEmailModal
+    );
 
   }catch(err){
     console.error("Deny failed:", err);
-    alert("Could not deny this change. Check the console for details.");
+    alert(DENY_FAILED_MESSAGE);
   }
 
 }
@@ -2611,16 +2074,14 @@ async function denyPendingChange(pendingId){
 /* ================================= */
    
 async function loadPendingChanges(){
-
-  const { getDocs, collection } = await import(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  );
-
-  const changes = await loadPendingChangesData(db, getDocs, collection);
-
-  console.log("Pending changes:", changes);
-
-  buildYearView(changes);
+  return loadPendingChangesEntryFlow({
+    loadPendingChangesFlowFn: loadPendingChangesFlow,
+    loadFirestoreFns: createPendingChangesFirestoreLoader(),
+    loadPendingChangesDataFn: loadPendingChangesData,
+    dbObj: db,
+    logFn: (...args) => console.log(...args),
+    buildYearViewFn: buildYearView
+  });
 }
    
 /* ================================= */
@@ -2628,7 +2089,11 @@ async function loadPendingChanges(){
 /* ================================= */
    
 function openPendingChanges(){
-  openPendingChangesSheet(loadPendingChanges);
+  openPendingChangesEntryFlow(
+    openPendingChangesFlow,
+    openPendingChangesSheet,
+    loadPendingChanges
+  );
 }
 
 /* ================================= */
@@ -2636,7 +2101,11 @@ function openPendingChanges(){
 /* ================================= */
    
 function closePendingChanges(){
-  closePendingChangesSheet(document);
+  closePendingChangesEntryFlow(
+    closePendingChangesFlow,
+    closePendingChangesSheet,
+    document
+  );
 }
    
 /* ================================= */
@@ -2653,21 +2122,17 @@ let savedScrollPosition = 0
 /* ================================= */
 
 async function loadMembers(){
-
-  try {
-
-    const querySnapshot = await getDocs(collection(db, "members"));
-
-    members = querySnapshot.docs.map(mapFirestoreMemberDoc);
-
-    console.log("Loaded members from Firestore:", members);
-
-    buildDirectory(getCurrentMemberSearchQuery());
-
-  } catch (error) {
-    console.error("Error loading members:", error);
-  }
-
+  return loadMembersFlow({
+    getDocsFn: getDocs,
+    collectionFn: collection,
+    dbObj: db,
+    mapFirestoreMemberDocFn: mapFirestoreMemberDoc,
+    setMembersFn: (next) => { members = next; },
+    logFn: (...args) => console.log(...args),
+    getCurrentMemberSearchQueryFn: getCurrentMemberSearchQuery,
+    buildDirectoryFn: buildDirectory,
+    onErrorFn: (error) => { console.error("Error loading members:", error); }
+  });
 }
 
 /* ================================= */
@@ -2675,60 +2140,23 @@ async function loadMembers(){
 /* ================================= */
 
 function buildDirectory(searchQuery){
-
-const directory = document.getElementById("directory")
-
-directory.innerHTML = ""
-
-const q = String(searchQuery || "").trim().toLowerCase()
-
-let list = members.slice()
-
-if(q){
-
-list = list.filter(m => memberMatchesNamePrefix(m, q))
-list.sort((a, b) => compareMembersSearchSort(a, b, q))
-
-}else{
-
-list.sort(compareMembersDefaultSort)
-
-}
-
-list.forEach(record=>{
-
-const f = record.fields
-
-const photo = f.Photo || "images/default.jpg"
-const name = f["Full Name"] || ""
-const ministry = f.Ministry || ""
-const phone = formatPhone(f["Phone Number"])
-const email = f.Email || ""
-
-const address = buildAddressHtmlFromFields(f)
-
-const birthday = formatMonthDay(f.Birthday)
-const anniversary = formatMonthDay(f.Anniversary)
-const household = f.Household || ""
-const updated = formatDate(f["Last Updated"])
-
-const card = document.createElement("div")
-card.className="card"
-
-card.innerHTML=`
-<img src="${photo}" loading="lazy" width="260" height="260" alt="">
-<div class="card-info">
-<h3>${name}</h3>
-${ministry ? `<p>${ministry}</p>` : ""}
-</div>
-`
-
-card.onclick=()=>showProfile(record.id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated)
-
-directory.appendChild(card)
-
-})
-
+  renderDirectoryCards({
+    documentObj: document,
+    members,
+    searchQuery,
+    directoryElementId: "directory",
+    getVisibleDirectoryMembersFn: getVisibleDirectoryMembers,
+    buildDirectoryProfileViewModelFn: buildDirectoryProfileViewModel,
+    buildDirectoryCardHtmlFn: buildDirectoryCardHtml,
+    createDirectoryCardElementFn: createDirectoryCardElement,
+    formatPhoneFn: formatPhone,
+    buildAddressHtmlFromFieldsFn: buildAddressHtmlFromFields,
+    formatMonthDayFn: formatMonthDay,
+    formatDateFn: formatDate,
+    createProfileViewModelFn: createProfileViewModel,
+    showProfileFromViewModelFn: showProfileFromViewModel,
+    showProfileFn: showProfile
+  });
 }
 
 /* ================================= */
@@ -2773,89 +2201,31 @@ async function saveProfileChanges(){
 /* ================================= */
 
 function showProfile(id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated){
-
-const rawPhone = phone ? phone.replace(/\D/g, '') : "";
-   
-birthday = formatShortDate(birthday);
-anniversary = formatShortDate(anniversary);
-   
-window.lastViewedProfile = { id, name, photo, ministry, phone, email, address, birthday, anniversary, household, updated };
-
-window.selectedMemberName = name;
-
-const cu = (window.currentUser && window.currentUser.email)
-  ? window.currentUser.email.toLowerCase().trim()
-  : "";
-
-const emailPlain = String(email || "")
-  .replace(/<[^>]+>/g, "")
-  .replace(/&nbsp;/g, " ")
-  .trim()
-  .toLowerCase();
-
-const isOwnProfile = !!(cu && emailPlain && cu === emailPlain);
-   
-const box = document.getElementById("profileContent");
-
-box.innerHTML = `
-
-${isOwnProfile ? `<div class="profile-own-edit-link" style="width:100%;padding:8px 12px 0 12px;margin:0;box-sizing:border-box;font-size:13px;line-height:1.35;text-align:left;"><a href="#" onclick="openEditMyProfileSheet();return false;" style="color:#2b5cff;">Edit my profile</a></div>` : ""}
-
-<div style="position:relative; display:inline-block;">
-  
-  <img 
-    id="profilePhoto"
-    src="${photo}" 
-    loading="lazy"
-    decoding="async"
-    alt=""
-    onclick="openPhoto('${photo}')"
-    style="cursor:pointer">
-
-</div>
-
-<div class="profile-info-group">
-<h2>${name}</h2>
-
-<div class="profile-details">
-${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
-
-<p><a href="tel:${rawPhone}">${phone}</a></p>
-<p><a href="mailto:${email}">${email}</a></p>
-
-<p>
-<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.replace(/<br>/g,' '))}" target="_blank">
-${address}
-</a>
-</p>
-
-${(birthday || anniversary || household) ? `<div class="profile-divider"></div>` : ""}
-
-${birthday ? `<p><strong>Birthday:</strong> ${birthday}</p>` : ""}
-${anniversary ? `<p><strong>Anniversary:</strong> ${anniversary}</p>` : ""}
-${household ? `<p><strong>Family:</strong> 
-<a href="#" onclick="showHousehold('${household}');return false;">${household}</a>
-</p>` : ""}
-
-${updated ? `<p style="font-size:12px;color:#777;margin-top:12px">Updated ${updated}</p>` : ""}
-</div>
-</div>
-
-`
-
-savedScrollPosition = window.scrollY
-document.body.classList.add("profile-open")
-document.body.style.overflow = "hidden"
-   
-const overlay = document.getElementById("profile")
-const sheet = overlay.querySelector(".profile-box")
-
-overlay.classList.add("show")
-
-setTimeout(()=>{
-sheet.style.transform = "translateY(0)"
-},10)
-
+  showProfileFlow({
+    id,
+    name,
+    photo,
+    ministry,
+    phone,
+    email,
+    address,
+    birthday,
+    anniversary,
+    household,
+    updated,
+    currentUser: window.currentUser,
+    documentObj: document,
+    windowObj: window,
+    formatShortDateFn: formatShortDate,
+    normalizeProfileDatesFn: normalizeProfileDates,
+    buildLastViewedProfileStateFn: buildLastViewedProfileState,
+    setProfileWindowStateFn: setProfileWindowState,
+    isOwnProfileForCurrentUserFn: isOwnProfileForCurrentUser,
+    buildProfileHtmlFn: buildProfileHtml,
+    getWindowScrollYFn: getWindowScrollY,
+    openProfileOverlayFn: openProfileOverlay,
+    setSavedScrollPositionFn: (next) => { savedScrollPosition = next; }
+  });
 }
 
 /* ================================= */
@@ -2863,80 +2233,38 @@ sheet.style.transform = "translateY(0)"
 /* ================================= */
 
 function closeProfile(){
-
-if(consumeReturnToFamilyFlow(
-  returnToFamily,
-  (next) => { returnToFamily = next; },
-  showHousehold
-)){
-return
-
-}
-
-closeProfileOverlay(document)
-resetProfilePageState(document, window, savedScrollPosition)
-
+  closeProfileFlow({
+    returnToFamily,
+    setReturnToFamilyFn: (next) => { returnToFamily = next; },
+    showHouseholdFn: showHousehold,
+    consumeReturnToFamilyFlowFn: consumeReturnToFamilyFlow,
+    closeProfileOverlayFn: closeProfileOverlay,
+    resetProfilePageStateFn: resetProfilePageState,
+    documentObj: document,
+    windowObj: window,
+    savedScrollPosition
+  });
 }
 
 /* ================================= */
 /* SHEET CLOSE ANIMATION             */
 /* ================================= */
 
-let startY = 0
-let currentY = 0
-let startTime = 0
-let dragging = false
-
-const sheet = document.querySelector(".profile-box")
-
-sheet.addEventListener("touchstart",(e)=>{
-
-// ONLY allow drag if scrolled to top
-if(sheet.scrollTop > 0){
-dragging = false
-return
-}
-
-startY = e.touches[0].clientY
-startTime = Date.now()
-dragging = true
-
-})
-
-sheet.addEventListener("touchmove",(e)=>{
-
-if(!dragging) return
-
-currentY = e.touches[0].clientY
-
-let diff = currentY - startY
-
-applyProfileDragResistance(sheet, diff)
-
-})
-
-sheet.addEventListener("touchend",()=>{
-
-dragging = false
-
-const distance = currentY - startY
-const time = Date.now() - startTime
-const velocity = distance / time
-
-if(shouldCloseProfileFromSwipe(distance, velocity)){
-closeProfile()
-}else{
-sheet.style.transform = "translateY(0)"
-}
-
-})
+initializeDirectoryProfileSwipeBoot({
+  documentObj: document,
+  initializeProfileSwipeCloseFlowFn: initializeProfileSwipeCloseFlow,
+  closeProfileFn: closeProfile,
+  setupProfileSheetSwipeCloseFn: setupProfileSheetSwipeClose,
+  applyProfileDragResistanceFn: applyProfileDragResistance,
+  shouldCloseProfileFromSwipeFn: shouldCloseProfileFromSwipe
+});
 
 /* ================================= */
 /* SHOW HOUSEHOLD PAGE               */
 /* ================================= */
 
 function showHousehold(householdName){
-showHouseholdFlow(document, members, householdName)
+  showHouseholdEntryFlow(document, members, householdName, showHouseholdFlow);
 }
 
 /* ================================= */
@@ -2944,8 +2272,7 @@ showHouseholdFlow(document, members, householdName)
 /* ================================= */
 
 function goBackToProfile(){
-goBackToProfileFlow(lastViewedProfile, showProfile)
-
+  goBackToProfileEntryFlow(lastViewedProfile, showProfile, goBackToProfileFlow);
 }
 
 /* ================================= */
@@ -2953,15 +2280,15 @@ goBackToProfileFlow(lastViewedProfile, showProfile)
 /* ================================= */
 
 function showProfileFromMember(name){
-showProfileFromMemberFlow(
-  members,
-  name,
-  formatPhone,
-  formatMonthDay,
-  formatDate,
-  showProfile
-)
-
+  showProfileFromMemberEntryFlow({
+    members,
+    name,
+    formatPhoneFn: formatPhone,
+    formatMonthDayFn: formatMonthDay,
+    formatDateFn: formatDate,
+    showProfileFn: showProfile,
+    showProfileFromMemberFlowFn: showProfileFromMemberFlow
+  });
 }
 
 /* ================================= */
@@ -2969,13 +2296,13 @@ showProfileFromMemberFlow(
 /* ================================= */
 
 function showFamilyMemberProfile(name, householdName){
-showFamilyMemberProfileFlow(
-  (next) => { returnToFamily = next; },
-  showProfileFromMember,
-  name,
-  householdName
-)
-
+  showFamilyMemberProfileEntryFlow(
+    (next) => { returnToFamily = next; },
+    showProfileFromMember,
+    name,
+    householdName,
+    showFamilyMemberProfileFlow
+  );
 }
 
 /* ================================= */
@@ -2983,53 +2310,60 @@ showFamilyMemberProfileFlow(
 /* ================================= */
 
 function openPhoto(photo){
-openPhotoViewer(document, photo);
+  openPhotoEntryFlow(document, photo, openPhotoViewer);
 }
 
 function closePhoto(){
-closePhotoViewer(document);
+  closePhotoEntryFlow(document, closePhotoViewer);
 }
 
 /* ================================= */
 /* DATA FORMATTING                   */
 /* ================================= */
 
-console.log("From main script:", window.firebase);
-
 // Make functions available to HTML onclick handlers
-window.filterMembers = filterMembers;
-window.closeProfile = closeProfile;
-window.showHousehold = showHousehold;
-window.showFamilyMemberProfile = showFamilyMemberProfile;
-window.showProfileFromMember = showProfileFromMember;
-window.openPhoto = openPhoto;
-window.closePhoto = closePhoto;
-window.openEditMyProfileSheet = openEditMyProfileSheet;
-window.openMemberSelect = openMemberSelect;
-window.closeMemberSelect = closeMemberSelect;
-window.selectMemberForEdit = selectMemberForEdit;
-window.openEditMember = openEditMember;
-window.closeEditMember = closeEditMember;
-window.saveMemberChanges = saveMemberChanges;
-window.deleteMemberFromDirectory = deleteMemberFromDirectory;
-window.openPendingChanges = openPendingChanges;
-window.closePendingChanges = closePendingChanges;
-window.openOnboarding = openOnboarding;
-window.submitOnboarding = submitOnboarding;
-window.cancelEditMyProfile = cancelEditMyProfile;
-window.closeOnboardingSheet = closeOnboardingSheet;
-window.buildMonthView = buildMonthView;
-window.buildDayList = buildDayList;
-window.buildUnresolvedList = buildUnresolvedList;
-window.restorePendingChangesYearView = restorePendingChangesYearView;
-window.openUnresolvedPendingDetail = openUnresolvedPendingDetail;
-window.approvePendingChange = approvePendingChange;
-window.denyPendingChange = denyPendingChange;
-window.closeAdminEmailModal = closeAdminEmailModal;
-window.sendAdminEmailFromModal = sendAdminEmailFromModal;
-window.openInviteMemberDialog = openInviteMemberDialog;
-window.closeInviteMemberDialog = closeInviteMemberDialog;
-window.submitInviteMember = submitInviteMember;
+initializeDirectoryGlobalHandlersBoot({
+  windowObj: window,
+  bindGlobalWindowHandlersFlowFn: bindGlobalWindowHandlersFlow,
+  logFn: (...args) => console.log(...args),
+  firebaseObj: window.firebase,
+  bindWindowHandlersFn: bindWindowHandlers,
+  handlers: {
+  filterMembers,
+  closeProfile,
+  showHousehold,
+  showFamilyMemberProfile,
+  showProfileFromMember,
+  openPhoto,
+  closePhoto,
+  openEditMyProfileSheet,
+  openMemberSelect,
+  closeMemberSelect,
+  selectMemberForEdit,
+  openEditMember,
+  closeEditMember,
+  saveMemberChanges,
+  deleteMemberFromDirectory,
+  openPendingChanges,
+  closePendingChanges,
+  openOnboarding,
+  submitOnboarding,
+  cancelEditMyProfile,
+  closeOnboardingSheet,
+  buildMonthView,
+  buildDayList,
+  buildUnresolvedList,
+  restorePendingChangesYearView,
+  openUnresolvedPendingDetail,
+  approvePendingChange,
+  denyPendingChange,
+  closeAdminEmailModal,
+  sendAdminEmailFromModal,
+  openInviteMemberDialog,
+  closeInviteMemberDialog,
+  submitInviteMember
+  }
+});
    
 </script>
    

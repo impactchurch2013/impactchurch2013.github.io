@@ -49,6 +49,60 @@ export function stopPendingChangesCountListener(pendingChangesCountUnsub, setPen
   }
 }
 
+export function countPendingChangesInSnapshot(snapshot){
+  let count = 0;
+  snapshot.forEach((docSnap) => {
+    if(docSnap.data().status === "pending"){
+      count++;
+    }
+  });
+  return count;
+}
+
+export async function startPendingChangesCountListener({
+  pendingChangesCountUnsub,
+  stopPendingChangesCountListenerFn,
+  wrapEl,
+  isChurchAdmin,
+  db,
+  onSnapshotFn,
+  collectionFn,
+  setPendingChangesCountTextFn,
+  setPendingChangesCountUnsubFn,
+  onErrorFn
+}){
+  if(typeof pendingChangesCountUnsub === "function"){
+    stopPendingChangesCountListenerFn();
+  }
+
+  if(!wrapEl){
+    return null;
+  }
+
+  if(!isChurchAdmin){
+    wrapEl.style.display = "none";
+    return null;
+  }
+
+  const unsub = onSnapshotFn(
+    collectionFn(db, "pendingChanges"),
+    (snapshot) => {
+      setPendingChangesCountTextFn(countPendingChangesInSnapshot(snapshot));
+    },
+    (err) => {
+      if(onErrorFn){
+        onErrorFn(err);
+      }
+    }
+  );
+
+  if(setPendingChangesCountUnsubFn){
+    setPendingChangesCountUnsubFn(unsub);
+  }
+
+  return unsub;
+}
+
 export async function loadPendingChangesData(db, getDocs, collection){
   return fetchPendingChangesData(db, getDocs, collection);
 }
