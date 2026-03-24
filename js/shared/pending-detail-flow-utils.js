@@ -5,6 +5,7 @@ export function findPendingChangeById(pendingChangesData, pendingId){
 
 export function buildPendingDetailViewModel(
   item,
+  members,
   getSafePendingPhotoUrlFn,
   buildPendingDetailRowsFn,
   buildPendingPhotoBlockHtmlFn,
@@ -13,7 +14,7 @@ export function buildPendingDetailViewModel(
   isChurchAdmin
 ){
   const safePhotoUrl = getSafePendingPhotoUrlFn((item && item.changes) || {});
-  const rows = buildPendingDetailRowsFn(item);
+  const rows = buildPendingDetailRowsFn(item, members);
   const photoBlock = buildPendingPhotoBlockHtmlFn(safePhotoUrl);
   const body = buildPendingDetailBodyHtmlFn(photoBlock, rows);
   const buttons = buildPendingActionButtonsHtmlFn(isChurchAdmin);
@@ -34,7 +35,7 @@ export function renderPendingDetailView(documentObj, bodyHtml, buttonsHtml){
   box.innerHTML = `
     <div onclick="buildUnresolvedList()"
       style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
-      ← Back to Unresolved
+      <- Back
     </div>
     <h2 style="margin:12px 0;">Review pending change</h2>
     <div style="padding:4px 0 8px;max-height:50vh;overflow-y:auto;">

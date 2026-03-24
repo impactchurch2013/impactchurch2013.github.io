@@ -158,10 +158,10 @@ export function openEditMyProfileFormEntry({
         <div class="profile-photo-examples" aria-hidden="true">
           <div class="profile-photo-examples-row">
             <div class="profile-photo-examples-cell profile-photo-examples-cell--portrait">
-              <img src="images/portrait.jpg" alt="" loading="lazy" decoding="async">
+              <img src="images/portrait2.jpg" alt="" loading="lazy" decoding="async">
             </div>
             <div class="profile-photo-examples-cell profile-photo-examples-cell--landscape">
-              <img src="images/landscape.jpg" alt="" loading="lazy" decoding="async">
+              <img src="images/landscape2.jpg" alt="" loading="lazy" decoding="async">
             </div>
           </div>
           <p class="profile-photo-examples-hint">Centered subjects work best in directory images.</p>

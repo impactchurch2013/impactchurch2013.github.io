@@ -7,6 +7,7 @@ export function createInviteAllowlistFirestoreLoader(){
 export function executeOpenUnresolvedPendingDetailEntry({
   pendingId,
   pendingChangesData,
+  members,
   findPendingChangeByIdFn,
   alertFn,
   pendingEntryNotFoundMessage,
@@ -34,6 +35,7 @@ export function executeOpenUnresolvedPendingDetailEntry({
   const admin = isChurchAdmin;
   const viewModel = buildPendingDetailViewModelFn(
     item,
+    members,
     getSafePendingPhotoUrlFn,
     buildPendingDetailRowsFn,
     buildPendingPhotoBlockHtmlFn,

@@ -1104,6 +1104,7 @@ function openUnresolvedPendingDetail(pendingId){
   executeOpenUnresolvedPendingDetailEntry({
     pendingId,
     pendingChangesData: window.pendingChangesData,
+    members,
     findPendingChangeByIdFn: findPendingChangeById,
     alertFn: alert,
     pendingEntryNotFoundMessage: PENDING_ENTRY_NOT_FOUND_MESSAGE,
@@ -1185,7 +1186,8 @@ function sendAdminEmailFromModal(){
     ADMIN_EMAIL_TO_REQUIRED_MESSAGE,
     alert,
     buildMailtoUrl,
-    (url) => { window.location.href = url; }
+    (url) => { window.location.href = url; },
+    closeAdminEmailModal
   );
 
 }

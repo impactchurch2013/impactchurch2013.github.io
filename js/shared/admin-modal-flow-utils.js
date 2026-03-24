@@ -32,7 +32,8 @@ export function sendAdminEmailFromModalFlow(
   adminEmailToRequiredMessage,
   alertFn,
   buildMailtoUrlFn,
-  navigateToUrlFn
+  navigateToUrlFn,
+  closeAdminEmailModalFn
 ){
   const { to, subject, body } = getAdminEmailModalValuesFn(documentObj);
   if(!to){
@@ -41,6 +42,9 @@ export function sendAdminEmailFromModalFlow(
   }
 
   const url = buildMailtoUrlFn(to, subject, body);
+  if(typeof closeAdminEmailModalFn === "function"){
+    closeAdminEmailModalFn();
+  }
   navigateToUrlFn(url);
   return true;
 }
