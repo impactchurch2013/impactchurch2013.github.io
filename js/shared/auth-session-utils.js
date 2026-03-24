@@ -14,6 +14,8 @@ export async function handleAuthenticatedSession({
   appEl,
   loginScreenEl,
   logoutBtnEl,
+  searchToggleBtnEl,
+  searchBarEl,
   editorToggleBtnEl,
   startPendingChangesCountListenerFn,
   openOnboardingFn,
@@ -46,6 +48,8 @@ export async function handleAuthenticatedSession({
     appEl,
     loginScreenEl,
     logoutBtnEl,
+    searchToggleBtnEl,
+    searchBarEl,
     editorToggleBtnEl,
     isChurchAdmin
   );
@@ -66,8 +70,11 @@ export function handleLoggedOutSession({
   appEl,
   loginScreenEl,
   logoutBtnEl,
+  searchToggleBtnEl,
+  searchBarEl,
   editorToggleBtnEl,
   pendingChangesCountWrapEl,
+  memberSearchInputEl,
   loginPasswordInputEl,
   clearLoginFeedbackFn
 }){
@@ -77,8 +84,11 @@ export function handleLoggedOutSession({
     appEl,
     loginScreenEl,
     logoutBtnEl,
+    searchToggleBtnEl,
+    searchBarEl,
     editorToggleBtnEl,
     pendingChangesCountWrapEl,
+    memberSearchInputEl,
     loginPasswordInputEl,
     clearLoginFeedbackFn
   );

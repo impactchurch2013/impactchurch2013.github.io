@@ -13,7 +13,8 @@ export function renderDirectoryCards({
   formatDateFn,
   createProfileViewModelFn,
   showProfileFromViewModelFn,
-  showProfileFn
+  showProfileFn,
+  onDirectoryCardClickFn
 }){
   const directory = documentObj.getElementById(directoryElementId);
   if(!directory){
@@ -44,7 +45,12 @@ export function renderDirectoryCards({
     const card = createDirectoryCardElementFn(
       documentObj,
       cardHtml,
-      () => showProfileFromViewModelFn(profileViewModel, showProfileFn)
+      () => {
+        if(typeof onDirectoryCardClickFn === "function"){
+          onDirectoryCardClickFn();
+        }
+        showProfileFromViewModelFn(profileViewModel, showProfileFn);
+      }
     );
 
     directory.appendChild(card);

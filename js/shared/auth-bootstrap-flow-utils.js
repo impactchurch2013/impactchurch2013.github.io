@@ -3,8 +3,11 @@ export function getAuthUiElements(documentObj){
     appEl: documentObj.getElementById("app"),
     loginScreenEl: documentObj.getElementById("loginScreen"),
     logoutBtnEl: documentObj.getElementById("logoutBtn"),
+    searchToggleBtnEl: documentObj.getElementById("searchToggleBtn"),
+    searchBarEl: documentObj.querySelector(".search-bar"),
     editorToggleBtnEl: documentObj.getElementById("editorToggleBtn"),
-    pendingChangesCountWrapEl: documentObj.getElementById("pendingChangesCountWrap")
+    pendingChangesCountWrapEl: documentObj.getElementById("pendingChangesCountWrap"),
+    memberSearchInputEl: documentObj.getElementById("memberSearch")
   };
 }
 
@@ -82,6 +85,8 @@ export async function handleAuthStateChangeFlow({
       appEl: uiElements.appEl,
       loginScreenEl: uiElements.loginScreenEl,
       logoutBtnEl: uiElements.logoutBtnEl,
+      searchToggleBtnEl: uiElements.searchToggleBtnEl,
+      searchBarEl: uiElements.searchBarEl,
       editorToggleBtnEl: uiElements.editorToggleBtnEl,
       startPendingChangesCountListenerFn,
       openOnboardingFn,
@@ -102,8 +107,11 @@ export async function handleAuthStateChangeFlow({
     appEl: uiElements.appEl,
     loginScreenEl: uiElements.loginScreenEl,
     logoutBtnEl: uiElements.logoutBtnEl,
+    searchToggleBtnEl: uiElements.searchToggleBtnEl,
+    searchBarEl: uiElements.searchBarEl,
     editorToggleBtnEl: uiElements.editorToggleBtnEl,
     pendingChangesCountWrapEl: uiElements.pendingChangesCountWrapEl,
+    memberSearchInputEl: uiElements.memberSearchInputEl,
     loginPasswordInputEl,
     clearLoginFeedbackFn
   });

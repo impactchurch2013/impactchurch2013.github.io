@@ -131,6 +131,11 @@ background:rgba(255,255,255,.2);
 max-width:600px;
 margin:10px auto 20px auto;
 padding:0 12px 14px 12px;
+display:none;
+}
+
+.search-bar.is-open{
+display:block;
 }
 
 .search-bar input{

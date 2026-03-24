@@ -2,6 +2,8 @@ export function applyAuthenticatedUiState(
   appEl,
   loginScreenEl,
   logoutBtnEl,
+  searchToggleBtnEl,
+  searchBarEl,
   editorToggleBtnEl,
   isChurchAdmin
 ){
@@ -17,14 +19,31 @@ export function applyAuthenticatedUiState(
   if(logoutBtnEl){
     logoutBtnEl.style.display = "inline-flex";
   }
+  if(searchToggleBtnEl){
+    searchToggleBtnEl.style.display = "inline-flex";
+    searchToggleBtnEl.style.order = isChurchAdmin ? "2" : "1";
+    searchToggleBtnEl.textContent = "Search";
+  }
+  if(searchBarEl){
+    searchBarEl.classList.remove("is-open");
+  }
+  if(logoutBtnEl){
+    logoutBtnEl.style.order = isChurchAdmin ? "1" : "2";
+  }
+  if(editorToggleBtnEl){
+    editorToggleBtnEl.style.order = "3";
+  }
 }
 
 export function applyLoggedOutUiState(
   appEl,
   loginScreenEl,
   logoutBtnEl,
+  searchToggleBtnEl,
+  searchBarEl,
   editorToggleBtnEl,
   pendingChangesCountWrapEl,
+  memberSearchInputEl,
   loginPasswordInputEl,
   clearLoginFeedbackFn
 ){
@@ -40,8 +59,18 @@ export function applyLoggedOutUiState(
   if(logoutBtnEl){
     logoutBtnEl.style.display = "none";
   }
+  if(searchToggleBtnEl){
+    searchToggleBtnEl.style.display = "none";
+    searchToggleBtnEl.textContent = "Search";
+  }
+  if(searchBarEl){
+    searchBarEl.classList.remove("is-open");
+  }
   if(editorToggleBtnEl){
     editorToggleBtnEl.style.display = "none";
+  }
+  if(memberSearchInputEl){
+    memberSearchInputEl.value = "";
   }
   if(loginPasswordInputEl){
     loginPasswordInputEl.value = "";

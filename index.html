@@ -113,8 +113,7 @@ color:#333;
 <input 
 type="text" 
 id="memberSearch"
-placeholder="Search members..."
-oninput="filterMembers()">
+placeholder="Search members...">
 </div>
 
 <div class="directory-toolbar">
@@ -122,10 +121,11 @@ oninput="filterMembers()">
     <span id="pendingChangesCountText"></span>
   </div>
   <div class="directory-toolbar-actions">
+    <button id="logoutBtn" style="display:none;">Logout</button>
+    <button id="searchToggleBtn" style="display:none;">Search</button>
     <button id="editorToggleBtn" style="display:none;">
       Enable Editor Mode
     </button>
-    <button id="logoutBtn" style="display:none;">Logout</button>
   </div>
 </div>
 
@@ -1222,7 +1222,13 @@ function buildDirectory(searchQuery){
     formatDateFn: formatDate,
     createProfileViewModelFn: createProfileViewModel,
     showProfileFromViewModelFn: showProfileFromViewModel,
-    showProfileFn: showProfile
+    showProfileFn: showProfile,
+    onDirectoryCardClickFn: () => {
+      const searchInputEl = document.getElementById("memberSearch");
+      if(searchInputEl && searchInputEl.value.trim()){
+        setSearchOpen(false, { clearQuery: true, rerender: true });
+      }
+    }
   });
 }
 
@@ -1231,6 +1237,70 @@ function buildDirectory(searchQuery){
 /* ================================= */
 
 const filterMembers = () => filterMembersUtil(buildDirectory);
+
+function setSearchOpen(isOpen, opts = {}){
+  const options = {
+    focusInput: false,
+    clearQuery: false,
+    rerender: true,
+    ...opts
+  };
+
+  const searchBarEl = document.querySelector(".search-bar");
+  const searchInputEl = document.getElementById("memberSearch");
+  const searchToggleBtnEl = document.getElementById("searchToggleBtn");
+
+  if(!searchBarEl || !searchInputEl || !searchToggleBtnEl){
+    return;
+  }
+
+  if(isOpen){
+    searchBarEl.classList.add("is-open");
+    searchToggleBtnEl.textContent = "Hide Search";
+    if(options.focusInput){
+      searchInputEl.focus();
+    }
+    return;
+  }
+
+  searchBarEl.classList.remove("is-open");
+  searchToggleBtnEl.textContent = "Search";
+
+  if(options.clearQuery){
+    searchInputEl.value = "";
+  }
+
+  if(options.rerender){
+    buildDirectory(getCurrentMemberSearchQuery());
+  }
+}
+
+function bindSearchUi(){
+  const searchToggleBtnEl = document.getElementById("searchToggleBtn");
+  const searchInputEl = document.getElementById("memberSearch");
+
+  if(searchToggleBtnEl){
+    searchToggleBtnEl.addEventListener("click", () => {
+      const searchBarEl = document.querySelector(".search-bar");
+      const isOpen = Boolean(searchBarEl && searchBarEl.classList.contains("is-open"));
+      setSearchOpen(!isOpen, {
+        focusInput: !isOpen,
+        clearQuery: isOpen,
+        rerender: true
+      });
+    });
+  }
+
+  if(searchInputEl){
+    searchInputEl.addEventListener("keydown", (event) => {
+      if(event.key !== "Enter"){
+        return;
+      }
+      event.preventDefault();
+      filterMembers();
+    });
+  }
+}
 
 /* ================================= */
 /* FORMAT DATE                       */
@@ -1422,6 +1492,8 @@ initializeDirectoryGlobalHandlersEntry({
     submitInviteMember
   })
 });
+
+bindSearchUi();
    
 </script>
    
