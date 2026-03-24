@@ -600,6 +600,7 @@ import {
 
 const provider = createGoogleProvider(GoogleAuthProvider);
 const requestedEntry = getRequestedEntry(window);
+let pendingChangesCountUnsub = null;
 
 await initAuthEntryFlow({
   documentObj: document,
@@ -692,8 +693,6 @@ function hideEditorUI(){
 /* ================================= */
 /* PENDING CHANGES COUNT (ADMINS)    */
 /* ================================= */
-
-let pendingChangesCountUnsub = null;
 
 function stopPendingChangesCountListener(){
   stopPendingChangesCountListenerFlow(
