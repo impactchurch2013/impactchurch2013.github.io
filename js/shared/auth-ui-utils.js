@@ -30,10 +30,10 @@ export function applyAuthenticatedUiState(
     searchBarEl.classList.remove("is-open");
   }
   if(logoutBtnEl && logoutBtnEl.style){
-    logoutBtnEl.style.order = isAdmin ? "1" : "2";
+    logoutBtnEl.style.order = "3";
   }
   if(editorToggleBtnEl && editorToggleBtnEl.style){
-    editorToggleBtnEl.style.order = "3";
+    editorToggleBtnEl.style.order = isAdmin ? "1" : "3";
   }
 }
 
