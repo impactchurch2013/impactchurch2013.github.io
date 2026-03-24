@@ -23,3 +23,13 @@ export async function grantAdminByEmailEntry({
     grantedAt: serverTimestamp()
   }, { merge: true });
 }
+
+export async function revokeAdminByEmailEntry({
+  dbObj,
+  email,
+  loadFirestoreFns
+}){
+  const cleanEmail = normalizeEmail(email);
+  const { deleteDoc, doc } = await loadFirestoreFns();
+  await deleteDoc(doc(dbObj, "admins", cleanEmail));
+}

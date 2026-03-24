@@ -13,11 +13,11 @@ function getMemberEmail(member){
   return String(member && member.fields ? (member.fields.Email || "") : "").toLowerCase().trim();
 }
 
-export function ensureGrantAdminAccess(isChurchAdmin, alertFn){
+function ensureAdminActionAccess(isChurchAdmin, alertFn){
   if(isChurchAdmin){
     return true;
   }
-  alertFn("Only admins can grant admin access.");
+  alertFn("Only admins can manage admin access.");
   return false;
 }
 
@@ -25,26 +25,46 @@ export function openGrantAdminFlow({
   isChurchAdmin,
   alertFn,
   openMemberSelectFn,
-  setGrantAdminTargetFn
+  setAdminActionTargetFn,
+  setAdminActionModeFn
 }){
-  if(!ensureGrantAdminAccess(isChurchAdmin, alertFn)){
+  if(!ensureAdminActionAccess(isChurchAdmin, alertFn)){
     return;
   }
-  setGrantAdminTargetFn(null);
+  setAdminActionModeFn("grant");
+  setAdminActionTargetFn(null);
   openMemberSelectFn({
     title: "Select Member For Admin Access",
     onSelectHandlerName: "selectMemberForGrantAdmin"
   });
 }
 
-export function selectMemberForGrantAdminFlow({
+export function openRevokeAdminFlow({
+  isChurchAdmin,
+  alertFn,
+  openMemberSelectFn,
+  setAdminActionTargetFn,
+  setAdminActionModeFn
+}){
+  if(!ensureAdminActionAccess(isChurchAdmin, alertFn)){
+    return;
+  }
+  setAdminActionModeFn("revoke");
+  setAdminActionTargetFn(null);
+  openMemberSelectFn({
+    title: "Select Admin To Revoke",
+    onSelectHandlerName: "selectMemberForRevokeAdmin"
+  });
+}
+
+function selectMemberForAdminActionFlow({
   members,
   memberId,
   alertFn,
-  setGrantAdminTargetFn,
-  renderGrantAdminConfirmFn,
+  setAdminActionTargetFn,
+  renderAdminActionConfirmFn,
   closeMemberSelectFn,
-  openGrantAdminSheetFn
+  openAdminActionSheetFn
 }){
   const member = (Array.isArray(members) ? members : []).find((item) => item.id === memberId);
   if(!member){
@@ -60,23 +80,37 @@ export function selectMemberForGrantAdminFlow({
 
   const name = getMemberName(member) || email;
   const target = { id: memberId, name, email };
-  setGrantAdminTargetFn(target);
+  setAdminActionTargetFn(target);
   closeMemberSelectFn();
-  renderGrantAdminConfirmFn(target);
-  openGrantAdminSheetFn();
+  renderAdminActionConfirmFn(target);
+  openAdminActionSheetFn();
 }
 
-export function buildGrantAdminConfirmHtml(target, escapeHtmlFn){
+export function selectMemberForGrantAdminFlow(args){
+  selectMemberForAdminActionFlow(args);
+}
+
+export function selectMemberForRevokeAdminFlow(args){
+  selectMemberForAdminActionFlow(args);
+}
+
+export function buildAdminActionConfirmHtml(mode, target, escapeHtmlFn){
   const safeName = escapeHtmlFn(target && target.name ? target.name : "");
   const safeEmail = escapeHtmlFn(target && target.email ? target.email : "");
+  const isRevoke = mode === "revoke";
+  const title = isRevoke ? "Revoke Admin" : "Grant Admin";
+  const prompt = isRevoke
+    ? `Revoke admin status from <strong>${safeName}</strong> (${safeEmail})?`
+    : `Grant admin status to <strong>${safeName}</strong> (${safeEmail})?`;
+  const confirmHandler = isRevoke ? "confirmRevokeAdmin()" : "confirmGrantAdmin()";
 
   return `
-    <h2>Grant Admin</h2>
+    <h2>${title}</h2>
     <p style="padding:0 0 14px 0;line-height:1.45;">
-      Grant admin status to <strong>${safeName}</strong> (${safeEmail})?
+      ${prompt}
     </p>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button type="button" onclick="confirmGrantAdmin()">Confirm</button>
+      <button type="button" onclick="${confirmHandler}">Confirm</button>
       <button type="button" onclick="closeGrantAdminSheet()">Cancel</button>
     </div>
   `;
@@ -85,19 +119,19 @@ export function buildGrantAdminConfirmHtml(target, escapeHtmlFn){
 export async function confirmGrantAdminFlow({
   isChurchAdmin,
   alertFn,
-  getGrantAdminTargetFn,
+  getAdminActionTargetFn,
   grantAdminByEmailFn,
   dbObj,
   currentUser,
   loadFirestoreFns,
   closeGrantAdminSheetFn,
-  clearGrantAdminTargetFn
+  clearAdminActionTargetFn
 }){
-  if(!ensureGrantAdminAccess(isChurchAdmin, alertFn)){
+  if(!ensureAdminActionAccess(isChurchAdmin, alertFn)){
     return;
   }
 
-  const target = getGrantAdminTargetFn();
+  const target = getAdminActionTargetFn();
   if(!target || !target.email){
     alertFn("No member selected for admin access.");
     return;
@@ -111,10 +145,51 @@ export async function confirmGrantAdminFlow({
       loadFirestoreFns
     });
     alertFn(`${target.name} now has admin access.`);
-    clearGrantAdminTargetFn();
+    clearAdminActionTargetFn();
     closeGrantAdminSheetFn();
   }catch(error){
     console.error("Grant admin failed:", error);
     alertFn("Could not grant admin access. Please try again.");
+  }
+}
+
+export async function confirmRevokeAdminFlow({
+  isChurchAdmin,
+  alertFn,
+  getAdminActionTargetFn,
+  revokeAdminByEmailFn,
+  dbObj,
+  loadFirestoreFns,
+  closeGrantAdminSheetFn,
+  clearAdminActionTargetFn,
+  superAdmins = []
+}){
+  if(!ensureAdminActionAccess(isChurchAdmin, alertFn)){
+    return;
+  }
+
+  const target = getAdminActionTargetFn();
+  if(!target || !target.email){
+    alertFn("No member selected for admin revoke.");
+    return;
+  }
+
+  if((superAdmins || []).includes(target.email)){
+    alertFn("Super admin access cannot be revoked here.");
+    return;
+  }
+
+  try{
+    await revokeAdminByEmailFn({
+      dbObj,
+      email: target.email,
+      loadFirestoreFns
+    });
+    alertFn(`${target.name} no longer has admin access.`);
+    clearAdminActionTargetFn();
+    closeGrantAdminSheetFn();
+  }catch(error){
+    console.error("Revoke admin failed:", error);
+    alertFn("Could not revoke admin access. Please try again.");
   }
 }

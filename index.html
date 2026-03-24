@@ -133,6 +133,7 @@ placeholder="Search members...">
   <button type="button" onclick="openInviteMemberDialog()">Invite</button>
   <button type="button" onclick="openMemberSelect()">Edit</button>
   <button type="button" onclick="openGrantAdminFlow()">Grant Admin</button>
+  <button type="button" onclick="openRevokeAdminFlow()">Revoke Admin</button>
   <button type="button" onclick="openPendingChanges()">Pending Changes</button>
 </div>
 
@@ -353,8 +354,8 @@ import { buildDirectoryGlobalHandlers, initializeDirectoryGlobalHandlersEntry } 
 import { PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE, PROFILE_SIGNIN_REQUIRED_MESSAGE, PROFILE_NAME_REQUIRED_MESSAGE, PROFILE_IMAGE_TOO_LARGE_MESSAGE, PROFILE_IMAGE_PROCESS_FAILED_MESSAGE, PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE, PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE, PROFILE_CHANGES_SUBMITTED_MESSAGE, ONBOARDING_COMPLETE_SUCCESS_MESSAGE, PROFILE_EDIT_OWN_ONLY_MESSAGE, PROFILE_LOAD_FAILED_MESSAGE, PROFILE_REFERENCE_MISSING_MESSAGE, PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE } from "./js/shared/profile-messages.js";
 import { UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE, MEMBER_NOT_FOUND_MESSAGE, EDIT_MEMBER_NAME_REQUIRED_MESSAGE, PROFILE_UPDATED_MESSAGE, UPDATE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ADMIN_ONLY_MESSAGE, REMOVE_MEMBER_SUCCESS_MESSAGE, REMOVE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE, PENDING_ENTRY_NOT_FOUND_MESSAGE } from "./js/shared/directory-messages.js";
 import { createDirectoryAdminFirestoreLoader, deleteMemberFromDirectoryEntry } from "./js/shared/directory-admin-entry-utils.js";
-import { openGrantAdminFlow as openGrantAdminFlowUtil, selectMemberForGrantAdminFlow, buildGrantAdminConfirmHtml, confirmGrantAdminFlow } from "./js/shared/grant-admin-flow-utils.js";
-import { createGrantAdminFirestoreLoader, grantAdminByEmailEntry } from "./js/shared/grant-admin-entry-utils.js";
+import { openGrantAdminFlow as openGrantAdminFlowUtil, openRevokeAdminFlow as openRevokeAdminFlowUtil, selectMemberForGrantAdminFlow, selectMemberForRevokeAdminFlow, buildAdminActionConfirmHtml, confirmGrantAdminFlow, confirmRevokeAdminFlow } from "./js/shared/grant-admin-flow-utils.js";
+import { createGrantAdminFirestoreLoader, grantAdminByEmailEntry, revokeAdminByEmailEntry } from "./js/shared/grant-admin-entry-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -813,7 +814,7 @@ function renderGrantAdminConfirm(target){
   if(!contentEl){
     return;
   }
-  contentEl.innerHTML = buildGrantAdminConfirmHtml(target, escapeHtml);
+  contentEl.innerHTML = buildAdminActionConfirmHtml(window.__adminActionMode, target, escapeHtml);
 }
 
 function openGrantAdminFlow(){
@@ -821,7 +822,18 @@ function openGrantAdminFlow(){
     isChurchAdmin: window.isChurchAdmin,
     alertFn: alert,
     openMemberSelectFn: (options) => openMemberSelect(options),
-    setGrantAdminTargetFn: (next) => { window.__grantAdminTarget = next; }
+    setAdminActionTargetFn: (next) => { window.__grantAdminTarget = next; },
+    setAdminActionModeFn: (next) => { window.__adminActionMode = next; }
+  });
+}
+
+function openRevokeAdminFlow(){
+  openRevokeAdminFlowUtil({
+    isChurchAdmin: window.isChurchAdmin,
+    alertFn: alert,
+    openMemberSelectFn: (options) => openMemberSelect(options),
+    setAdminActionTargetFn: (next) => { window.__grantAdminTarget = next; },
+    setAdminActionModeFn: (next) => { window.__adminActionMode = next; }
   });
 }
 
@@ -830,15 +842,28 @@ function selectMemberForGrantAdmin(memberId){
     members,
     memberId,
     alertFn: alert,
-    setGrantAdminTargetFn: (next) => { window.__grantAdminTarget = next; },
-    renderGrantAdminConfirmFn: renderGrantAdminConfirm,
+    setAdminActionTargetFn: (next) => { window.__grantAdminTarget = next; },
+    renderAdminActionConfirmFn: renderGrantAdminConfirm,
     closeMemberSelectFn: closeMemberSelect,
-    openGrantAdminSheetFn: () => openGrantAdminSheet(document)
+    openAdminActionSheetFn: () => openGrantAdminSheet(document)
+  });
+}
+
+function selectMemberForRevokeAdmin(memberId){
+  selectMemberForRevokeAdminFlow({
+    members,
+    memberId,
+    alertFn: alert,
+    setAdminActionTargetFn: (next) => { window.__grantAdminTarget = next; },
+    renderAdminActionConfirmFn: renderGrantAdminConfirm,
+    closeMemberSelectFn: closeMemberSelect,
+    openAdminActionSheetFn: () => openGrantAdminSheet(document)
   });
 }
 
 function closeGrantAdminSheet(){
   window.__grantAdminTarget = null;
+  window.__adminActionMode = "grant";
   const contentEl = document.getElementById("grantAdminContent");
   if(contentEl){
     contentEl.innerHTML = "";
@@ -850,13 +875,27 @@ async function confirmGrantAdmin(){
   await confirmGrantAdminFlow({
     isChurchAdmin: window.isChurchAdmin,
     alertFn: alert,
-    getGrantAdminTargetFn: () => window.__grantAdminTarget,
+    getAdminActionTargetFn: () => window.__grantAdminTarget,
     grantAdminByEmailFn: grantAdminByEmailEntry,
     dbObj: db,
     currentUser: window.currentUser,
     loadFirestoreFns: createGrantAdminFirestoreLoader(),
     closeGrantAdminSheetFn: closeGrantAdminSheet,
-    clearGrantAdminTargetFn: () => { window.__grantAdminTarget = null; }
+    clearAdminActionTargetFn: () => { window.__grantAdminTarget = null; }
+  });
+}
+
+async function confirmRevokeAdmin(){
+  await confirmRevokeAdminFlow({
+    isChurchAdmin: window.isChurchAdmin,
+    alertFn: alert,
+    getAdminActionTargetFn: () => window.__grantAdminTarget,
+    revokeAdminByEmailFn: revokeAdminByEmailEntry,
+    dbObj: db,
+    loadFirestoreFns: createGrantAdminFirestoreLoader(),
+    closeGrantAdminSheetFn: closeGrantAdminSheet,
+    clearAdminActionTargetFn: () => { window.__grantAdminTarget = null; },
+    superAdmins: SUPER_ADMINS
   });
 }
 
@@ -1264,6 +1303,7 @@ let returnToFamily = null
 let savedScrollPosition = 0
 window.__memberSelectOptions = null
 window.__grantAdminTarget = null
+window.__adminActionMode = "grant"
    
 /* ================================= */
 /* LOAD MEMBERS DATA                  */
@@ -1561,9 +1601,12 @@ initializeDirectoryGlobalHandlersEntry({
     closeMemberSelect,
     selectMemberForEdit,
     openGrantAdminFlow,
+    openRevokeAdminFlow,
     selectMemberForGrantAdmin,
+    selectMemberForRevokeAdmin,
     closeGrantAdminSheet,
     confirmGrantAdmin,
+    confirmRevokeAdmin,
     openEditMember,
     closeEditMember,
     saveMemberChanges,
