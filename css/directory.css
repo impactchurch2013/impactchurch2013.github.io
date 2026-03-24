@@ -105,7 +105,7 @@ margin:0 auto;
 padding:0 20px 14px 20px;
 flex-direction:row;
 flex-wrap:wrap;
-gap:12px;
+gap:8px;
 justify-content:center;
 align-items:center;
 border-top:1px solid rgba(255,255,255,.08);
@@ -118,8 +118,11 @@ background:rgba(255,255,255,.12);
 color:#fff;
 border:1px solid rgba(255,255,255,.35);
 border-radius:8px;
-padding:8px 14px;
+padding:7px 10px;
+font-size:13px;
+line-height:1.2;
 cursor:pointer;
+white-space:nowrap;
 }
 
 .admin-panel button:hover{

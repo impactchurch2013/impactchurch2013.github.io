@@ -1,10 +1,6 @@
 export function showEditorUI(documentObj){
-  const banner = documentObj.getElementById("editorBanner");
   const panel = documentObj.getElementById("adminPanel");
 
-  if(banner){
-    banner.style.display = "block";
-  }
   if(panel){
     panel.style.display = "flex";
   }
