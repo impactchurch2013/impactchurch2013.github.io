@@ -326,13 +326,13 @@ import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayLis
 import { buildPendingYearViewEntry, buildPendingMonthViewEntry, buildPendingDayListEntry, buildUnresolvedPendingListEntry } from "./js/shared/pending-view-entry-utils.js";
 import { openInviteMemberDialogUI, closeInviteMemberDialogUI, getInviteEmailInputValue, normalizeInviteEmail, isValidInviteEmail, buildMailtoUrl, openAdminEmailModalUI, closeAdminEmailModalUI, getAdminEmailModalValues } from "./js/shared/admin-modal-utils.js";
 import { openInviteMemberDialogFlow, closeInviteMemberDialogFlow, openAdminEmailModalFlow, closeAdminEmailModalFlow, sendAdminEmailFromModalFlow } from "./js/shared/admin-modal-flow-utils.js";
-import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet } from "./js/shared/sheet-utils.js";
+import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet, bindSwipeCloseToOverlay } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
 import { showFamilyMemberProfileEntryFlow, openPhotoEntryFlow, closePhotoEntryFlow, bindWindowHandlers } from "./js/shared/ui-entry-utils.js";
 import { openPhotoViewer, closePhotoViewer } from "./js/shared/media-utils.js";
-import { initializeEditorAdminBootFlow, initializeProfileSwipeCloseFlow, bindGlobalWindowHandlersFlow } from "./js/shared/app-boot-flow-utils.js";
-import { initializeDirectoryPreAuthBoot, initializeDirectoryProfileSwipeBoot, initializeDirectoryGlobalHandlersBoot } from "./js/entry/directory-runtime-init.js";
-import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, showProfileFromViewModel, createProfileViewModel, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, applyProfileDragResistance, shouldCloseProfileFromSwipe, isOwnProfileForCurrentUser, buildProfileHtml, openProfileOverlay, setupProfileSheetSwipeClose, normalizeProfileDates, buildLastViewedProfileState, setProfileWindowState, getWindowScrollY } from "./js/shared/profile-utils.js";
+import { initializeEditorAdminBootFlow, initializeSheetSwipeCloseFlow, bindGlobalWindowHandlersFlow } from "./js/shared/app-boot-flow-utils.js";
+import { initializeDirectoryPreAuthBoot, initializeDirectorySheetSwipeBoot, initializeDirectoryGlobalHandlersBoot } from "./js/entry/directory-runtime-init.js";
+import { showFamilyMemberProfileFlow, goBackToProfileFlow, showProfileFromMemberFlow, showProfileFromViewModel, createProfileViewModel, buildAddressHtmlFromFields, showHouseholdFlow, consumeReturnToFamilyFlow, closeProfileOverlay, resetProfilePageState, isOwnProfileForCurrentUser, buildProfileHtml, openProfileOverlay, normalizeProfileDates, buildLastViewedProfileState, setProfileWindowState, getWindowScrollY } from "./js/shared/profile-utils.js";
 import { showProfileFlow, closeProfileFlow, showHouseholdEntryFlow, goBackToProfileEntryFlow, showProfileFromMemberEntryFlow } from "./js/shared/profile-flow-utils.js";
 import { openEditMyProfileSheetEntry, openEditMyProfileFormEntry, submitEditMyProfileEntry } from "./js/shared/edit-my-profile-entry-utils.js";
 import { createEditMemberFirestoreLoader, openEditMemberEntry, saveMemberChangesEntry } from "./js/shared/edit-member-runtime-entry-utils.js";
@@ -1377,13 +1377,17 @@ function closeProfile(){
 /* SHEET CLOSE ANIMATION             */
 /* ================================= */
 
-initializeDirectoryProfileSwipeBoot({
+initializeDirectorySheetSwipeBoot({
   documentObj: document,
-  initializeProfileSwipeCloseFlowFn: initializeProfileSwipeCloseFlow,
-  closeProfileFn: closeProfile,
-  setupProfileSheetSwipeCloseFn: setupProfileSheetSwipeClose,
-  applyProfileDragResistanceFn: applyProfileDragResistance,
-  shouldCloseProfileFromSwipeFn: shouldCloseProfileFromSwipe
+  initializeSheetSwipeCloseFlowFn: initializeSheetSwipeCloseFlow,
+  bindSwipeCloseToOverlayFn: bindSwipeCloseToOverlay,
+  sheetSwipeBindings: [
+    { overlayId: "profile", closeFn: closeProfile },
+    { overlayId: "onboardingSheet", closeFn: closeOnboardingSheet },
+    { overlayId: "memberSelectSheet", closeFn: closeMemberSelect },
+    { overlayId: "editMemberSheet", closeFn: closeEditMember },
+    { overlayId: "pendingChangesSheet", closeFn: closePendingChanges }
+  ]
 });
 
 /* ================================= */

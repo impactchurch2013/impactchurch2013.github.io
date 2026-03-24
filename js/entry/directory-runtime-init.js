@@ -38,6 +38,19 @@ export function initializeDirectoryProfileSwipeBoot({
   });
 }
 
+export function initializeDirectorySheetSwipeBoot({
+  documentObj,
+  initializeSheetSwipeCloseFlowFn,
+  bindSwipeCloseToOverlayFn,
+  sheetSwipeBindings
+}){
+  initializeSheetSwipeCloseFlowFn({
+    documentObj,
+    bindSwipeCloseToOverlayFn,
+    sheetSwipeBindings
+  });
+}
+
 export function initializeDirectoryGlobalHandlersBoot({
   windowObj,
   bindGlobalWindowHandlersFlowFn,

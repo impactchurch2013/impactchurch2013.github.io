@@ -34,6 +34,28 @@ export function initializeProfileSwipeCloseFlow({
   );
 }
 
+export function initializeSheetSwipeCloseFlow({
+  sheetSwipeBindings,
+  bindSwipeCloseToOverlayFn,
+  documentObj
+}){
+  if(!Array.isArray(sheetSwipeBindings) || typeof bindSwipeCloseToOverlayFn !== "function"){
+    return;
+  }
+
+  sheetSwipeBindings.forEach((binding) => {
+    if(!binding || !binding.overlayId || typeof binding.closeFn !== "function"){
+      return;
+    }
+
+    bindSwipeCloseToOverlayFn({
+      documentObj,
+      overlayId: binding.overlayId,
+      closeFn: binding.closeFn
+    });
+  });
+}
+
 export function bindGlobalWindowHandlersFlow(windowObj, handlers, bindWindowHandlersFn){
   bindWindowHandlersFn(windowObj, handlers);
 }
