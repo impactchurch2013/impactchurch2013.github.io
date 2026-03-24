@@ -68,7 +68,7 @@ export function buildPendingDayListHtml(filtered, getPendingCreatedAtDateFn){
 export function buildUnresolvedPendingEmptyStateHtml(){
   return `
       <div onclick="restorePendingChangesYearView()"
-        style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+        style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
         ← Back
       </div>
       <h2>Unresolved</h2>
@@ -79,7 +79,7 @@ export function buildUnresolvedPendingEmptyStateHtml(){
 export function buildUnresolvedPendingListHtml(filtered, getPendingCreatedAtDateFn, escapeHtmlFn){
   let html = `
     <div onclick="restorePendingChangesYearView()"
-      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;">
+      style="padding:12px;cursor:pointer;color:#2b5cff;border-bottom:1px solid #eee;text-align:left;">
       ← Back
     </div>
     <h2>Unresolved</h2>
