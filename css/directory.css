@@ -328,16 +328,31 @@ align-items:stretch;
 justify-content:center;
 }
 
-.profile-box .profile-photo-examples img{
-width:auto;
-max-width:50%;
-height:76px;
-min-width:0;
+.profile-photo-examples-cell{
 flex:1 1 0;
+min-width:0;
+height:112px;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:6px;
+box-sizing:border-box;
 border-radius:8px;
-object-fit:cover;
+background:#f2f3f5;
+box-shadow:0 2px 8px rgba(0,0,0,.1);
+}
+
+.profile-box .profile-photo-examples-cell img{
+width:auto;
+height:auto;
+max-width:100%;
+max-height:100%;
+flex-shrink:1;
+border-radius:4px;
+object-fit:contain;
+object-position:center;
 margin:0;
-box-shadow:0 2px 8px rgba(0,0,0,.12);
+box-shadow:none;
 }
 
 .profile-photo-examples-hint{

@@ -102,8 +102,12 @@ export function openOnboardingEntry({
         <span>Profile photo (optional)</span>
         <div class="profile-photo-examples" aria-hidden="true">
           <div class="profile-photo-examples-row">
-            <img src="images/portrait.jpg" alt="" width="120" height="76" loading="lazy" decoding="async">
-            <img src="images/landscape.jpg" alt="" width="120" height="76" loading="lazy" decoding="async">
+            <div class="profile-photo-examples-cell">
+              <img src="images/portrait.jpg" alt="" loading="lazy" decoding="async">
+            </div>
+            <div class="profile-photo-examples-cell">
+              <img src="images/landscape.jpg" alt="" loading="lazy" decoding="async">
+            </div>
           </div>
           <p class="profile-photo-examples-hint">Centered subjects work best in directory images.</p>
         </div>
