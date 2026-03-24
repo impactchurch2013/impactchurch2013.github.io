@@ -8,6 +8,16 @@ export async function isUserAllowedByEmail(db, email, getDocFn, docFn){
   return userDoc.exists();
 }
 
+export async function isChurchAdminByEmailQuery(db, email, getDocFn, docFn){
+  const cleanEmail = String(email || "").toLowerCase().trim();
+  if(!cleanEmail){
+    return false;
+  }
+
+  const adminDoc = await getDocFn(docFn(db, "admins", cleanEmail));
+  return adminDoc.exists();
+}
+
 export async function getMemberProfileByEmailQuery(db, email, getDocsFn, collectionFn){
   const cleanEmail = String(email || "").toLowerCase().trim();
   if(!cleanEmail){

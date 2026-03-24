@@ -132,6 +132,7 @@ placeholder="Search members...">
 <div id="adminPanel" class="admin-panel">
   <button type="button" onclick="openInviteMemberDialog()">Invite</button>
   <button type="button" onclick="openMemberSelect()">Edit</button>
+  <button type="button" onclick="openGrantAdminFlow()">Grant Admin</button>
   <button type="button" onclick="openPendingChanges()">Pending Changes</button>
 </div>
 
@@ -209,6 +210,13 @@ placeholder="Search members...">
   <div class="profile-box">
     <div class="close-icon" onclick="closePendingChanges()">✕</div>
     <div id="pendingChangesContent"></div>
+  </div>
+</div>
+
+<div class="profile" id="grantAdminSheet">
+  <div class="profile-box">
+    <div class="close-icon" onclick="closeGrantAdminSheet()">✕</div>
+    <div id="grantAdminContent"></div>
   </div>
 </div>
 
@@ -295,8 +303,8 @@ import {
   savePendingMemberEdits,
   finalizeEditMemberSaveFlow
 } from "./js/shared/edit-member-save-utils.js";
-import { isUserAllowedByEmail, getMemberProfileByEmailQuery, hasPendingOnboardingSubmissionQuery } from "./js/shared/auth-query-utils.js";
-import { createAuthAllowlistFirestoreLoader, createAuthMemberProfileFirestoreLoader, createAuthPendingOnboardingFirestoreLoader, isUserAllowedEntry, getMemberProfileByEmailEntry, hasPendingOnboardingSubmissionEntry } from "./js/shared/auth-query-entry-utils.js";
+import { isUserAllowedByEmail, isChurchAdminByEmailQuery, getMemberProfileByEmailQuery, hasPendingOnboardingSubmissionQuery } from "./js/shared/auth-query-utils.js";
+import { createAuthAllowlistFirestoreLoader, createAuthMemberProfileFirestoreLoader, createAuthPendingOnboardingFirestoreLoader, createAuthAdminRoleFirestoreLoader, isUserAllowedEntry, isChurchAdminByEmailEntry, getMemberProfileByEmailEntry, hasPendingOnboardingSubmissionEntry } from "./js/shared/auth-query-entry-utils.js";
 import { SUPER_ADMINS, CHURCH_ADMINS } from "./js/shared/auth-role-config.js";
 import { applyAuthenticatedUiState, applyLoggedOutUiState, toggleEditorModeUi } from "./js/shared/auth-ui-utils.js";
 import { handleAuthenticatedSession, handleLoggedOutSession } from "./js/shared/auth-session-utils.js";
@@ -326,7 +334,7 @@ import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayLis
 import { buildPendingYearViewEntry, buildPendingMonthViewEntry, buildPendingDayListEntry, buildUnresolvedPendingListEntry } from "./js/shared/pending-view-entry-utils.js";
 import { openInviteMemberDialogUI, closeInviteMemberDialogUI, getInviteEmailInputValue, normalizeInviteEmail, isValidInviteEmail, buildMailtoUrl, openAdminEmailModalUI, closeAdminEmailModalUI, getAdminEmailModalValues } from "./js/shared/admin-modal-utils.js";
 import { openInviteMemberDialogFlow, closeInviteMemberDialogFlow, openAdminEmailModalFlow, closeAdminEmailModalFlow, sendAdminEmailFromModalFlow } from "./js/shared/admin-modal-flow-utils.js";
-import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet, bindSwipeCloseToOverlay } from "./js/shared/sheet-utils.js";
+import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet, openGrantAdminSheet, closeGrantAdminSheet as closeGrantAdminSheetUtil, bindSwipeCloseToOverlay } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
 import { showFamilyMemberProfileEntryFlow, openPhotoEntryFlow, closePhotoEntryFlow, bindWindowHandlers } from "./js/shared/ui-entry-utils.js";
 import { openPhotoViewer, closePhotoViewer } from "./js/shared/media-utils.js";
@@ -345,6 +353,8 @@ import { buildDirectoryGlobalHandlers, initializeDirectoryGlobalHandlersEntry } 
 import { PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE, PROFILE_SIGNIN_REQUIRED_MESSAGE, PROFILE_NAME_REQUIRED_MESSAGE, PROFILE_IMAGE_TOO_LARGE_MESSAGE, PROFILE_IMAGE_PROCESS_FAILED_MESSAGE, PROFILE_IMAGE_PREVIEW_PROCESS_FAILED_MESSAGE, PROFILE_SUBMIT_ONBOARDING_FAILED_MESSAGE, PROFILE_CHANGES_SUBMITTED_MESSAGE, ONBOARDING_COMPLETE_SUCCESS_MESSAGE, PROFILE_EDIT_OWN_ONLY_MESSAGE, PROFILE_LOAD_FAILED_MESSAGE, PROFILE_REFERENCE_MISSING_MESSAGE, PROFILE_SUBMIT_CHANGES_FAILED_MESSAGE } from "./js/shared/profile-messages.js";
 import { UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE, MEMBER_NOT_FOUND_MESSAGE, EDIT_MEMBER_NAME_REQUIRED_MESSAGE, PROFILE_UPDATED_MESSAGE, UPDATE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ADMIN_ONLY_MESSAGE, REMOVE_MEMBER_SUCCESS_MESSAGE, REMOVE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE, PENDING_ENTRY_NOT_FOUND_MESSAGE } from "./js/shared/directory-messages.js";
 import { createDirectoryAdminFirestoreLoader, deleteMemberFromDirectoryEntry } from "./js/shared/directory-admin-entry-utils.js";
+import { openGrantAdminFlow as openGrantAdminFlowUtil, selectMemberForGrantAdminFlow, buildGrantAdminConfirmHtml, confirmGrantAdminFlow } from "./js/shared/grant-admin-flow-utils.js";
+import { createGrantAdminFirestoreLoader, grantAdminByEmailEntry } from "./js/shared/grant-admin-entry-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -422,6 +432,15 @@ async function getMemberProfileByEmail(email){
     email,
     loadFirestoreFns: createAuthMemberProfileFirestoreLoader(),
     getMemberProfileByEmailQueryFn: getMemberProfileByEmailQuery
+  });
+}
+
+async function isChurchAdminByEmail(email){
+  return isChurchAdminByEmailEntry({
+    dbObj: db,
+    email,
+    loadFirestoreFns: createAuthAdminRoleFirestoreLoader(),
+    isChurchAdminByEmailQueryFn: isChurchAdminByEmailQuery
   });
 }
 
@@ -621,6 +640,7 @@ await initAuthEntryFlow({
   },
   sessionFns: {
     isUserAllowedFn: isUserAllowed,
+    isChurchAdminByEmailFn: isChurchAdminByEmail,
     getMemberProfileByEmailFn: getMemberProfileByEmail,
     hasPendingOnboardingSubmissionFn: hasPendingOnboardingSubmission,
     applyAuthenticatedUiStateFn: applyAuthenticatedUiState,
@@ -728,21 +748,33 @@ async function startPendingChangesCountListener(){
 /* OPEN MEMBER SELECTION SHEET       */
 /* ================================= */
 
-function renderMemberSelectContent(){
+function renderMemberSelectContent(options = null){
+  if(options && typeof options === "object"){
+    window.__memberSelectOptions = options;
+  }
+  const resolvedOptions = window.__memberSelectOptions || {};
+
   renderMemberSelectContentEntryFlow(
     document,
     members,
     escapeHtml,
-    renderMemberSelectContentUtil
+    renderMemberSelectContentUtil,
+    resolvedOptions
   );
 }
 
-function openMemberSelect(){
+function openMemberSelect(options = null){
+  const resolvedOptions = (options && typeof options === "object")
+    ? options
+    : (window.__memberSelectOptions || {});
+  window.__memberSelectOptions = resolvedOptions;
+
   openMemberSelectEntryFlow(
     document,
     openMemberSelectFlow,
     openMemberSelectSheet,
-    renderMemberSelectContent
+    renderMemberSelectContent,
+    resolvedOptions
   );
 }
 
@@ -751,6 +783,7 @@ function openMemberSelect(){
 /* ================================= */
 
 function closeMemberSelect(){
+  window.__memberSelectOptions = null;
   closeMemberSelectEntryFlow(
     document,
     closeMemberSelectFlow,
@@ -773,6 +806,58 @@ function selectMemberForEdit(memberId){
   // TEMP: just verify selection works
   // Next step will open edit sheet
 
+}
+
+function renderGrantAdminConfirm(target){
+  const contentEl = document.getElementById("grantAdminContent");
+  if(!contentEl){
+    return;
+  }
+  contentEl.innerHTML = buildGrantAdminConfirmHtml(target, escapeHtml);
+}
+
+function openGrantAdminFlow(){
+  openGrantAdminFlowUtil({
+    isChurchAdmin: window.isChurchAdmin,
+    alertFn: alert,
+    openMemberSelectFn: (options) => openMemberSelect(options),
+    setGrantAdminTargetFn: (next) => { window.__grantAdminTarget = next; }
+  });
+}
+
+function selectMemberForGrantAdmin(memberId){
+  selectMemberForGrantAdminFlow({
+    members,
+    memberId,
+    alertFn: alert,
+    setGrantAdminTargetFn: (next) => { window.__grantAdminTarget = next; },
+    renderGrantAdminConfirmFn: renderGrantAdminConfirm,
+    closeMemberSelectFn: closeMemberSelect,
+    openGrantAdminSheetFn: () => openGrantAdminSheet(document)
+  });
+}
+
+function closeGrantAdminSheet(){
+  window.__grantAdminTarget = null;
+  const contentEl = document.getElementById("grantAdminContent");
+  if(contentEl){
+    contentEl.innerHTML = "";
+  }
+  closeGrantAdminSheetUtil(document);
+}
+
+async function confirmGrantAdmin(){
+  await confirmGrantAdminFlow({
+    isChurchAdmin: window.isChurchAdmin,
+    alertFn: alert,
+    getGrantAdminTargetFn: () => window.__grantAdminTarget,
+    grantAdminByEmailFn: grantAdminByEmailEntry,
+    dbObj: db,
+    currentUser: window.currentUser,
+    loadFirestoreFns: createGrantAdminFirestoreLoader(),
+    closeGrantAdminSheetFn: closeGrantAdminSheet,
+    clearGrantAdminTargetFn: () => { window.__grantAdminTarget = null; }
+  });
 }
 
 /* ================================= */
@@ -1177,6 +1262,8 @@ let members = []
 let lastViewedProfile = null
 let returnToFamily = null
 let savedScrollPosition = 0
+window.__memberSelectOptions = null
+window.__grantAdminTarget = null
    
 /* ================================= */
 /* LOAD MEMBERS DATA                  */
@@ -1386,7 +1473,8 @@ initializeDirectorySheetSwipeBoot({
     { overlayId: "onboardingSheet", closeFn: closeOnboardingSheet },
     { overlayId: "memberSelectSheet", closeFn: closeMemberSelect },
     { overlayId: "editMemberSheet", closeFn: closeEditMember },
-    { overlayId: "pendingChangesSheet", closeFn: closePendingChanges }
+    { overlayId: "pendingChangesSheet", closeFn: closePendingChanges },
+    { overlayId: "grantAdminSheet", closeFn: closeGrantAdminSheet }
   ]
 });
 
@@ -1472,6 +1560,10 @@ initializeDirectoryGlobalHandlersEntry({
     openMemberSelect,
     closeMemberSelect,
     selectMemberForEdit,
+    openGrantAdminFlow,
+    selectMemberForGrantAdmin,
+    closeGrantAdminSheet,
+    confirmGrantAdmin,
     openEditMember,
     closeEditMember,
     saveMemberChanges,

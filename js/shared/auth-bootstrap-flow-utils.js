@@ -39,6 +39,7 @@ export async function handleAuthStateChangeFlow({
   authObj,
   signOutFn,
   isUserAllowedFn,
+  isChurchAdminByEmailFn,
   getMemberProfileByEmailFn,
   hasPendingOnboardingSubmissionFn,
   superAdmins,
@@ -67,6 +68,7 @@ export async function handleAuthStateChangeFlow({
       auth: authObj,
       signOutFn,
       isUserAllowedFn,
+      isChurchAdminByEmailFn,
       onAllowedCheckedFn: (allowed) => {
         logFn("Allowed check result:", allowed);
       },

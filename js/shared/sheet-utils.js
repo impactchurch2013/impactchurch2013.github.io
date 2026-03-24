@@ -167,3 +167,11 @@ export function closeEditMemberSheet(documentObj, clearEditMemberPhotoStateFn){
 export function openEditMemberSheet(documentObj){
   openSheetById(documentObj, "editMemberSheet");
 }
+
+export function openGrantAdminSheet(documentObj){
+  openSheetById(documentObj, "grantAdminSheet");
+}
+
+export function closeGrantAdminSheet(documentObj){
+  closeSheetById(documentObj, "grantAdminSheet");
+}

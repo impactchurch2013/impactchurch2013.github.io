@@ -117,6 +117,7 @@ export async function initAuthEntryFlow({
       authObj,
       signOutFn: authFns.signOutFn,
       isUserAllowedFn: sessionFns.isUserAllowedFn,
+      isChurchAdminByEmailFn: sessionFns.isChurchAdminByEmailFn,
       getMemberProfileByEmailFn: sessionFns.getMemberProfileByEmailFn,
       hasPendingOnboardingSubmissionFn: sessionFns.hasPendingOnboardingSubmissionFn,
       superAdmins: roleConfig.superAdmins,

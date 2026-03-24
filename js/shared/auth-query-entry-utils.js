@@ -16,6 +16,12 @@ export function createAuthPendingOnboardingFirestoreLoader(){
   );
 }
 
+export function createAuthAdminRoleFirestoreLoader(){
+  return async () => import(
+    "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  );
+}
+
 export async function isUserAllowedEntry({
   dbObj,
   email,
@@ -51,4 +57,14 @@ export async function hasPendingOnboardingSubmissionEntry({
     query,
     where
   );
+}
+
+export async function isChurchAdminByEmailEntry({
+  dbObj,
+  email,
+  loadFirestoreFns,
+  isChurchAdminByEmailQueryFn
+}){
+  const { getDoc, doc } = await loadFirestoreFns();
+  return isChurchAdminByEmailQueryFn(dbObj, email, getDoc, doc);
 }

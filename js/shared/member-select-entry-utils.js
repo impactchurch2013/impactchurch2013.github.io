@@ -2,18 +2,20 @@ export function renderMemberSelectContentEntryFlow(
   documentObj,
   members,
   escapeHtmlFn,
-  renderMemberSelectContentUtilFn
+  renderMemberSelectContentUtilFn,
+  options = {}
 ){
-  renderMemberSelectContentUtilFn(documentObj, members, escapeHtmlFn);
+  renderMemberSelectContentUtilFn(documentObj, members, escapeHtmlFn, options);
 }
 
 export function openMemberSelectEntryFlow(
   documentObj,
   openMemberSelectFlowFn,
   openMemberSelectSheetFn,
-  renderMemberSelectContentFn
+  renderMemberSelectContentFn,
+  options = {}
 ){
-  openMemberSelectFlowFn(documentObj, openMemberSelectSheetFn, renderMemberSelectContentFn);
+  openMemberSelectFlowFn(documentObj, openMemberSelectSheetFn, renderMemberSelectContentFn, options);
 }
 
 export function closeMemberSelectEntryFlow(

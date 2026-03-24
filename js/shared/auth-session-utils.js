@@ -3,6 +3,7 @@ export async function handleAuthenticatedSession({
   auth,
   signOutFn,
   isUserAllowedFn,
+  isChurchAdminByEmailFn,
   onAllowedCheckedFn,
   getMemberProfileByEmailFn,
   hasPendingOnboardingSubmissionFn,
@@ -41,7 +42,10 @@ export async function handleAuthenticatedSession({
   const onboardingPending = await hasPendingOnboardingSubmissionFn(user.email);
 
   const isSuperAdmin = superAdmins.includes(email);
-  const isChurchAdmin = churchAdmins.includes(email) || isSuperAdmin;
+  const isFirestoreAdmin = isChurchAdminByEmailFn
+    ? await isChurchAdminByEmailFn(email)
+    : false;
+  const isChurchAdmin = churchAdmins.includes(email) || isSuperAdmin || isFirestoreAdmin;
   setAdminFlagsFn(isSuperAdmin, isChurchAdmin);
 
   applyAuthenticatedUiStateFn(
