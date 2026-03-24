@@ -11,6 +11,7 @@ export function applyAuthenticatedUiState(
 
   if(editorToggleBtnEl && editorToggleBtnEl.style){
     editorToggleBtnEl.style.display = isAdmin ? "inline-flex" : "none";
+    editorToggleBtnEl.textContent = "Editor Mode";
   }
   if(appEl && appEl.style){
     appEl.style.display = "block";
@@ -91,10 +92,10 @@ export function toggleEditorModeUi(
   windowObj.isEditor = !windowObj.isEditor;
 
   if(windowObj.isEditor){
-    editorToggleBtnEl.textContent = "Disable Editor Mode";
+    editorToggleBtnEl.textContent = "Exit Editor";
     showEditorUiFn();
   }else{
-    editorToggleBtnEl.textContent = "Enable Editor Mode";
+    editorToggleBtnEl.textContent = "Editor Mode";
     hideEditorUiFn();
   }
 }
