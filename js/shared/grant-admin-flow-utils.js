@@ -124,6 +124,7 @@ export async function confirmGrantAdminFlow({
   dbObj,
   currentUser,
   loadFirestoreFns,
+  appendAdminLogEntryFn,
   closeGrantAdminSheetFn,
   clearAdminActionTargetFn
 }){
@@ -144,6 +145,14 @@ export async function confirmGrantAdminFlow({
       currentUser,
       loadFirestoreFns
     });
+    await appendAdminLogEntryFn({
+      dbObj,
+      action: "grant_admin",
+      targetEmail: target.email,
+      targetName: target.name,
+      performedBy: currentUser && currentUser.email,
+      loadFirestoreFns
+    });
     alertFn(`${target.name} now has admin access.`);
     clearAdminActionTargetFn();
     closeGrantAdminSheetFn();
@@ -159,7 +168,9 @@ export async function confirmRevokeAdminFlow({
   getAdminActionTargetFn,
   revokeAdminByEmailFn,
   dbObj,
+  currentUser,
   loadFirestoreFns,
+  appendAdminLogEntryFn,
   closeGrantAdminSheetFn,
   clearAdminActionTargetFn,
   superAdmins = []
@@ -183,6 +194,14 @@ export async function confirmRevokeAdminFlow({
     await revokeAdminByEmailFn({
       dbObj,
       email: target.email,
+      loadFirestoreFns
+    });
+    await appendAdminLogEntryFn({
+      dbObj,
+      action: "revoke_admin",
+      targetEmail: target.email,
+      targetName: target.name,
+      performedBy: currentUser && currentUser.email,
       loadFirestoreFns
     });
     alertFn(`${target.name} no longer has admin access.`);

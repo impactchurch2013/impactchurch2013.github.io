@@ -25,7 +25,8 @@ export async function executeApprovePendingChangeEntry({
   mapChangesToMemberFn,
   applyPendingApprovalToMembersFn,
   approveMissingMemberReferenceMessage,
-  removePendingChangeFn,
+  resolvePendingChangeStatusFn,
+  currentUser,
   getPendingMemberEmailFn,
   getPendingFirstNameFn,
   buildApprovedPendingEmailBodyFn,
@@ -49,7 +50,7 @@ export async function executeApprovePendingChangeEntry({
   }
 
   try {
-    const { doc, getDoc, updateDoc, addDoc, collection, deleteDoc } = await loadFirestoreFns();
+    const { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } = await loadFirestoreFns();
 
     const changeRef = createPendingChangeRefFn(doc, dbObj, pendingId);
     const snap = await getPendingChangeSnapshotFn(getDoc, changeRef);
@@ -70,6 +71,7 @@ export async function executeApprovePendingChangeEntry({
     const approvalResult = await applyPendingApprovalToMembersFn(
       row,
       memberPayload,
+      currentUser && currentUser.email,
       dbObj,
       doc,
       updateDoc,
@@ -81,7 +83,13 @@ export async function executeApprovePendingChangeEntry({
       return;
     }
 
-    await removePendingChangeFn(deleteDoc, changeRef);
+    await resolvePendingChangeStatusFn(
+      updateDoc,
+      serverTimestamp,
+      changeRef,
+      "approved",
+      currentUser && currentUser.email
+    );
 
     const memberEmail = getPendingMemberEmailFn(changes);
     const firstName = getPendingFirstNameFn(changes);
@@ -126,7 +134,8 @@ export async function executeDenyPendingChangeEntry({
   pendingChangeMissingMessage,
   refreshAndRebuildUnresolvedFn,
   extractPendingRowAndChangesFn,
-  removePendingChangeFn,
+  resolvePendingChangeStatusFn,
+  currentUser,
   getPendingMemberEmailFn,
   buildDeniedPendingEmailBodyFn,
   runDenyPendingPostActionFn,
@@ -148,7 +157,7 @@ export async function executeDenyPendingChangeEntry({
   }
 
   try{
-    const { doc, getDoc, deleteDoc } = await loadFirestoreFns();
+    const { doc, getDoc, updateDoc, serverTimestamp } = await loadFirestoreFns();
 
     const changeRef = createPendingChangeRefFn(doc, dbObj, pendingId);
     const snap = await getPendingChangeSnapshotFn(getDoc, changeRef);
@@ -166,7 +175,13 @@ export async function executeDenyPendingChangeEntry({
     const { changes } = extractPendingRowAndChangesFn(snap);
     const memberEmail = getPendingMemberEmailFn(changes);
 
-    await removePendingChangeFn(deleteDoc, changeRef);
+    await resolvePendingChangeStatusFn(
+      updateDoc,
+      serverTimestamp,
+      changeRef,
+      "denied",
+      currentUser && currentUser.email
+    );
 
     const emailBody = buildDeniedPendingEmailBodyFn();
 

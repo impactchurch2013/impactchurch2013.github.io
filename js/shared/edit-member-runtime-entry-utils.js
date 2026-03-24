@@ -215,7 +215,8 @@ export async function saveMemberChangesEntry({
         updateDocFn: updateDoc,
         docFn: doc,
         dbObj,
-        formValues: values
+        formValues: values,
+        currentUser
       });
 
       alertFn(profileUpdatedMessage);

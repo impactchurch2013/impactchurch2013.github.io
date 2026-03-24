@@ -103,7 +103,7 @@ export async function resolvePendingEditMemberPhotoUrl(
   return getDownloadURLFn(storageRef);
 }
 
-export function buildAdminMemberUpdatePayload(formValues, photoUrl){
+export function buildAdminMemberUpdatePayload(formValues, photoUrl, updatedBy){
   return {
     firstName: formValues.firstName,
     lastName: formValues.lastName,
@@ -119,7 +119,8 @@ export function buildAdminMemberUpdatePayload(formValues, photoUrl){
     birthday: formValues.birthday,
     anniversary: formValues.anniversary,
     photo: photoUrl,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
+    updatedBy: String(updatedBy || "").toLowerCase().trim()
   };
 }
 
@@ -178,7 +179,8 @@ export async function saveAdminMemberEdits({
   updateDocFn,
   docFn,
   dbObj,
-  formValues
+  formValues,
+  currentUser
 }){
   const photoOut = await resolveAdminEditMemberPhotoUrl(
     existingPhoto,
@@ -193,7 +195,11 @@ export async function saveAdminMemberEdits({
 
   await updateDocFn(
     docFn(dbObj, "members", memberId),
-    buildAdminMemberUpdatePayload(formValues, photoOut)
+    buildAdminMemberUpdatePayload(
+      formValues,
+      photoOut,
+      currentUser && currentUser.email
+    )
   );
 
   return photoOut;

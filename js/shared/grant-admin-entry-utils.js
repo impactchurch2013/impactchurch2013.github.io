@@ -33,3 +33,21 @@ export async function revokeAdminByEmailEntry({
   const { deleteDoc, doc } = await loadFirestoreFns();
   await deleteDoc(doc(dbObj, "admins", cleanEmail));
 }
+
+export async function appendAdminLogEntry({
+  dbObj,
+  action,
+  targetEmail,
+  targetName,
+  performedBy,
+  loadFirestoreFns
+}){
+  const { addDoc, collection, serverTimestamp } = await loadFirestoreFns();
+  await addDoc(collection(dbObj, "adminLogs"), {
+    action: String(action || ""),
+    targetEmail: normalizeEmail(targetEmail),
+    targetName: String(targetName || "").trim(),
+    performedBy: normalizeEmail(performedBy),
+    createdAt: serverTimestamp()
+  });
+}

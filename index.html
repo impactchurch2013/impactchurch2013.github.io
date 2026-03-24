@@ -134,6 +134,7 @@ placeholder="Search members...">
   <button type="button" onclick="openMemberSelect()">Edit</button>
   <button type="button" onclick="openGrantAdminFlow()">Grant Admin</button>
   <button type="button" onclick="openRevokeAdminFlow()">Revoke Admin</button>
+  <button type="button" onclick="openAdminLogs()">Admin Logs</button>
   <button type="button" onclick="openPendingChanges()">Pending Changes</button>
 </div>
 
@@ -218,6 +219,13 @@ placeholder="Search members...">
   <div class="profile-box">
     <div class="close-icon" onclick="closeGrantAdminSheet()">✕</div>
     <div id="grantAdminContent"></div>
+  </div>
+</div>
+
+<div class="profile" id="adminLogsSheet">
+  <div class="profile-box">
+    <div class="close-icon" onclick="closeAdminLogs()">✕</div>
+    <div id="adminLogsContent"></div>
   </div>
 </div>
 
@@ -326,16 +334,19 @@ import { ADMIN_EMAIL_SUBJECT_APPROVED, ADMIN_EMAIL_SUBJECT_DENIED, APPROVED_NOTI
 import { INVITE_ADMIN_ONLY_MESSAGE, INVITE_EMAIL_REQUIRED_MESSAGE, INVITE_EMAIL_INVALID_MESSAGE, INVITE_ALLOWLIST_WRITE_FAILED_MESSAGE, ADMIN_EMAIL_TO_REQUIRED_MESSAGE, APPROVE_ADMIN_ONLY_MESSAGE, APPROVE_CONFIRM_MESSAGE, PENDING_CHANGE_MISSING_MESSAGE, APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE, APPROVE_SUCCESS_MESSAGE, APPROVE_FAILED_MESSAGE, DENY_ADMIN_ONLY_MESSAGE, DENY_CONFIRM_MESSAGE, DENY_SUCCESS_MESSAGE, DENY_FAILED_MESSAGE } from "./js/shared/pending-messages.js";
 import { getPendingMemberEmail, getPendingFirstName, buildApprovedPendingEmailBody, buildDeniedPendingEmailBody, buildPendingEmailModalOptions } from "./js/shared/pending-action-utils.js";
 import { ensurePendingReviewAdminAccess, ensurePendingReviewConfirmed, handleMissingPendingReviewSnapshot, runApprovePendingPostAction, runDenyPendingPostAction, maybeOpenPendingReviewEmailModal } from "./js/shared/pending-review-flow-utils.js";
-import { createPendingChangeRef, getPendingChangeSnapshot, isPendingSnapshotMissing, extractPendingRowAndChanges, applyPendingApprovalToMembers, removePendingChange } from "./js/shared/pending-firestore-utils.js";
+import { createPendingChangeRef, getPendingChangeSnapshot, isPendingSnapshotMissing, extractPendingRowAndChanges, applyPendingApprovalToMembers, resolvePendingChangeStatus } from "./js/shared/pending-firestore-utils.js";
 import { createPendingReviewFirestoreLoader, executeApprovePendingChangeEntry, executeDenyPendingChangeEntry } from "./js/shared/pending-review-entry-utils.js";
 import { createInviteAllowlistFirestoreLoader, executeOpenUnresolvedPendingDetailEntry, executeSubmitInviteMemberEntry } from "./js/shared/pending-admin-entry-utils.js";
 import { buildPendingChangePayload, submitPendingChangeToFirestore } from "./js/shared/pending-submit-utils.js";
 import { createPendingSubmitFirestoreLoader, submitPendingChangeEntry } from "./js/shared/pending-submit-entry-utils.js";
 import { buildPendingYearViewHtml, buildPendingMonthViewHtml, buildPendingDayListHtml, buildUnresolvedPendingEmptyStateHtml, buildUnresolvedPendingListHtml } from "./js/shared/pending-render-utils.js";
 import { buildPendingYearViewEntry, buildPendingMonthViewEntry, buildPendingDayListEntry, buildUnresolvedPendingListEntry } from "./js/shared/pending-view-entry-utils.js";
+import { createAdminLogsFirestoreLoader, loadAdminLogsData, getAdminLogCreatedAtDate, groupAdminLogsByYear, groupAdminLogsByMonth, groupAdminLogsByDay, filterAdminLogsByDay } from "./js/shared/admin-logs-utils.js";
+import { buildAdminLogsYearViewHtml, buildAdminLogsMonthViewHtml, buildAdminLogsDayListHtml, buildAdminLogsResultsHtml } from "./js/shared/admin-logs-render-utils.js";
+import { renderAdminLogsYearView, renderAdminLogsMonthView, renderAdminLogsDayListView, renderAdminLogsResultsView } from "./js/shared/admin-logs-flow-utils.js";
 import { openInviteMemberDialogUI, closeInviteMemberDialogUI, getInviteEmailInputValue, normalizeInviteEmail, isValidInviteEmail, buildMailtoUrl, openAdminEmailModalUI, closeAdminEmailModalUI, getAdminEmailModalValues } from "./js/shared/admin-modal-utils.js";
 import { openInviteMemberDialogFlow, closeInviteMemberDialogFlow, openAdminEmailModalFlow, closeAdminEmailModalFlow, sendAdminEmailFromModalFlow } from "./js/shared/admin-modal-flow-utils.js";
-import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet, openGrantAdminSheet, closeGrantAdminSheet as closeGrantAdminSheetUtil, bindSwipeCloseToOverlay } from "./js/shared/sheet-utils.js";
+import { closePendingChangesSheet, openPendingChangesSheet, openSheet as openSheetUtil, closeOnboardingSheet as closeOnboardingSheetUtil, openMemberSelectSheet, closeMemberSelectSheet, closeEditMemberSheet, openEditMemberSheet, openGrantAdminSheet, closeGrantAdminSheet as closeGrantAdminSheetUtil, openAdminLogsSheet, closeAdminLogsSheet as closeAdminLogsSheetUtil, bindSwipeCloseToOverlay } from "./js/shared/sheet-utils.js";
 import { showEditorUI as showEditorUIUtil, hideEditorUI as hideEditorUIUtil, setPendingChangesCountText as setPendingChangesCountTextUtil } from "./js/shared/ui-utils.js";
 import { showFamilyMemberProfileEntryFlow, openPhotoEntryFlow, closePhotoEntryFlow, bindWindowHandlers } from "./js/shared/ui-entry-utils.js";
 import { openPhotoViewer, closePhotoViewer } from "./js/shared/media-utils.js";
@@ -355,7 +366,7 @@ import { PROFILE_SIGNIN_REQUIRED_SAVE_MESSAGE, PROFILE_SIGNIN_REQUIRED_MESSAGE, 
 import { UNAUTHORIZED_DIRECTORY_ACCESS_MESSAGE, MEMBER_NOT_FOUND_MESSAGE, EDIT_MEMBER_NAME_REQUIRED_MESSAGE, PROFILE_UPDATED_MESSAGE, UPDATE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ADMIN_ONLY_MESSAGE, REMOVE_MEMBER_SUCCESS_MESSAGE, REMOVE_MEMBER_FAILED_MESSAGE, REMOVE_MEMBER_ACCESS_CLEANUP_FAILED_MESSAGE, PENDING_ENTRY_NOT_FOUND_MESSAGE } from "./js/shared/directory-messages.js";
 import { createDirectoryAdminFirestoreLoader, deleteMemberFromDirectoryEntry } from "./js/shared/directory-admin-entry-utils.js";
 import { openGrantAdminFlow as openGrantAdminFlowUtil, openRevokeAdminFlow as openRevokeAdminFlowUtil, selectMemberForGrantAdminFlow, selectMemberForRevokeAdminFlow, buildAdminActionConfirmHtml, confirmGrantAdminFlow, confirmRevokeAdminFlow } from "./js/shared/grant-admin-flow-utils.js";
-import { createGrantAdminFirestoreLoader, grantAdminByEmailEntry, revokeAdminByEmailEntry } from "./js/shared/grant-admin-entry-utils.js";
+import { createGrantAdminFirestoreLoader, grantAdminByEmailEntry, revokeAdminByEmailEntry, appendAdminLogEntry } from "./js/shared/grant-admin-entry-utils.js";
 import { normalizeLoginEmail as normalizeLoginEmailUtil, getLoginCredentials as getLoginCredentialsUtil, setLoginFeedback as setLoginFeedbackUtil, ensureAllowedEmail as ensureAllowedEmailUtil, createGoogleProvider } from "./js/auth/login-utils.js";
 
 const { auth, db, authReady } = window.firebase;
@@ -880,6 +891,7 @@ async function confirmGrantAdmin(){
     dbObj: db,
     currentUser: window.currentUser,
     loadFirestoreFns: createGrantAdminFirestoreLoader(),
+    appendAdminLogEntryFn: appendAdminLogEntry,
     closeGrantAdminSheetFn: closeGrantAdminSheet,
     clearAdminActionTargetFn: () => { window.__grantAdminTarget = null; }
   });
@@ -892,7 +904,9 @@ async function confirmRevokeAdmin(){
     getAdminActionTargetFn: () => window.__grantAdminTarget,
     revokeAdminByEmailFn: revokeAdminByEmailEntry,
     dbObj: db,
+    currentUser: window.currentUser,
     loadFirestoreFns: createGrantAdminFirestoreLoader(),
+    appendAdminLogEntryFn: appendAdminLogEntry,
     closeGrantAdminSheetFn: closeGrantAdminSheet,
     clearAdminActionTargetFn: () => { window.__grantAdminTarget = null; },
     superAdmins: SUPER_ADMINS
@@ -1198,7 +1212,8 @@ async function approvePendingChange(pendingId){
     mapChangesToMemberFn: mapChangesToMember,
     applyPendingApprovalToMembersFn: applyPendingApprovalToMembers,
     approveMissingMemberReferenceMessage: APPROVE_MISSING_MEMBER_REFERENCE_MESSAGE,
-    removePendingChangeFn: removePendingChange,
+    resolvePendingChangeStatusFn: resolvePendingChangeStatus,
+    currentUser: window.currentUser,
     getPendingMemberEmailFn: getPendingMemberEmail,
     getPendingFirstNameFn: getPendingFirstName,
     buildApprovedPendingEmailBodyFn: buildApprovedPendingEmailBody,
@@ -1235,7 +1250,8 @@ async function denyPendingChange(pendingId){
     pendingChangeMissingMessage: PENDING_CHANGE_MISSING_MESSAGE,
     refreshAndRebuildUnresolvedFn: refreshAndRebuildUnresolved,
     extractPendingRowAndChangesFn: extractPendingRowAndChanges,
-    removePendingChangeFn: removePendingChange,
+    resolvePendingChangeStatusFn: resolvePendingChangeStatus,
+    currentUser: window.currentUser,
     getPendingMemberEmailFn: getPendingMemberEmail,
     buildDeniedPendingEmailBodyFn: buildDeniedPendingEmailBody,
     runDenyPendingPostActionFn: runDenyPendingPostAction,
@@ -1292,6 +1308,78 @@ function closePendingChanges(){
     documentObj: document
   });
 }
+
+/* ================================= */
+/* ADMIN LOGS SHEET                  */
+/* ================================= */
+
+function buildAdminLogsYearView(logs){
+  window.adminLogsData = Array.isArray(logs) ? logs : [];
+  renderAdminLogsYearView(
+    document,
+    window.adminLogsData,
+    groupAdminLogsByYear,
+    buildAdminLogsYearViewHtml
+  );
+}
+
+function restoreAdminLogsYearView(){
+  buildAdminLogsYearView(window.adminLogsData);
+}
+
+function buildAdminLogsMonthView(year){
+  renderAdminLogsMonthView(
+    document,
+    window.adminLogsData,
+    year,
+    groupAdminLogsByMonth,
+    buildAdminLogsMonthViewHtml
+  );
+}
+
+function buildAdminLogsDayList(year, month){
+  renderAdminLogsDayListView(
+    document,
+    window.adminLogsData,
+    year,
+    month,
+    groupAdminLogsByDay,
+    buildAdminLogsDayListHtml
+  );
+}
+
+function buildAdminLogsResults(year, month, day){
+  renderAdminLogsResultsView(
+    document,
+    window.adminLogsData,
+    year,
+    month,
+    day,
+    filterAdminLogsByDay,
+    buildAdminLogsResultsHtml,
+    getAdminLogCreatedAtDate,
+    escapeHtml
+  );
+}
+
+async function loadAdminLogs(){
+  const { getDocs, collection } = await createAdminLogsFirestoreLoader()();
+  const logs = await loadAdminLogsData(db, getDocs, collection);
+  buildAdminLogsYearView(logs);
+}
+
+async function openAdminLogs(){
+  if(!window.isChurchAdmin){
+    alert("Only admins can view admin logs.");
+    return;
+  }
+  await loadAdminLogs();
+  openAdminLogsSheet(document);
+}
+
+function closeAdminLogs(){
+  closeAdminLogsSheetUtil(document);
+}
    
 /* ================================= */
 /* GLOBAL DATA STORE                 */
@@ -1304,6 +1392,7 @@ let savedScrollPosition = 0
 window.__memberSelectOptions = null
 window.__grantAdminTarget = null
 window.__adminActionMode = "grant"
+window.adminLogsData = []
    
 /* ================================= */
 /* LOAD MEMBERS DATA                  */
@@ -1514,7 +1603,8 @@ initializeDirectorySheetSwipeBoot({
     { overlayId: "memberSelectSheet", closeFn: closeMemberSelect },
     { overlayId: "editMemberSheet", closeFn: closeEditMember },
     { overlayId: "pendingChangesSheet", closeFn: closePendingChanges },
-    { overlayId: "grantAdminSheet", closeFn: closeGrantAdminSheet }
+    { overlayId: "grantAdminSheet", closeFn: closeGrantAdminSheet },
+    { overlayId: "adminLogsSheet", closeFn: closeAdminLogs }
   ]
 });
 
@@ -1621,6 +1711,12 @@ initializeDirectoryGlobalHandlersEntry({
     buildDayList,
     buildUnresolvedList,
     restorePendingChangesYearView,
+    openAdminLogs,
+    closeAdminLogs,
+    restoreAdminLogsYearView,
+    buildAdminLogsMonthView,
+    buildAdminLogsDayList,
+    buildAdminLogsResults,
     openUnresolvedPendingDetail,
     approvePendingChange,
     denyPendingChange,

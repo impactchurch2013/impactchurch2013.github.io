@@ -21,6 +21,7 @@ export function extractPendingRowAndChanges(snapshot){
 export async function applyPendingApprovalToMembers(
   row,
   memberPayload,
+  resolvedByEmail,
   db,
   docFn,
   updateDocFn,
@@ -28,17 +29,22 @@ export async function applyPendingApprovalToMembers(
   collectionFn
 ){
   const ch = (row && row.changes) || {};
+  const normalizedResolvedBy = String(resolvedByEmail || "").toLowerCase().trim();
 
   if(ch.onboarding){
     await addDocFn(collectionFn(db, "members"), {
       ...memberPayload,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedBy: normalizedResolvedBy
     });
     return { ok: true };
   }
 
   if(row && row.memberId){
-    await updateDocFn(docFn(db, "members", row.memberId), memberPayload);
+    await updateDocFn(docFn(db, "members", row.memberId), {
+      ...memberPayload,
+      updatedBy: normalizedResolvedBy
+    });
     return { ok: true };
   }
 
@@ -47,4 +53,18 @@ export async function applyPendingApprovalToMembers(
 
 export async function removePendingChange(deleteDocFn, changeRef){
   await deleteDocFn(changeRef);
+}
+
+export async function resolvePendingChangeStatus(
+  updateDocFn,
+  serverTimestampFn,
+  changeRef,
+  status,
+  resolvedByEmail
+){
+  await updateDocFn(changeRef, {
+    status,
+    resolvedBy: String(resolvedByEmail || "").toLowerCase().trim(),
+    resolvedAt: serverTimestampFn()
+  });
 }

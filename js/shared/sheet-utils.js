@@ -175,3 +175,11 @@ export function openGrantAdminSheet(documentObj){
 export function closeGrantAdminSheet(documentObj){
   closeSheetById(documentObj, "grantAdminSheet");
 }
+
+export function openAdminLogsSheet(documentObj){
+  openSheetById(documentObj, "adminLogsSheet");
+}
+
+export function closeAdminLogsSheet(documentObj){
+  closeSheetById(documentObj, "adminLogsSheet");
+}
