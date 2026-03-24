@@ -1,8 +1,12 @@
 import { buildIndexEntryUrl } from "../shared/entry-page-redirect-utils.js";
 import { resolveEntryMode, shouldUseLegacyRedirect } from "./entry-mode-utils.js";
+import { getEntryDefaultMode, ENTRY_FORCE_LEGACY_PARAM } from "./entry-cutover-config.js";
 
 export function resolveLoginEntryMode(windowObj){
-  return resolveEntryMode(windowObj, "loginMode");
+  return resolveEntryMode(windowObj, "loginMode", {
+    defaultMode: getEntryDefaultMode(),
+    forceLegacyParam: ENTRY_FORCE_LEGACY_PARAM
+  });
 }
 
 export function shouldFallbackLoginToIndex(entryMode){

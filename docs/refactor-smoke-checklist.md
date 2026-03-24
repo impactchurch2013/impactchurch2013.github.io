@@ -55,3 +55,9 @@ Run this checklist after each small refactor slice.
 - In a new tab, open `login.html?loginMode=standalone` and verify standalone shell is preserved.
 - In a new tab, open `directory.html?directoryMode=standalone` and verify standalone shell is preserved.
 - End with one normal app reload on canonical `directory.html` while signed in.
+
+## Sprint 7 Cutover And Rollback
+- Verify default mode currently stays on legacy redirect behavior for both `login.html` and `directory.html`.
+- Confirm rollback param `?entryLegacy=1` forces legacy redirect behavior even when standalone query params are present.
+- Confirm `entryLegacy` is preserved through the redirect to `index.html` for rollback stability.
+- Confirm canonical URL sync still strips transitional entry mode params (`entry`, `loginMode`, `directoryMode`).

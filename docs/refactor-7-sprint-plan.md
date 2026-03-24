@@ -36,10 +36,10 @@ This tracks the remaining major refactor as larger, deliberate chunks.
 - Enable standalone runtime behind explicit mode switches and test gates.
 - Align URL routing/canonical behavior for login and directory pages.
 - Remove transitional duplication once parity is verified.
-- Status: ready for verification.
+- Status: completed.
 
 ## Sprint 7: Final Cutover + Verification
 - Promote multi-page runtime path to primary path.
 - Keep rollback option briefly, then retire legacy bootstrap path.
 - Execute full smoke checklist and update docs.
-- Status: pending.
+- Status: ready for verification.

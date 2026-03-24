@@ -1,5 +1,6 @@
 import { buildIndexEntryUrl } from "../shared/entry-page-redirect-utils.js";
 import { resolveEntryMode, shouldUseLegacyRedirect } from "./entry-mode-utils.js";
+import { getEntryDefaultMode, ENTRY_FORCE_LEGACY_PARAM } from "./entry-cutover-config.js";
 
 export function initializeDirectoryPreAuthBoot({
   documentObj,
@@ -52,7 +53,10 @@ export function initializeDirectoryGlobalHandlersBoot({
 }
 
 export function resolveDirectoryEntryMode(windowObj){
-  return resolveEntryMode(windowObj, "directoryMode");
+  return resolveEntryMode(windowObj, "directoryMode", {
+    defaultMode: getEntryDefaultMode(),
+    forceLegacyParam: ENTRY_FORCE_LEGACY_PARAM
+  });
 }
 
 export function shouldFallbackToIndex(entryMode){
