@@ -28,9 +28,12 @@ service cloud.firestore {
         );
     }
 
-    // Allowlist: document id = lowercase email (see isUserAllowed in index.html)
+    // Allowlist: document id = lowercase email.
+    // `get` is open so pre-auth invite checks can verify a single email doc.
+    // `list` stays authenticated-only to prevent broad scraping.
     match /allowedUsers/{docId} {
-      allow read: if request.auth != null;
+      allow get: if true;
+      allow list: if request.auth != null;
       allow create, update: if isChurchAdminEmail();
       allow delete: if isChurchAdminEmail();
     }

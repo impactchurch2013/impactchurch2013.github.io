@@ -100,6 +100,13 @@ export function openOnboardingEntry({
       </label>
       <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">
         <span>Profile photo (optional)</span>
+        <div class="profile-photo-examples" aria-hidden="true">
+          <div class="profile-photo-examples-row">
+            <img src="images/portrait.jpg" alt="" width="120" height="76" loading="lazy" decoding="async">
+            <img src="images/landscape.jpg" alt="" width="120" height="76" loading="lazy" decoding="async">
+          </div>
+          <p class="profile-photo-examples-hint">Centered subjects work best in directory images.</p>
+        </div>
         <input id="onboardPhoto" type="file" accept="image/*" style="font-size:14px;">
         <span style="font-size:12px;color:#666;">Up to 10 MB. Images are resized (max width 800px), converted to JPEG, and compressed before upload. Only a link is stored in Firestore.</span>
       </label>

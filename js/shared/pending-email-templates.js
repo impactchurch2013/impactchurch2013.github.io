@@ -9,6 +9,4 @@ export const INVITE_MEMBER_BODY = `Hi! You are invited to register your profile 
 
 https://impactchurch2013.github.io/
 
-Looking forward to seeing you in the directory!
-
-#####`;
+Looking forward to seeing you in the directory!`;
