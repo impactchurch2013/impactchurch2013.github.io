@@ -49,6 +49,47 @@ export function ministryStringToSelectValue(stored){
   return raw;
 }
 
+const ROLE_DISPLAY_NAMES = ["Admin", "Sound", "Security", "Volunteer"];
+
+function normalizeMinistryDisplaySegment(segment){
+  const t = String(segment || "").trim();
+  if(!t){
+    return "";
+  }
+
+  for(const role of ROLE_DISPLAY_NAMES){
+    if(t.toLowerCase() === role.toLowerCase()){
+      return role;
+    }
+    if(t.toLowerCase() === `${role.toLowerCase()} ministry`){
+      return role;
+    }
+  }
+
+  return t;
+}
+
+/**
+ * Profile / cards: show role tokens without a spurious "Ministry" suffix (fixes legacy "Admin Ministry").
+ * Combined values use " · "; each segment is normalized separately.
+ */
+export function formatMinistryFieldForDisplay(raw){
+  const s = String(raw || "").trim();
+  if(!s){
+    return "";
+  }
+
+  if(!/\s·\s/.test(s)){
+    return normalizeMinistryDisplaySegment(s);
+  }
+
+  return s
+    .split(/\s*·\s*/)
+    .map(normalizeMinistryDisplaySegment)
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function omitUndefined(obj){
   return Object.fromEntries(
     Object.entries(obj).filter(([, val]) => val !== undefined)

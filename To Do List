@@ -1,0 +1,89 @@
+# To Do — Household & family linking (from planning discussion)
+
+## Where things stand
+
+- **Household** exists in the data model and in **admin edit member** flows, and the **profile** already has a **Family / household** concept (tap opens a household view).
+- **Onboarding** and **edit my profile** are the member-facing paths; those forms currently don’t collect **Household** as a free-text field, so members can’t set it there today.
+
+## What we want (restated)
+
+1. **Text field** “Household” on onboarding and edit my profile (same idea as name fields—plain text).
+2. **Conditional second step**: only if that field is non-empty, show **another sheet** after the main form (not necessarily blocking the whole app forever—see below).
+3. On that sheet: **find other directory members with the same last name**, list them **A→Z by first name**, **checkboxes** to pick who is in their family.
+4. **Persist links** so when someone taps **household** on a profile, the **family sheet** shows the right people—not only a shared string, but **actual linked members**.
+
+## Design decisions to agree on first
+
+### 1. What does the Household text field mean?
+
+Common options:
+
+- **Label only** (e.g. “Smith family”) for display, plus **separate links** for who’s in the family.
+- **Grouping key** (everyone with the same household string sees each other)—simpler but fragile (typos, renames).
+
+The checkbox flow implies **explicit links** between member records, not only matching text.
+
+### 2. When does the “pick family” sheet appear?
+
+Two patterns:
+
+- **After submit**: user submits profile/pending change first; then if household text is non-empty, open the **link family** sheet (could still be “before we’re done” from a UX perspective, or clearly “one more step”).
+- **Before submit**: harder because the pending payload might not exist yet for new onboarding.
+
+Most teams do **after successful submit** (or after local save) so the member row exists and IDs are stable.
+
+### 3. Same last name only
+
+That’s a **hint**, not proof of relation. Plan for:
+
+- **No matches** → message + skip or manual search later.
+- **Many matches** → scrollable list; optional future: search/filter.
+
+### 4. Bidirectional vs one-way links
+
+If A selects B, should B’s family page show A?
+
+- **Symmetric** (recommended for “family”): linking should create **mutual** membership in the same family group.
+- **Asymmetric** only if you explicitly want “I list them, they don’t list me” (unusual for churches).
+
+### 5. Data model
+
+Today, household is likely a **string** on the member doc. To support checkboxes and stable navigation you’ll need something like:
+
+- A **family id** (or household id) shared by all linked members, **or**
+- An array on each member: **linkedMemberIds** (with rules to keep pairs/groups in sync).
+
+The family sheet would **load members by that group**, not only by matching last name.
+
+## Suggested plan (phased)
+
+**Phase A — Forms**  
+- Add **Household** text input to onboarding and edit my profile (optional).  
+- Include `household` in the **pending** payload / member fields consistently with admin edit.
+
+**Phase B — Post-step sheet (only if household text non-empty)**  
+- After successful submit (or after pending submission succeeds), open **“Link your family”** sheet.  
+- Query/list members: **same last name** as current user (normalize: trim, case-insensitive), **exclude self**, sort **by first name**.  
+- Checkboxes + **Save** / **Skip**.
+
+**Phase C — Persistence**  
+- On Save: write **family linkage** to Firestore (shared group id or reciprocal links).  
+- Store the **household label** from the text field for display if you still want a string on the profile.
+
+**Phase D — Profile + family sheet**  
+- **Household** link uses **linked members** (from group), not only `Household` string matching.  
+- Fallback: if no links yet, could still show members with same household string **or** show “No linked family yet.”
+
+**Phase E — Rules & privacy**  
+- Confirm **Firestore rules** allow members to update only their own link fields (or only via controlled writes).  
+- Decide if **last-name search** is acceptable for all authenticated users (usually yes in a church directory).
+
+## Risks / product notes
+
+- **Last name collisions** unrelated people—checkboxes + explicit confirm reduces mistakes.  
+- **Name changes** (marriage, etc.)—may need admin tools later.  
+- **Pending approval**: if profile changes are pending, whether **family links** apply immediately or after approval is a product choice (often: links can update immediately since they’re not “directory display fields” in the same sense).
+
+---
+
+If we align on **symmetric links**, **sheet after successful submit**, and **family id vs linked ids**, the implementation path stays straightforward. Next step later can be a one-page spec (field names + user stories only) before coding.

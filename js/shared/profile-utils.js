@@ -1,3 +1,5 @@
+import { formatMinistryFieldForDisplay } from "./member-utils.js";
+
 export function showFamilyMemberProfileFlow(
   setReturnToFamilyFn,
   showProfileFromMemberFn,
@@ -114,7 +116,7 @@ export function buildProfileViewModelFromMemberFields(
     id: member.id,
     displayName: f["Full Name"] || "",
     photo: f.Photo || "",
-    ministry: f.Ministry || "",
+    ministry: formatMinistryFieldForDisplay(f.Ministry || ""),
     phone: formatPhoneFn(f["Phone Number"]),
     email: f.Email || "",
     address: buildAddressHtmlFromFields(f),
@@ -290,7 +292,7 @@ ${isOwnProfile ? `<div class="profile-own-edit-link" style="width:100%;padding:8
 <h2>${name}</h2>
 
 <div class="profile-details">
-${ministry ? `<p><strong>${ministry} Ministry</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
+${ministry ? `<p><strong>${ministry}</strong></p>${(phone || email || address) ? `<div class="profile-divider"></div>` : ""}` : ""}
 
 <p><a href="tel:${rawPhone}">${phone}</a></p>
 <p><a href="mailto:${email}">${email}</a></p>

@@ -1,3 +1,5 @@
+import { formatMinistryFieldForDisplay } from "./member-utils.js";
+
 export function buildDirectoryProfileViewModel(
   record,
   formatPhoneFn,
@@ -14,7 +16,7 @@ export function buildDirectoryProfileViewModel(
     id: record.id,
     displayName,
     photo,
-    ministry: fields.Ministry || "",
+    ministry: formatMinistryFieldForDisplay(fields.Ministry || ""),
     phone: formatPhoneFn(fields["Phone Number"]),
     email: fields.Email || "",
     address: buildAddressHtmlFromFieldsFn(fields),
